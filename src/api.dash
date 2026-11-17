@@ -1,0 +1,473 @@
+# Cliente de la API de Hangar para el Amiga (/amiga/v1 del servicio): texto en Latin-1, una línea por
+# registro y campos separados por TAB.
+#
+#   l = api_buscar("player", 0)
+#   if l.error != ""
+#       Print l.error
+#   end
+#   for p in l.paquetes
+#       Print p.nombre + " " + p.version
+#   end
+#   f = api_ficha(l.paquetes[0].id)
+#   Print f.descarga
+import "../lib/tachyon/http.dash"
+
+const API_ESPERA_MS = 20000
+
+# La base de la API: la del servicio, salvo que el programa la cambie (tests, otro servidor)
+var api_base: String = "http://hangar.freemem.space/amiga/v1"
+
+struct Paquete
+    id: Int
+    nombre: String
+    version: String
+    cajon: String
+    tamano: Int
+    fecha: String
+    corto: String
+end
+
+struct Lista
+    total: Int
+    pagina: Int
+    por_pagina: Int
+    paquetes: [Paquete]
+    error: String
+end
+
+# Una cosa que pide un programa (las líneas "nec" de la ficha, docs/API.md del servicio)
+struct Necesidad
+    tipo: String       # cpu, fpu, mmu, chipset, rtg, os, memoria, chip, lib, red, paquete, sistema
+    valor: String
+    version: String
+    paquete: Int       # el programa del catálogo que lo trae, 0 si no hay
+end
+
+struct Ficha
+    id: Int
+    fuente: String
+    nombre: String
+    version: String
+    cajon: String
+    tamano: Int
+    fecha: String
+    corto: String
+    autor: String
+    arquitectura: String
+    requiere: String
+    web: String
+    descarga: String
+    imagenes: Int
+    readme: String
+    error: String
+    necesita: [Necesidad]
+    instala: String    # del manifiesto (Install:): "drawer Nombre" o "system LIBS:x.library, C:y"
+    ejecuta: String    # (Run:) qué ejecutar, desde donde se instaló: "Nombre/Programa"
+    # del formato v1 (docs/FORMATO_PAQUETES.md del servicio)
+    paquete: String    # el nombre del paquete: el de su fichero, en minúsculas
+    release: Int
+    provee: String
+    conflictos: String
+    sustituye: String
+    asigna: String
+    arranque: String
+    permisos: String
+    sha256: String     # el del fichero que se baja ("" si el servidor aún no lo ha visto)
+    tamano_fichero: Int
+    firma: Int = 0     # de api_ficha_firmada: 1 buena, 0 sin firma, -1 mala
+    config: String = ""   # Config: ficheros del usuario que una actualización no pisa
+    # del formato 2
+    pkg2: String = ""          # su nombre en el formato 2 (la ficha lo da como "pkg")
+    repo: String = ""          # su repositorio ("aminet", "main")
+    epoch: Int = 0
+    variantes: [String] = nil  # Variant: un fichero según la máquina
+end
+
+struct Comparacion
+    nombre: String
+    local: String
+    estado: String     # "nueva", "igual", "local-mas-nueva", "desconocido"
+    id: Int
+    version: String    # la del catálogo
+end
+
+struct Versiones
+    lista: [Comparacion]
+    error: String
+end
+
+func _api_error(r: Respuesta) -> String
+    if r.error != ""
+        return r.error
+    end
+    if r.estado != 200
+        cuerpo = http_texto(r)
+        if str_find(cuerpo, "ERROR\t") == 0
+            return str_trim(cuerpo[6:])
+        end
+        return "el servidor respondió " + str_from_int(r.estado, 10)
+    end
+    return ""
+end
+
+# El error de una respuesta ("" si vale), para los otros módulos
+func api_error(r: Respuesta) -> String
+    return _api_error(r)
+end
+
+func _lista_vacia(error: String) -> Lista
+    var ps: [Paquete] = []
+    return Lista(0, 0, 0, ps, error)
+end
+
+# Lee una respuesta LISTA
+func api_leer_lista(texto: String) -> Lista
+    lineas = str_split(texto, "\n")
+    if lineas.length == 0
+        return _lista_vacia("respuesta vacía")
+    end
+    cab = str_split(lineas[0], "\t")
+    if cab.length < 4 or cab[0] != "LISTA"
+        return _lista_vacia("respuesta rara: " + lineas[0])
+    end
+    l = _lista_vacia("")
+    l.total = Int(cab[1])
+    l.pagina = Int(cab[2])
+    l.por_pagina = Int(cab[3])
+    lineas.push("")      # al menos dos: (1..0) contaría hacia atrás
+    for i in (1..lineas.length - 1)
+        c = str_split(lineas[i], "\t")
+        if c.length >= 8
+            p = Paquete(Int(c[0]), c[1], c[2], c[3], Int(c[4]), c[5], c[7])
+            l.paquetes.push(p)
+        end
+    end
+    return l
+end
+
+func _api_lista(ruta: String) -> Lista
+    r = http_get(api_base + ruta, API_ESPERA_MS)
+    e = _api_error(r)
+    if e != ""
+        return _lista_vacia(e)
+    end
+    return api_leer_lista(http_texto(r))
+end
+
+func api_buscar(q: String, pagina: Int) -> Lista
+    return _api_lista("/buscar?q=" + url_codificar(q) + "&pag=" + str_from_int(pagina, 10))
+end
+
+func api_novedades(pagina: Int) -> Lista
+    return _api_lista("/novedades?pag=" + str_from_int(pagina, 10))
+end
+
+func api_categoria(cajon: String, pagina: Int) -> Lista
+    return _api_lista("/categoria/" + cajon + "?pag=" + str_from_int(pagina, 10))
+end
+
+# Las categorías: "cajón TAB paquetes" por elemento
+func api_categorias() -> [String]
+    var r: [String] = []
+    resp = http_get(api_base + "/categorias", API_ESPERA_MS)
+    if _api_error(resp) != ""
+        return r
+    end
+    lineas = str_split(http_texto(resp), "\n")
+    lineas.push("")      # al menos dos: (1..0) contaría hacia atrás
+    for i in (1..lineas.length - 1)
+        if lineas[i] != ""
+            r.push(lineas[i])
+        end
+    end
+    return r
+end
+
+func _ficha_vacia(error: String) -> Ficha
+    var ns: [Necesidad] = []
+    return Ficha(0, "", "", "", "", 0, "", "", "", "", "", "", "", 0, "", error, ns, "", "", "", 1, "", "", "", "", "", "", "", 0)
+end
+
+# Lee una respuesta FICHA: campos hasta la línea en blanco, luego el readme
+func api_leer_ficha(texto: String) -> Ficha
+    f = _ficha_vacia("")
+    if str_find(texto, "FICHA\n") != 0
+        f.error = "respuesta rara"
+        return f
+    end
+    fin = str_find(texto, "\n\n")
+    cabecera = texto[6:]
+    if fin >= 0
+        cabecera = texto[6:fin + 1]
+        f.readme = texto[fin + 2:]
+    end
+    for linea in str_split(cabecera, "\n")
+        t = str_find(linea, "\t")
+        if t > 0
+            k = linea[:t]
+            v = linea[t + 1:]
+            if k == "id"
+                f.id = Int(v)
+            elif k == "fuente"
+                f.fuente = v
+            elif k == "nombre"
+                f.nombre = v
+            elif k == "version"
+                f.version = v
+            elif k == "cajon"
+                f.cajon = v
+            elif k == "tamano"
+                f.tamano = Int(v)
+            elif k == "fecha"
+                f.fecha = v
+            elif k == "corto"
+                f.corto = v
+            elif k == "autor"
+                f.autor = v
+            elif k == "arquitectura"
+                f.arquitectura = v
+            elif k == "requiere"
+                f.requiere = v
+            elif k == "instala"
+                f.instala = v
+            elif k == "ejecuta"
+                f.ejecuta = v
+            elif k == "paquete"
+                f.paquete = v
+            elif k == "release"
+                f.release = Int(v)
+            elif k == "provee"
+                f.provee = v
+            elif k == "conflictos"
+                f.conflictos = v
+            elif k == "sustituye"
+                f.sustituye = v
+            elif k == "asigna"
+                f.asigna = v
+            elif k == "arranque"
+                f.arranque = v
+            elif k == "permisos"
+                f.permisos = v
+            elif k == "config"
+                f.config = v
+            elif k == "sha256"
+                f.sha256 = v
+            elif k == "tamano_fichero"
+                f.tamano_fichero = Int(v)
+            elif k == "nec"
+                p = str_split(v + "\t\t\t", "\t")
+                n = 0
+                if p[3] != ""
+                    n = Int(p[3])
+                end
+                f.necesita.push(Necesidad(p[0], p[1], p[2], n))
+            elif k == "web"
+                f.web = v
+            elif k == "descarga"
+                f.descarga = v
+            elif k == "imagenes"
+                f.imagenes = Int(v)
+            elif k == "pkg"
+                f.pkg2 = v
+            elif k == "repo"
+                f.repo = v
+            end
+        end
+    end
+    return f
+end
+
+func api_ficha(id: Int) -> Ficha
+    r = http_get(api_base + "/ficha/" + str_from_int(id, 10), API_ESPERA_MS)
+    e = _api_error(r)
+    if e != ""
+        return _ficha_vacia(e)
+    end
+    return api_leer_ficha(http_texto(r))
+end
+
+# La clave pública del repositorio de Hangar (la privada está solo en el servidor): con ella se comprueba que una
+# respuesta viene de Hangar y no la cambió nadie por el camino, aunque llegue por HTTP
+var clave_hangar: String = "660fcdaa0ff7edd1f562293c337645d5754172f2e273cc03bb5b6fe7770f6a11"
+var clave_hangar_id: String = "91f3b1d66448ffdb"
+
+# La firma de una respuesta (cabecera X-Hangar-Firma: id y firma Ed25519 del cuerpo): 1 buena, 0 sin firma, -1 mala.
+# Tarda unos segundos en un 68020.
+func api_firma(r: Respuesta) -> Int
+    f = r.cabeceras["x-hangar-firma"]
+    if f == nil or f == ""
+        return 0
+    end
+    e = str_find(f, " ")
+    if e <= 0 or f[:e] != clave_hangar_id
+        return -1
+    end
+    if ed25519_verify_text(clave_hangar, str_trim(f[e + 1:]), r.cuerpo)
+        return 1
+    end
+    return -1
+end
+
+# La ficha, con su firma comprobada (f.firma): la que se usa para instalar (url y SHA-256 de lo que se baja)
+# La ficha de lo instalado por su nombre del formato 2 y su repositorio (GET /ficha-pkg/REPO/NOMBRE): el número de
+# un recibo hecho con el formato 2 es el de la entrada del índice, no el del catálogo
+func api_ficha_pkg(repo: String, nombre: String) -> Ficha
+    r = http_get(api_base + "/ficha-pkg/" + repo + "/" + nombre, API_ESPERA_MS)
+    e = _api_error(r)
+    if e != ""
+        return _ficha_vacia(e)
+    end
+    return api_leer_ficha(http_texto(r))
+end
+
+func api_ficha_firmada(id: Int) -> Ficha
+    r = http_get(api_base + "/ficha/" + str_from_int(id, 10), API_ESPERA_MS)
+    e = _api_error(r)
+    if e != ""
+        return _ficha_vacia(e)
+    end
+    f = api_leer_ficha(http_texto(r))
+    f.firma = api_firma(r)
+    return f
+end
+
+# Una versión del historial de un paquete (GET /historial/ID): de la más nueva a la más vieja
+struct VersionVieja
+    version: String
+    release: Int
+    tamano: Int
+    sha256: String
+    fecha: String
+    url: String
+end
+
+struct Historial
+    lista: [VersionVieja]
+    firma: Int         # 1 buena, 0 sin firma, -1 mala
+    error: String
+end
+
+func api_historial(id: Int) -> Historial
+    var vs: [VersionVieja] = []
+    h = Historial(vs, 0, "")
+    r = http_get(api_base + "/historial/" + str_from_int(id, 10), API_ESPERA_MS)
+    e = _api_error(r)
+    if e != ""
+        h.error = e
+        return h
+    end
+    h.firma = api_firma(r)
+    for linea in str_split(http_texto(r), "\n")
+        if not str_starts(linea, "HISTORIAL") and not str_starts(linea, " ") and linea != ""
+            p = str_split(linea, "\t")
+            if p.length >= 6
+                h.lista.push(VersionVieja(p[0], Int(p[1]), Int(p[2]), p[3], p[4], p[5]))
+            end
+        end
+    end
+    return h
+end
+
+# El SHA-256 de un fichero, leído a trozos de 32 KB ("" si no se puede leer)
+func api_sha256_fichero(ruta: String) -> String
+    fd = file_open(ruta, 1005)
+    if fd == 0
+        return ""
+    end
+    b = buffer_alloc(32768)
+    s = sha256_new()
+    n = file_read(fd, b, 32768)
+    while n > 0
+        sha256_add(s, b, n)
+        n = file_read(fd, b, 32768)
+    end
+    buffer_free(b)
+    file_close(fd)
+    return sha256_hex(s)
+end
+
+# Manda el inventario ("nombre TAB versión" por línea) y lee la comparación con el catálogo
+func api_versiones(inventario: String) -> Versiones
+    var cs: [Comparacion] = []
+    v = Versiones(cs, "")
+    c = http_empezar_post(api_base + "/versiones", inventario, "text/plain; charset=iso-8859-1", API_ESPERA_MS)
+    while not http_avanzar(c)
+        time_delay(1)
+    end
+    r = c.respuesta
+    e = _api_error(r)
+    if e != ""
+        v.error = e
+        return v
+    end
+    lineas = str_split(http_texto(r), "\n")
+    lineas.push("")      # al menos dos: (1..0) contaría hacia atrás
+    for i in (1..lineas.length - 1)
+        p = str_split(lineas[i], "\t")
+        if p.length >= 5
+            id = 0
+            if p[3] != ""
+                id = Int(p[3])
+            end
+            v.lista.push(Comparacion(p[0], p[1], p[2], id, p[4]))
+        end
+    end
+    return v
+end
+
+# Lo instalado, reconocido por sus ficheros (POST /reconocer): una línea por programa o librería del disco
+struct Reconocido
+    fichero: String
+    estado: String     # "nueva", "igual", "local-mas-nueva", "desconocido"
+    id: Int
+    nombre: String     # el del catálogo
+    local: String      # la versión instalada
+    version: String    # la del catálogo
+    ruta: String = ""  # dónde estaba en el archivo del paquete ("AmiWordle/AmiWordle"), si se reconoció por el fichero
+end
+
+struct Reconocidos
+    lista: [Reconocido]
+    error: String
+end
+
+func api_reconocer(inventario: String) -> Reconocidos
+    var rs: [Reconocido] = []
+    v = Reconocidos(rs, "")
+    c = http_empezar_post(api_base + "/reconocer", inventario, "text/plain; charset=iso-8859-1", API_ESPERA_MS)
+    while not http_avanzar(c)
+        time_delay(1)
+    end
+    r = c.respuesta
+    e = _api_error(r)
+    if e != ""
+        v.error = e
+        return v
+    end
+    lineas = str_split(http_texto(r), "\n")
+    lineas.push("")      # al menos dos: (1..0) contaría hacia atrás
+    for i in (1..lineas.length - 1)
+        p = str_split(lineas[i], "\t")
+        if p.length >= 6
+            id = 0
+            if p[2] != ""
+                id = Int(p[2])
+            end
+            rc = Reconocido(p[0], p[1], id, p[3], p[4], p[5])
+            if p.length >= 7
+                rc.ruta = p[6]
+            end
+            v.lista.push(rc)
+        end
+    end
+    return v
+end
+
+# Una URL de descarga de una ficha (f.descarga puede llevar varias, una por línea)
+func api_url_descarga(f: Ficha, u: String) -> String
+    return u
+end
+
+func api_url_miniatura(id: Int) -> String
+    return api_base + "/miniatura/" + str_from_int(id, 10) + ".iff"
+end

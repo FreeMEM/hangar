@@ -1,0 +1,85 @@
+# Test: la base local (src/recibos.dash): guardar y leer un paquete con el CRC-32 y el tamaño de cada fichero, de
+# quién es un fichero, pasar un recibo viejo a la base y quitar un paquete devolviendo lo que pisó en el sistema.
+# expect-out: crc 6fa0f988 4
+# expect-out: leido tunefinder 1.5 r2 dependencia retenido=si 2 ficheros [Requires: pkg:codesets]
+# expect-out: fichero 1 RAM:Prog/TF 6fa0f988 4
+# expect-out: dueno [TuneFinder] []
+# expect-out: migrados 1: Viejo 1.0 crc 6fa0f988
+# expect-out: quitado 0 fallos; vuelve el de antes: si; base: 1
+# expect-out: verificar bien 0
+# expect-out: verificar mal 2: cambiado RAM:Prog/TF | falta RAM:Prog/TF.info
+# expect-out: formato PKG-DB 2 [Reason: dependency] [Hold: yes] fichero tunefinder.pkg
+# expect-out: base 1 pasada: 1 -> Uno 3.0 explicit; queda el viejo: no
+# expect-out: suma: entero=si cambiado=en duda copia=tunefinder 1.5
+import "../src/recibos.dash"
+
+func escribir(ruta: String, t: String)
+    file_write_text(ruta, t)
+end
+
+func _linea(t: String, campo: String) -> String
+    for l in str_split(t, "\n")
+        if str_starts(l, campo + ": ")
+            return l
+        end
+    end
+    return ""
+end
+
+Main
+    recibos_cajon = "RAM:Base"
+    recibos_viejos = "RAM:Recibos"
+    dir_create("RAM:Prog")
+    escribir("RAM:Prog/TF", "hola")
+    escribir("RAM:Prog/TF.info", "icono")
+    c = recibo_crc("RAM:Prog/TF")
+    print_crc = recibo_hex(c)
+    Print "crc " + print_crc + " " + str_from_int(file_size("RAM:Prog/TF"), 10)
+    var fs: [String] = ["RAM:Prog/TF", "RAM:Prog/TF.info"]
+    r = recibo_nuevo(4050, "TuneFinder", "1.5", "RAM:", fs)
+    r.lanzamiento = 2
+    r.motivo = "dependencia"
+    r.retenido = true
+    r.requiere = "pkg:codesets"
+    recibo_guardar(r)
+    l = recibo_leer(4050)
+    Print "leido " + recibo_clave(l.nombre) + " " + l.version + " r" + str_from_int(l.lanzamiento, 10) + " " + l.motivo + " retenido=" + recibo_si_no(l.retenido) + " " + str_from_int(l.ficheros.length, 10) + " ficheros [Requires: " + l.requiere + "]"
+    Print "fichero 1 " + l.ficheros[0] + " " + recibo_hex(l.crcs[0]) + " " + str_from_int(l.tamanos[0], 10)
+    Print "dueno [" + recibo_dueno("ram:prog/tf") + "] [" + recibo_dueno("RAM:Otro") + "]"
+    # un recibo de la 0.4 y un fichero del sistema pisado (con su .antes)
+    dir_create("RAM:Recibos")
+    escribir("RAM:Prog/V", "hola")
+    escribir("RAM:Prog/V.antes", "viejo")
+    escribir("RAM:Recibos/9.txt", "HANGAR-RECIBO 1\nid\t9\nnombre\tViejo\nversion\t1.0\ndestino\tRAM:\nf\tRAM:Prog/V\n")
+    n = recibos_migrar()
+    v = recibo_leer(9)
+    Print "migrados " + str_from_int(n, 10) + ": " + v.nombre + " " + v.version + " crc " + recibo_hex(v.crcs[0])
+    fallos = recibo_desinstalar(v)
+    Print "quitado " + str_from_int(fallos, 10) + " fallos; vuelve el de antes: " + recibo_si_no(file_read_text("RAM:Prog/V") == "viejo") + "; base: " + str_from_int(recibos_todos().length, 10)
+    Print "verificar bien " + str_from_int(recibo_verificar(recibo_leer(4050)).length, 10)
+    escribir("RAM:Prog/TF", "adiós")
+    file_delete("RAM:Prog/TF.info")
+    mal = recibo_verificar(recibo_leer(4050))
+    Print "verificar mal " + str_from_int(mal.length, 10) + ": " + mal[0] + " | " + mal[1]
+    # el formato 2 en el disco
+    texto = file_read_text("RAM:Base/tunefinder.pkg")
+    Print "formato " + texto[:8] + " [" + _linea(texto, "Reason") + "] [" + _linea(texto, "Hold") + "] fichero tunefinder.pkg"
+    # una base de la versión 1 se pasa sola
+    escribir("RAM:Base/uno", "HANGAR-BASE 1\nPaquete: uno\nNombre: Uno\nVersion: 3.0\nRelease: 1\nId: 77\nMotivo: pedido\nRetenido: no\nFecha: x\nDestino: RAM:\n")
+    n1 = recibos_a_v2()
+    u = recibo_de("uno")
+    Print "base 1 pasada: " + str_from_int(n1, 10) + " -> " + u.nombre + " " + u.version + " " + _linea(file_read_text("RAM:Base/uno.pkg"), "Reason")[8:] + "; queda el viejo: " + recibo_si_no(file_exists("RAM:Base/uno"))
+    # la suma del final: un .pkg cambiado queda en duda y la copia de la base lo da entero
+    bien = recibo_de("tunefinder")
+    recibos_copiar_base()
+    tx = file_read_text("RAM:Base/tunefinder.pkg")
+    escribir("RAM:Base/tunefinder.pkg", str_replace(tx, "Version: 1.5", "Version: 9.9"))
+    roto = recibo_de("tunefinder")
+    copia_r = recibo_de_copia("tunefinder")
+    duda = "entero"
+    if roto.en_duda
+        duda = "en duda"
+    end
+    Print "suma: entero=" + recibo_si_no(not bien.en_duda) + " cambiado=" + duda + " copia=" + recibo_clave(copia_r.nombre) + " " + copia_r.version
+end
+

@@ -1,0 +1,16 @@
+# Para tests/cortes.py: si RAM:P quedó limpio tras un corte (y deshacer) o tras quitar lo instalado
+func hay(ruta: String) -> String
+    if file_exists(ruta)
+        return "si"
+    end
+    return "no"
+end
+
+Main
+    n = dir_read("RAM:P")
+    limpio = "si"
+    if n > 0
+        limpio = "no"
+    end
+    Print "limpio=" + limpio + " A=" + hay("RAM:P/A") + " B=" + hay("RAM:P/B") + " C=" + hay("RAM:P/C")
+end

@@ -1,0 +1,37 @@
+# Test: el lector de entradas del formato 2 (src/formato.dash): la cabecera de un delta con sus Removed, dos
+# entradas con campos repetidos (Variant, Startup), epoch y release, y la versión para enseñar.
+# expect-out: PKG-INDEX-DELTA 2 aminet m68k-amigaos 31764 31700 quitados 2: 7 9
+# expect-out: 2 entradas
+# expect-out: trasfondo 1:2.8.7-2 id 5 rank 1 601234
+# expect-out: req V40, muimaster.library 19 | pkg:mui >= 5
+# expect-out: variantes 2: T/T = T/T.060; 68060, FPU
+# expect-out: startup 2
+# expect-out: modplayer 0.20240312 sin release
+import "../src/formato.dash"
+
+Main
+    t = "PKG-INDEX-DELTA 2\nRepository: aminet\nArchitecture: m68k-amigaos\nSerial: 31764\nExpires: 2026-11-21T00:00:00Z\nSince: 31700\n\n"
+    t = t + "Name: trasfondo\nVersion: 2.8.7\nEpoch: 1\nRelease: 2\nId: 5\nRank: 1\nUrl: https://example.org/T.lha\nSize: 601234\nSha256: aa\n"
+    t = t + "Requires: V40, muimaster.library 19 | pkg:mui >= 5\nVariant: T/T = T/T.060; 68060, FPU\nVariant: T/T = T/T.020\n"
+    t = t + "Startup: Run >NIL: T/T\nStartup: Assign X: T\n\n"
+    t = t + "Name: modplayer\nVersion: 0.20240312\nRelease: 1\nId: 6\nSha256: bb\n\nRemoved: 7\n\nRemoved: 9\n"
+    h = formato_cabecera(t)
+    q = ""
+    for x in h.quitados
+        q = q + " " + str_from_int(x, 10)
+    end
+    Print h.tipo + " " + h.repositorio + " " + h.arquitectura + " " + str_from_int(h.serie, 10) + " " + str_from_int(h.desde, 10) + " quitados " + str_from_int(h.quitados.length, 10) + ":" + q
+    es = formato_entradas(t)
+    Print str_from_int(es.length, 10) + " entradas"
+    e = es[0]
+    Print e.nombre + " " + formato_version_texto(e) + " id " + str_from_int(e.id, 10) + " rank " + str_from_int(e.rank, 10) + " " + str_from_int(e.tamano, 10)
+    Print "req " + e.requires
+    Print "variantes " + str_from_int(e.variantes.length, 10) + ": " + e.variantes[0]
+    Print "startup " + str_from_int(e.startup.length, 10)
+    m = es[1]
+    r = "con release"
+    if formato_version_texto(m) == m.version
+        r = "sin release"
+    end
+    Print m.nombre + " " + m.version + " " + r
+end

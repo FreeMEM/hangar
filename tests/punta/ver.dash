@@ -1,0 +1,18 @@
+# Para tests/punta.py: cómo quedó el disco
+func si_no(b: Bool) -> String
+    if b
+        return "si"
+    end
+    return "no"
+end
+
+Main
+    Print "A=" + si_no(file_exists("RAM:P/A/A")) + " B=" + si_no(file_exists("RAM:P/B/B")) + " C=" + si_no(file_exists("RAM:P/C/C")) + " T=" + si_no(file_exists("RAM:P/T/T"))
+    Print "prefs=" + file_read_text("RAM:P/K/K.prefs") + " nuevo=" + si_no(file_exists("RAM:P/K/K.prefs.new"))
+    t = file_read_text("S:User-Startup")
+    if t == nil
+        t = ""
+    end
+    Print "user-startup=" + str_replace(t, "\n", "|")
+    Print "A arreglado=" + si_no(file_read_text("RAM:P/A/A") != "roto")
+end

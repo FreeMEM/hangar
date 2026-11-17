@@ -1,0 +1,39 @@
+# Para cazar un cuelgue de Disco: lo mismo que inventario() de Hangar, sin ventana: recorrer el
+# disco, reconocer con el servidor y pedir la ficha de lo primero con versión nueva
+import "../../src/api.dash"
+import "../../src/inventario.dash"
+import "../../src/recibos.dash"
+
+Main
+    inv = inventario_recorrer(["C:", "LIBS:", "DEVS:", "SYS:Utilities", "SYS:Tools", "SYS:System", "SYS:Prefs"], 1)
+    Print "ficheros: " + str_from_int(inv.length, 10)
+    for f in inventario_recorrer(["Work:"], 3)
+        inv.push(f)
+    end
+    t = inventario_texto(inv)
+    Print "texto: " + str_from_int(t.length, 10)
+    v = api_reconocer(t)
+    Print "error: " + v.error + " lista: " + str_from_int(v.lista.length, 10)
+    n = 0
+    for c in v.lista
+        if c.estado == "nueva" and n < 3
+            Print "nueva: " + str_from_int(c.id, 10) + " " + c.nombre + " " + c.local + " -> " + c.version
+            f = api_ficha(c.id)
+            Print "ficha: " + f.error + " " + f.nombre + " " + f.version
+            n = n + 1
+        end
+    end
+    # lo de adoptar(): cada reconocido contra la base
+    k = 0
+    cuantos = 0
+    while k < v.lista.length and k < inv.length
+        c = v.lista[k]
+        if c.estado != "desconocido" and c.id > 0 and recibo_leer(c.id).id == 0 and c.ruta != ""
+            cuantos = cuantos + 1
+        end
+        k = k + 1
+    end
+    Print "para apuntar: " + str_from_int(cuantos, 10)
+    Print "progdir: " + str_from_int(dir_read("PROGDIR:"), 10)
+    Print "fin"
+end

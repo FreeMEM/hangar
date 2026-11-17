@@ -1,0 +1,223 @@
+# Dependencias en grafo (docs/PAQUETES_LOOP.md del servicio, K6): qué hay que instalar antes de un programa (lo que
+# pide, lo que piden esas dependencias, y así), en orden, sin repetir y sin dar vueltas; quién necesita un paquete
+# antes de quitarlo; y los huérfanos, lo que se instaló como dependencia y ya no pide nadie.
+
+import "requisitos.dash"
+
+# Un paso del plan: instalar un paquete del catálogo porque lo pide otro
+struct PasoPlan
+    ficha: Ficha
+    para: String       # quién lo pide ("Programa")
+    que: String        # qué hace falta ("reqtools.library 38", "el paquete codesets >= 6.20")
+end
+
+struct Plan
+    pasos: [PasoPlan]      # en orden: las dependencias de cada uno antes que él
+    otros: [String]        # avisos: "es para AmigaOS 4", lo que falta y no trae nadie
+    error: String
+end
+
+var _plan_vistos: [Int] = []
+
+func _visto(id: Int) -> Bool
+    for x in _plan_vistos
+        if x == id
+            return true
+        end
+    end
+    return false
+end
+
+func _plan_de(f: Ficha, plan: Plan, hondo: Int)
+    for n in f.necesita
+        if n.tipo == "sistema"
+            plan.otros.push(f.nombre + " es para " + n.valor)
+        elif necesidad_cumplida(n) == 0
+            if n.paquete > 0 and n.paquete != f.id and not _visto(n.paquete)
+                if hondo >= 8
+                    plan.otros.push("dependencias demasiado hondas en " + f.nombre)
+                else
+                    _plan_vistos.push(n.paquete)
+                    d = api_ficha(n.paquete)
+                    if d.error != ""
+                        plan.otros.push(necesidad_texto(n) + " (no se pudo leer su ficha: " + d.error + ")")
+                    else
+                        # primero lo que pide la dependencia, luego ella
+                        _plan_de(d, plan, hondo + 1)
+                        plan.pasos.push(PasoPlan(d, f.nombre, necesidad_texto(n)))
+                    end
+                end
+            elif n.paquete == 0 and n.tipo != "cpu" and n.tipo != "fpu" and n.tipo != "rtg" and n.tipo != "os" and n.tipo != "chipset" and n.tipo != "memoria" and n.tipo != "chip"
+                plan.otros.push(f.nombre + " necesita " + necesidad_texto(n) + " y no lo trae ningún programa del catálogo")
+            end
+        end
+    end
+end
+
+# El plan para instalar f: sus dependencias que faltan, en orden de instalación
+func plan_para(f: Ficha) -> Plan
+    var pasos: [PasoPlan] = []
+    var otros: [String] = []
+    plan = Plan(pasos, otros, "")
+    var vistos: [Int] = [f.id]
+    _plan_vistos = vistos
+    _plan_de(f, plan, 0)
+    return plan
+end
+
+# Si el texto de un Requires pide el paquete nombre, o algo que trae (provee: "x.library 2, y.mcc")
+func _pide(requiere: String, nombre: String, provee: String) -> Bool
+    r = str_lower(requiere)
+    c = recibo_clave(nombre)
+    if str_find(r, "pkg:" + c) >= 0 or str_find(r, "/" + c + ".lha") >= 0
+        return true
+    end
+    for x in str_split(str_lower(provee), ",")
+        partes = str_split(str_trim(x), " ")
+        if partes.length > 0 and partes[0] != "" and str_find(r, partes[0]) >= 0
+            return true
+        end
+    end
+    return false
+end
+
+# Los paquetes instalados que necesitan a r (por su nombre o por lo que trae)
+func dependientes(r: Recibo) -> [String]
+    var d: [String] = []
+    for otro in recibos_todos()
+        if otro.id != r.id and _pide(otro.requiere, r.nombre, r.provee)
+            d.push(otro.nombre)
+        end
+    end
+    return d
+end
+
+# Lo instalado como dependencia que ya no necesita nadie (sin contar los que se van a quitar: fuera)
+func huerfanos(fuera: [String]) -> [Recibo]
+    var h: [Recibo] = []
+    todos = recibos_todos()
+    for r in todos
+        quitado = false
+        for x in fuera
+            if recibo_clave(x) == recibo_clave(r.nombre)
+                quitado = true
+            end
+        end
+        if r.motivo == "dependencia" and not quitado
+            pedido = false
+            for otro in todos
+                sale = false
+                for x in fuera
+                    if recibo_clave(x) == recibo_clave(otro.nombre)
+                        sale = true
+                    end
+                end
+                if otro.id != r.id and not sale and _pide(otro.requiere, r.nombre, r.provee)
+                    pedido = true
+                end
+            end
+            if not pedido
+                h.push(r)
+            end
+        end
+    end
+    return h
+end
+
+# Los nombres de una lista "pkg:a, pkg:b >= 2" (Conflicts, Replaces) que están instalados: sus recibos
+func instalados_de(lista: String) -> [Recibo]
+    var r: [Recibo] = []
+    for x in str_split(lista, ",")
+        t = str_trim(x)
+        if str_starts(str_lower(t), "pkg:")
+            t = t[4:]
+        end
+        e = str_find(t, " ")
+        if e > 0
+            t = t[:e]
+        end
+        if t != ""
+            rec = recibo_de(t)
+            if rec.id != 0
+                r.push(rec)
+            end
+        end
+    end
+    return r
+end
+
+# Todos los ficheros de un cajón y sus subcajones
+func listar_arbol(cajon: String, salida: [String])
+    n = dir_read(cajon)
+    if n <= 0
+        return
+    end
+    var nombres: [String] = []
+    var cajones: [Bool] = []
+    for i in (0..n - 1)
+        nombres.push(dir_entry_name(i))
+        cajones.push(dir_entry_is_dir(i))
+    end
+    i = 0
+    while i < nombres.length
+        r = cajon + "/" + nombres[i]
+        if cajones[i]
+            listar_arbol(r, salida)
+        else
+            salida.push(r)
+        end
+        i = i + 1
+    end
+end
+
+# Lo que se adoptaría de un programa instalado a mano y reconocido: su destino y sus ficheros. Si el fichero estaba
+# en un cajón dentro del archivo ("AmiWordle/AmiWordle"), ese cajón entero y su icono; si no, solo ese fichero y su
+# icono (así nunca se adopta un cajón del sistema, como C:).
+func adopcion(local: String, dentro: String, nombre: String, destino: [String]) -> [String]
+    var fs: [String] = []
+    d = ""
+    if dentro != "" and local.length > dentro.length and str_lower(local[local.length - dentro.length:]) == str_lower(dentro)
+        d = local[:local.length - dentro.length]
+        barra = str_find(dentro, "/")
+        if barra > 0
+            cajon = d + dentro[:barra]
+            listar_arbol(cajon, fs)
+            if file_exists(cajon + ".info")
+                fs.push(cajon + ".info")
+            end
+            destino.push(d)
+            return fs
+        end
+    end
+    if d == ""
+        i = local.length - 1
+        while i >= 0 and str_code(local, i) != 47 and str_code(local, i) != 58
+            i = i - 1
+        end
+        d = local[:i + 1]
+    end
+    # un fichero suelto en un cajón que se llama como el programa ("SYS:Tools/FileX/FileX.68000" de FileX): es el
+    # cajón del programa; se apunta entero y su sitio es el de encima (si no, al actualizar quedaría dentro)
+    if nombre != "" and d.length > 1 and str_ends(d, "/")
+        cajon = d[:d.length - 1]
+        j = cajon.length - 1
+        while j >= 0 and str_code(cajon, j) != 47 and str_code(cajon, j) != 58
+            j = j - 1
+        end
+        if str_lower(cajon[j + 1:]) == str_lower(nombre)
+            listar_arbol(cajon, fs)
+            if file_exists(cajon + ".info")
+                fs.push(cajon + ".info")
+            end
+            destino.push(cajon[:j + 1])
+            return fs
+        end
+    end
+    fs.push(local)
+    if file_exists(local + ".info")
+        fs.push(local + ".info")
+    end
+    destino.push(d)
+    return fs
+end
+

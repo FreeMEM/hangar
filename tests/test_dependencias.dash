@@ -1,0 +1,104 @@
+# Test: dependencias en grafo (src/dependencias.dash) contra el servidor falso. A pide B y C, y B pide C >= 2.0: el
+# plan instala C y luego B (C solo una vez). Con C 1.0 instalado, C no llega a la versión y entra en el plan; con C
+# 2.1, no. D y E se piden entre sí y no da vueltas. F pide lo que no trae nadie y es de otro sistema. Y en la base:
+# quién necesita a C, y los huérfanos al quitar A.
+# emu-server: falso.py 47121
+# expect-out: A: C(para B: c >= 2.0) B(para A: b) | avisos 0
+# expect-out: con C 1.0: C(para B: c >= 2.0) B(para A: b)
+# expect-out: con C 2.1: B(para A: b)
+# expect-out: D: E(para D: e)
+# expect-out: F: 0 pasos, 2 avisos
+# expect-out: versiones 1 0 -1 1 1
+# expect-out: necesitan C: B
+# expect-out: huerfanos al quitar A: B
+# expect-out: huerfanos al quitar A y B: C
+# expect-out: adoptar cajon: RAM:Juegos/ 4 ficheros
+# expect-out: adoptar suelto: RAM:C/ 1 ficheros
+# expect-out: adoptar su cajon: RAM:Tools/ 3 ficheros
+import "../src/dependencias.dash"
+
+func texto_plan(p: Plan) -> String
+    t = ""
+    for x in p.pasos
+        if t != ""
+            t = t + " "
+        end
+        t = t + x.ficha.nombre + "(para " + x.para + ": " + x.que + ")"
+    end
+    return t
+end
+
+func nombres(rs: [Recibo]) -> String
+    t = ""
+    for r in rs
+        if t != ""
+            t = t + " "
+        end
+        t = t + r.nombre
+    end
+    return t
+end
+
+Main
+    api_base = "http://127.0.0.1:47121/amiga/v1"
+    recibos_cajon = "RAM:BaseDep"
+    a = api_ficha(5001)
+    p = plan_para(a)
+    Print "A: " + texto_plan(p) + " | avisos " + str_from_int(p.otros.length, 10)
+    var nada: [String] = []
+    c = recibo_nuevo(5003, "C", "1.0", "RAM:", nada)
+    c.motivo = "dependencia"
+    recibo_guardar(c)
+    Print "con C 1.0: " + texto_plan(plan_para(a))
+    c.version = "2.1"
+    recibo_guardar(c)
+    Print "con C 2.1: " + texto_plan(plan_para(a))
+    Print "D: " + texto_plan(plan_para(api_ficha(5004)))
+    pf = plan_para(api_ficha(5006))
+    Print "F: " + str_from_int(pf.pasos.length, 10) + " pasos, " + str_from_int(pf.otros.length, 10) + " avisos"
+    Print "versiones " + str_from_int(version_comparar("1.0", "1.0-beta"), 10) + " " + str_from_int(version_comparar("0.9.3-alfa", "0.9.3-alpha"), 10) + " " + str_from_int(version_comparar("1.0-rc1", "1.0-rc2"), 10) + " " + str_from_int(version_comparar("2.3a", "2.3"), 10) + " " + str_from_int(version_comparar("1.31", "1.4"), 10)
+    # B (dependencia de A) pide c; A (pedido) pide b
+    b = recibo_nuevo(5002, "B", "1.0", "RAM:", nada)
+    b.motivo = "dependencia"
+    b.requiere = "pkg:c >= 2.0"
+    recibo_guardar(b)
+    ra = recibo_nuevo(5001, "A", "1.0", "RAM:", nada)
+    ra.requiere = "pkg:b, pkg:c"
+    recibo_guardar(ra)
+    necesitan = dependientes(recibo_de("C"))
+    t = ""
+    for x in necesitan
+        if x != "A"
+            t = t + x
+        end
+    end
+    Print "necesitan C: " + t
+    var fuera: [String] = ["A"]
+    Print "huerfanos al quitar A: " + nombres(huerfanos(fuera))
+    fuera.push("B")
+    Print "huerfanos al quitar A y B: " + nombres(huerfanos(fuera))
+    dir_create("RAM:Juegos")
+    dir_create("RAM:Juegos/AmiWordle")
+    dir_create("RAM:Juegos/AmiWordle/db")
+    file_write_text("RAM:Juegos/AmiWordle/AmiWordle", "prog")
+    file_write_text("RAM:Juegos/AmiWordle/AmiWordle.info", "icono")
+    file_write_text("RAM:Juegos/AmiWordle/db/es.db", "datos")
+    file_write_text("RAM:Juegos/AmiWordle.info", "icono")
+    var d1: [String] = []
+    fs = adopcion("RAM:Juegos/AmiWordle/AmiWordle", "AmiWordle/AmiWordle", "AmiWordle", d1)
+    Print "adoptar cajon: " + d1[0] + " " + str_from_int(fs.length, 10) + " ficheros"
+    dir_create("RAM:C")
+    file_write_text("RAM:C/Install", "orden")
+    var d2: [String] = []
+    fs = adopcion("RAM:C/Install", "Install", "Install", d2)
+    Print "adoptar suelto: " + d2[0] + " " + str_from_int(fs.length, 10) + " ficheros"
+    # un fichero suelto en el cajón del programa (FileX/FileX.68000): el cajón entero, y su sitio el de encima
+    dir_create("RAM:Tools")
+    dir_create("RAM:Tools/FileX")
+    file_write_text("RAM:Tools/FileX/FileX.68000", "prog")
+    file_write_text("RAM:Tools/FileX/FileX.guide", "doc")
+    file_write_text("RAM:Tools/FileX.info", "icono")
+    var d3: [String] = []
+    fs = adopcion("RAM:Tools/FileX/FileX.68000", "FileX.68000", "FileX", d3)
+    Print "adoptar su cajon: " + d3[0] + " " + str_from_int(fs.length, 10) + " ficheros"
+end

@@ -1,0 +1,962 @@
+# El resolutor de dependencias del formato 2 (docs/FORMATO_PAQUETES.md del servicio, 3 y 5): de qué repositorio sale
+# cada paquete, qué entrada (versión más alta, Rank más bajo que cumple la máquina), y el plan en orden, con
+# alternativas, Provides, Conflicts, Replaces, Recommends de un nivel y ciclos. Es la traducción de la referencia en
+# Python (docs/formato/referencia/resolver.py del servicio) y pasa los mismos casos (tests/test_resolutor.dash).
+#
+# No sabe de red: trabaja con lo que haya en la caché (resolutor_meter). Quien lo usa la llena antes, o con
+# resolutor_pedir (que pone el programa) cuando falta algo.
+
+import "formato.dash"
+
+struct PkgRepo
+    nombre: String
+    prioridad: Int
+    protegido: Bool
+end
+
+struct EntradaRepo
+    repo: String
+    e: Entrada
+end
+
+struct PkgInstalado
+    nombre: String
+    epoch: Int
+    version: String
+    release: Int
+    repo: String
+    motivo: String
+    retenido: Bool
+end
+
+# La máquina que ejecuta los programas (en las pruebas, inventada)
+struct Maquina
+    os: Int
+    cpu: Int
+    fpu: Bool
+    mmu: Bool
+    rtg: Bool
+    tcpip: Bool
+    chipset: String
+    mem: Int
+    chip: Int
+    libs: [String]        # "nombre versión", en minúsculas
+end
+
+# Un paso del plan
+struct PkgPaso
+    tipo: String          # "+", "^" o "-"
+    nombre: String
+    repo: String
+    motivo: String        # explicit, dependency, recommended
+    vieja: String         # la versión de antes, en "^" (con epoch, sin release)
+    vieja_rel: Int
+    entrada: EntradaRepo  # nil en "-"
+end
+
+var _repos: [PkgRepo] = []
+var _cache: [EntradaRepo] = []
+var _instalados: [PkgInstalado] = []
+var _maq: Maquina = nil
+var _planeados: [EntradaRepo] = []
+var resolutor_pasos: [PkgPaso] = []
+# Las librerías de la máquina se miran de verdad (library_version), no en Maquina.libs
+var resolutor_libs_reales: Bool = false
+var resolutor_error: String = ""
+var resolutor_avisos: [String] = []    # requisitos adivinados (Declared: no) que no se cumplen: se avisa, no bloquea
+# lo instalado al empezar el plan (para saber qué funcionaba antes) y el tope de pasos (marcha atrás acotada)
+var _rs_original: [PkgInstalado] = []
+var _rs_pasos: Int = 0
+const RS_TOPE_PASOS = 10000
+
+# Una copia del estado del plan, para deshacer una alternativa que falla más abajo
+struct RsCopia
+    planeados: [EntradaRepo]
+    pasos: [PkgPaso]
+    instalados: [PkgInstalado]
+end
+
+func _rs_copiar() -> RsCopia
+    var a: [EntradaRepo] = []
+    var b: [PkgPaso] = []
+    var c: [PkgInstalado] = []
+    for x in _planeados
+        a.push(x)
+    end
+    for x in resolutor_pasos
+        b.push(x)
+    end
+    for x in _instalados
+        c.push(x)
+    end
+    return RsCopia(a, b, c)
+end
+
+func _rs_volver(c: RsCopia)
+    d = _rs_copiar_de(c)
+    _planeados = d.planeados
+    resolutor_pasos = d.pasos
+    _instalados = d.instalados
+end
+
+func _rs_copiar_de(c: RsCopia) -> RsCopia
+    var a: [EntradaRepo] = []
+    var b: [PkgPaso] = []
+    var i: [PkgInstalado] = []
+    for x in c.planeados
+        a.push(x)
+    end
+    for x in c.pasos
+        b.push(x)
+    end
+    for x in c.instalados
+        i.push(x)
+    end
+    return RsCopia(a, b, i)
+end
+
+# ---------------------------------------------------------------------------------------------------------------
+# Lo que hay
+
+func resolutor_empezar(m: Maquina)
+    var r: [PkgRepo] = []
+    var c: [EntradaRepo] = []
+    var i: [PkgInstalado] = []
+    _repos = r
+    _cache = c
+    _instalados = i
+    _maq = m
+end
+
+func resolutor_repo(nombre: String, prioridad: Int, protegido: Bool)
+    _repos.push(PkgRepo(nombre, prioridad, protegido))
+end
+
+func resolutor_meter(repo: String, e: Entrada)
+    for x in _cache
+        if x.repo == repo and x.e.nombre == e.nombre and x.e.id == e.id and x.e.version == e.version and x.e.release == e.release and x.e.epoch == e.epoch
+            return
+        end
+    end
+    _cache.push(EntradaRepo(repo, e))
+end
+
+# Los paquetes a los que dice sustituir (Replaces) lo que hay en la caché
+func resolutor_sustituidos() -> [String]
+    return _nombres_de("replaces")
+end
+
+# Los paquetes que recomienda (Recommends) lo que hay en la caché
+func resolutor_recomendados() -> [String]
+    return _nombres_de("recommends")
+end
+
+func _nombres_de(campo: String) -> [String]
+    var r: [String] = []
+    for x in _cache
+        texto = x.e.replaces
+        if campo == "recommends"
+            texto = x.e.recommends
+        end
+        for a in formato_lista(texto, true, false)
+            for o in a.opciones
+                if o.tipo == "pkg" or o.tipo == "aminet"
+                    r.push(_nombre_pkg(o))
+                end
+            end
+        end
+    end
+    return r
+end
+
+# Cuántas entradas de un paquete hay en la caché de un repositorio
+func resolutor_en_cache(repo: String, nombre: String) -> Int
+    n = 0
+    for x in _cache
+        if x.repo == repo and x.e.nombre == nombre
+            n = n + 1
+        end
+    end
+    return n
+end
+
+func resolutor_instalado(i: PkgInstalado)
+    _instalados.push(i)
+end
+
+func _instalado(nombre: String) -> PkgInstalado
+    for i in _instalados
+        if i.nombre == nombre
+            return i
+        end
+    end
+    return nil
+end
+
+func _quitar_instalado(nombre: String)
+    var r: [PkgInstalado] = []
+    for i in _instalados
+        if i.nombre != nombre
+            r.push(i)
+        end
+    end
+    _instalados = r
+end
+
+func _planeado(nombre: String) -> EntradaRepo
+    for x in _planeados
+        if x.e.nombre == nombre
+            return x
+        end
+    end
+    return nil
+end
+
+func _repo(nombre: String) -> PkgRepo
+    for r in _repos
+        if r.nombre == nombre
+            return r
+        end
+    end
+    return nil
+end
+
+# La entrada de la caché de lo instalado (para su Author y lo que ofrece)
+func _entrada_instalada(i: PkgInstalado) -> EntradaRepo
+    for x in _cache
+        if x.repo == i.repo and x.e.nombre == i.nombre and version_entera(x.e.epoch, x.e.version, x.e.release, i.epoch, i.version, i.release) == 0
+            return x
+        end
+    end
+    return nil
+end
+
+# ---------------------------------------------------------------------------------------------------------------
+# Lo que cumple una opción ahora: la máquina, lo instalado o lo que ya va en el plan
+
+func _nombre_pkg(o: Opcion) -> String
+    if o.tipo == "aminet"
+        b = o.nombre
+        p = str_find(b, "/")
+        while p >= 0
+            b = b[p + 1:]
+            p = str_find(b, "/")
+        end
+        q = b.length - 1
+        while q > 0 and str_code(b, q) != 46
+            q = q - 1
+        end
+        if q > 0
+            b = b[:q]
+        end
+        return str_lower(b)
+    end
+    a = str_find(o.nombre, "@")
+    if a >= 0
+        return o.nombre[:a]
+    end
+    return o.nombre
+end
+
+func _repo_pedido(o: Opcion) -> String
+    if o.tipo == "aminet"
+        return "aminet"
+    end
+    a = str_find(o.nombre, "@")
+    if a >= 0
+        return o.nombre[a + 1:]
+    end
+    return ""
+end
+
+# Si una versión cumple "op ref" (ref con epoch si lo lleva; el release no cuenta)
+func _cumple_op(epoch: Int, v: String, op: String, ref: String) -> Bool
+    if op == ""
+        return true
+    end
+    k = 0
+    er = version_epoch(ref)
+    if epoch != er
+        k = -1
+        if epoch > er
+            k = 1
+        end
+    else
+        k = version_comparar(v, version_sin_epoch(ref))
+    end
+    if op == ">="
+        return k >= 0
+    elif op == ">"
+        return k > 0
+    elif op == "="
+        return k == 0
+    elif op == "<="
+        return k <= 0
+    end
+    return k < 0
+end
+
+func _ofrece(e: Entrada, o: Opcion) -> Bool
+    for a in formato_lista(e.provides, false, true)
+        for p in a.opciones
+            if p.tipo == "has" and p.nombre == o.nombre
+                if o.version == "" or version_comparar(p.version, o.version) >= 0
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
+func _lib_maquina(nombre: String) -> String
+    if resolutor_libs_reales
+        if str_starts(nombre, "fonts:")
+            return ""
+        end
+        v = library_version(nombre)
+        if v < 0 and (str_ends(nombre, ".mcc") or str_ends(nombre, ".mcp"))
+            v = library_version("mui/" + nombre)
+        end
+        if v < 0
+            return ""
+        end
+        return str_from_int(v, 10)
+    end
+    for l in _maq.libs
+        p = str_find(l, " ")
+        if p > 0 and l[:p] == nombre
+            return l[p + 1:]
+        end
+        if l == nombre
+            return "0"
+        end
+    end
+    return ""
+end
+
+func _cumple(o: Opcion) -> Bool
+    t = o.tipo
+    if t == "os"
+        return _maq.os >= o.n
+    elif t == "cpu"
+        c = _maq.cpu
+        if c == 0
+            c = 68000
+        end
+        return c >= o.n
+    elif t == "fpu"
+        return _maq.fpu
+    elif t == "mmu"
+        return _maq.mmu
+    elif t == "rtg"
+        return _maq.rtg
+    elif t == "tcpip"
+        return _maq.tcpip
+    elif t == "chipset"
+        return _maq.chipset == o.nombre or (o.nombre == "ecs" and _maq.chipset == "aga")
+    elif t == "mem"
+        return _maq.mem >= o.n
+    elif t == "chip"
+        return _maq.chip >= o.n
+    elif t == "pkg" or t == "aminet"
+        n = _nombre_pkg(o)
+        p = _planeado(n)
+        if p != nil
+            return _cumple_op(p.e.epoch, p.e.version, o.op, o.version)
+        end
+        i = _instalado(n)
+        if i != nil
+            return _cumple_op(i.epoch, i.version, o.op, o.version)
+        end
+        return false
+    elif t == "has"
+        v = _lib_maquina(o.nombre)
+        if v != "" and (o.version == "" or version_comparar(v, o.version) >= 0)
+            return true
+        end
+        for x in _planeados
+            if _ofrece(x.e, o)
+                return true
+            end
+        end
+        for i in _instalados
+            ei = _entrada_instalada(i)
+            if ei != nil and _ofrece(ei.e, o)
+                return true
+            end
+        end
+    end
+    return false
+end
+
+func _alt_de_maquina(a: Alternativa) -> Bool
+    for o in a.opciones
+        if not formato_de_maquina(o)
+            return false
+        end
+    end
+    return true
+end
+
+func _alt_cumplida(a: Alternativa) -> Bool
+    for o in a.opciones
+        if _cumple(o)
+            return true
+        end
+    end
+    return false
+end
+
+# ---------------------------------------------------------------------------------------------------------------
+# Elegir repositorio y entrada
+
+# La mejor entrada de un paquete en un repositorio: la versión más alta y, de esa, la de Rank más bajo que cumple
+# la máquina (si ninguna la cumple, la primera, que fallará al resolverla)
+func _mejor_de(repo: String, nombre: String) -> EntradaRepo
+    var top: EntradaRepo = nil
+    for x in _cache
+        if x.repo == repo and x.e.nombre == nombre
+            if top == nil or version_entera(x.e.epoch, x.e.version, x.e.release, top.e.epoch, top.e.version, top.e.release) > 0
+                top = x
+            end
+        end
+    end
+    if top == nil
+        return nil
+    end
+    var elegida: EntradaRepo = nil
+    var primera: EntradaRepo = nil
+    for x in _cache
+        if x.repo == repo and x.e.nombre == nombre and version_entera(x.e.epoch, x.e.version, x.e.release, top.e.epoch, top.e.version, top.e.release) == 0
+            if primera == nil or x.e.rank < primera.e.rank
+                primera = x
+            end
+            vale = true
+            for a in formato_lista(x.e.requires, true, false)
+                if x.e.declarado and a.vale and _alt_de_maquina(a) and not _alt_cumplida(a)
+                    vale = false
+                end
+            end
+            if vale and (elegida == nil or x.e.rank < elegida.e.rank)
+                elegida = x
+            end
+        end
+    end
+    if elegida != nil
+        return elegida
+    end
+    return primera
+end
+
+func _repo_tiene(repo: String, nombre: String) -> Bool
+    for x in _cache
+        if x.repo == repo and x.e.nombre == nombre
+            return true
+        end
+    end
+    return false
+end
+
+# De qué repositorio sale un paquete: el pedido; uno protegido que lo tenga; el de quien lo pide; el de más
+# prioridad (un empate es un error)
+func _elegir(nombre: String, pedido: String, de_repo: String) -> EntradaRepo
+    if pedido != ""
+        return _mejor_de(pedido, nombre)
+    end
+    var prot: PkgRepo = nil
+    for r in _repos
+        if r.protegido and _repo_tiene(r.nombre, nombre) and (prot == nil or r.prioridad > prot.prioridad)
+            prot = r
+        end
+    end
+    if prot != nil
+        return _mejor_de(prot.nombre, nombre)
+    end
+    if de_repo != "" and _repo_tiene(de_repo, nombre)
+        return _mejor_de(de_repo, nombre)
+    end
+    top = -1
+    for r in _repos
+        if _repo_tiene(r.nombre, nombre) and r.prioridad > top
+            top = r.prioridad
+        end
+    end
+    if top < 0
+        return nil
+    end
+    empatados = ""
+    cuantos = 0
+    elegido = ""
+    for r in _repos
+        if _repo_tiene(r.nombre, nombre) and r.prioridad == top
+            empatados = empatados + " " + r.nombre
+            cuantos = cuantos + 1
+            elegido = r.nombre
+        end
+    end
+    if cuantos > 1
+        resolutor_error = "ambiguous " + nombre + empatados
+        return nil
+    end
+    return _mejor_de(elegido, nombre)
+end
+
+# Quién trae algo (has): primero los repositorios protegidos, luego el de quien lo pide, luego por prioridad
+func _proveedor(o: Opcion, de_repo: String) -> EntradaRepo
+    var orden: [String] = []
+    for r in _repos
+        if r.protegido
+            orden.push(r.nombre)
+        end
+    end
+    if de_repo != ""
+        orden.push(de_repo)
+    end
+    hechos = 0
+    while hechos < _repos.length
+        var mejor: PkgRepo = nil
+        for r in _repos
+            ya = false
+            for n in orden
+                if n == r.nombre
+                    ya = true
+                end
+            end
+            if not ya and (mejor == nil or r.prioridad > mejor.prioridad)
+                mejor = r
+            end
+        end
+        if mejor != nil
+            orden.push(mejor.nombre)
+        end
+        hechos = hechos + 1
+    end
+    for n in orden
+        for x in _cache
+            if x.repo == n and _ofrece(x.e, o)
+                return _mejor_de(n, x.e.nombre)
+            end
+        end
+    end
+    return nil
+end
+
+# ---------------------------------------------------------------------------------------------------------------
+# Resolver
+
+func _paso(tipo: String, nombre: String, repo: String, motivo: String, vieja: String, vieja_rel: Int, x: EntradaRepo)
+    resolutor_pasos.push(PkgPaso(tipo, nombre, repo, motivo, vieja, vieja_rel, x))
+end
+
+# Intenta cumplir una opción instalando o subiendo algo; true si lo consigue
+func _instalar_opcion(o: Opcion, de_repo: String, motivo: String) -> Bool
+    if formato_de_maquina(o)
+        return false
+    end
+    var x: EntradaRepo = nil
+    if o.tipo == "pkg" or o.tipo == "aminet"
+        x = _elegir(_nombre_pkg(o), _repo_pedido(o), de_repo)
+        if x == nil or not _cumple_op(x.e.epoch, x.e.version, o.op, o.version)
+            return false
+        end
+    else
+        x = _proveedor(o, de_repo)
+        if x == nil
+            return false
+        end
+    end
+    i = _instalado(x.e.nombre)
+    if i != nil
+        if version_entera(x.e.epoch, x.e.version, x.e.release, i.epoch, i.version, i.release) > 0
+            _resolver(x, "", i, false)
+            return true
+        end
+        return false
+    end
+    _resolver(x, motivo, nil, false)
+    return true
+end
+
+func _resolver(x: EntradaRepo, motivo0: String, vieja: PkgInstalado, recomendado: Bool)
+    if resolutor_error != "" or _planeado(x.e.nombre) != nil
+        return
+    end
+    motivo = motivo0
+    e = x.e
+    _rs_pasos = _rs_pasos + 1
+    if _rs_pasos > RS_TOPE_PASOS
+        resolutor_error = "too-complex"
+        return
+    end
+    _planeados.push(x)
+    for a in formato_lista(e.conflicts, false, false)
+        for o in a.opciones
+            n = _nombre_pkg(o)
+            if (o.tipo == "pkg" or o.tipo == "aminet") and n != e.nombre and (_instalado(n) != nil or _planeado(n) != nil)
+                resolutor_error = "conflict " + e.nombre + " " + n
+                return
+            end
+        end
+    end
+    for a in formato_lista(e.requires, true, false)
+        if resolutor_error != ""
+            return
+        end
+        if a.vale and not _alt_cumplida(a)
+            if _alt_de_maquina(a)
+                if not e.declarado
+                    # adivinado (Declared: no): se avisa y no bloquea
+                    resolutor_avisos.push(e.nombre + ": " + formato_canonica(a.opciones[0]))
+                    continue
+                end
+                resolutor_error = "machine " + formato_canonica(a.opciones[0])
+                return
+            end
+            # cada alternativa por turno; si una falla más abajo, se deshace lo que hizo y se prueba la siguiente
+            hecho = false
+            primer = ""
+            for o in a.opciones
+                if not hecho and resolutor_error != "too-complex"
+                    copia = _rs_copiar()
+                    resolutor_error = ""
+                    if _instalar_opcion(o, x.repo, "dependency") and resolutor_error == ""
+                        hecho = true
+                    else
+                        if resolutor_error == "too-complex"
+                            return
+                        end
+                        if primer == "" and resolutor_error != ""
+                            primer = resolutor_error
+                        end
+                        _rs_volver(copia)
+                        resolutor_error = ""
+                    end
+                end
+            end
+            if resolutor_error == "too-complex"
+                return
+            end
+            if not hecho and not e.declarado
+                resolutor_avisos.push(e.nombre + ": " + formato_canonica_alt(a))
+                resolutor_error = ""
+                hecho = true
+            end
+            if not hecho
+                if primer != ""
+                    resolutor_error = primer
+                    return
+                end
+                for o in a.opciones
+                    if resolutor_error == "" and not formato_de_maquina(o)
+                        resolutor_error = "missing " + formato_canonica(o)
+                    end
+                end
+                return
+            end
+        end
+    end
+    if not recomendado
+        for a in formato_lista(e.recommends, true, false)
+            if a.vale and not _alt_cumplida(a)
+                hecho = false
+                for o in a.opciones
+                    if not hecho and o.tipo == "pkg" and _instalado(_nombre_pkg(o)) == nil
+                        r = _elegir(_nombre_pkg(o), _repo_pedido(o), x.repo)
+                        if r != nil and _planeado(r.e.nombre) == nil
+                            _resolver(r, "recommended", nil, true)
+                            hecho = true
+                        end
+                    end
+                end
+                # un recomendado que no se puede no bloquea
+                resolutor_error = ""
+            end
+        end
+    end
+    # Replaces: solo en el mismo repositorio y, en aminet, con el mismo Author y Uploader
+    for a in formato_lista(e.replaces, false, false)
+        for o in a.opciones
+            n = _nombre_pkg(o)
+            i = _instalado(n)
+            if i != nil and i.repo == x.repo
+                vale = x.repo != "aminet"
+                if not vale
+                    ei = _entrada_instalada(i)
+                    vale = ei != nil and ei.e.autor == e.autor and ei.e.uploader == e.uploader
+                end
+                if vale
+                    _paso("-", n, i.repo, "", "", 1, nil)
+                    if motivo == ""
+                        motivo = i.motivo
+                    end
+                    _quitar_instalado(n)
+                end
+            end
+        end
+    end
+    if vieja != nil
+        _paso("^", e.nombre, x.repo, vieja.motivo, _version_instalada(vieja), vieja.release, x)
+    else
+        _paso("+", e.nombre, x.repo, motivo, "", 1, x)
+    end
+end
+
+func _version_instalada(i: PkgInstalado) -> String
+    t = i.version
+    if i.epoch > 0
+        t = str_from_int(i.epoch, 10) + ":" + t
+    end
+    return t
+end
+
+func _reset_plan()
+    var sin: [String] = []
+    resolutor_avisos = sin
+    var p: [EntradaRepo] = []
+    var s: [PkgPaso] = []
+    _planeados = p
+    resolutor_pasos = s
+    resolutor_error = ""
+    _rs_pasos = 0
+    var o: [PkgInstalado] = []
+    for i in _instalados
+        o.push(i)
+    end
+    _rs_original = o
+end
+
+# Si alguna alternativa se cumplía con lo instalado al empezar y sin nada del plan
+func _rs_cumplida_antes(a: Alternativa) -> Bool
+    gp = _planeados
+    gi = _instalados
+    var nada: [EntradaRepo] = []
+    _planeados = nada
+    _instalados = _rs_original
+    r = _alt_cumplida(a)
+    _planeados = gp
+    _instalados = gi
+    return r
+end
+
+# Si el choque c (de un Conflicts) toca a la entrada y
+func _rs_choca(c: Opcion, y: EntradaRepo) -> Bool
+    if c.tipo != "pkg" and c.tipo != "aminet"
+        return false
+    end
+    rp = _repo_pedido(c)
+    return _nombre_pkg(c) == y.e.nombre and (rp == "" or rp == y.repo) and _cumple_op(y.e.epoch, y.e.version, c.op, c.version)
+end
+
+func _rs_choca_entre(a: EntradaRepo, b: EntradaRepo) -> Bool
+    for l in formato_lista(a.e.conflicts, false, false)
+        for o in l.opciones
+            if _rs_choca(o, b)
+                return true
+            end
+        end
+    end
+    return false
+end
+
+# Si a va antes que b por sus bytes (para nombrar un choque siempre igual)
+func _rs_antes(a: String, b: String) -> Bool
+    i = 0
+    while i < a.length and i < b.length
+        if str_code(a, i) != str_code(b, i)
+            return str_code(a, i) < str_code(b, i)
+        end
+        i = i + 1
+    end
+    return a.length < b.length
+end
+
+# Lo primero que el plan rompe (como pkg2::resolutor), o "": lo que había y el plan no toca deja de cumplir un
+# requisito que antes cumplía, o choca con algo nuevo; o algo del plan se queda sin lo que necesita o choca con otro
+func _rs_rompe() -> String
+    for i in _instalados
+        if _planeado(i.nombre) == nil
+            ei = _entrada_instalada(i)
+            if ei != nil
+                for a in formato_lista(ei.e.requires, true, false)
+                    if ei.e.declarado and a.vale and not _alt_cumplida(a) and _rs_cumplida_antes(a)
+                        return "breaks " + i.nombre + " " + formato_canonica_alt(a)
+                    end
+                end
+                for l in formato_lista(ei.e.conflicts, false, false)
+                    for o in l.opciones
+                        p = _planeado(_nombre_pkg(o))
+                        if p != nil and _rs_choca(o, p)
+                            return "conflict " + i.nombre + " " + p.e.nombre
+                        end
+                    end
+                end
+            end
+        end
+    end
+    var quedan: [EntradaRepo] = []
+    for i in _instalados
+        if _planeado(i.nombre) == nil
+            ei = _entrada_instalada(i)
+            if ei != nil
+                quedan.push(ei)
+            end
+        end
+    end
+    for x in _planeados
+        quedan.push(x)
+    end
+    for x in _planeados
+        for a in formato_lista(x.e.requires, true, false)
+            if x.e.declarado and a.vale and not _alt_cumplida(a)
+                return "breaks " + x.e.nombre + " " + formato_canonica_alt(a)
+            end
+        end
+        for q in quedan
+            if q.e.nombre != x.e.nombre and (_rs_choca_entre(x, q) or _rs_choca_entre(q, x))
+                if _rs_antes(x.e.nombre, q.e.nombre)
+                    return "conflict " + x.e.nombre + " " + q.e.nombre
+                end
+                return "conflict " + q.e.nombre + " " + x.e.nombre
+            end
+        end
+    end
+    return ""
+end
+
+# El plan para instalar un paquete ("nombre" o "nombre@repositorio")
+func resolutor_instalar(pedido: String) -> Bool
+    _reset_plan()
+    nombre = pedido
+    repo = ""
+    a = str_find(pedido, "@")
+    if a >= 0
+        nombre = pedido[:a]
+        repo = pedido[a + 1:]
+    end
+    x = _elegir(nombre, repo, "")
+    if resolutor_error != ""
+        return false
+    end
+    if x == nil
+        resolutor_error = "missing pkg " + nombre
+        return false
+    end
+    _resolver(x, "explicit", nil, false)
+    if resolutor_error == ""
+        resolutor_error = _rs_rompe()
+    end
+    return resolutor_error == ""
+end
+
+# El plan para ponerlo todo al día: lo instalado (sin lo retenido) desde su repositorio, y lo que sustituye a algo
+# instalado
+func resolutor_actualizar() -> Bool
+    _reset_plan()
+    var antes: [PkgInstalado] = []
+    for i in _instalados
+        antes.push(i)
+    end
+    for i in antes
+        if not i.retenido and _instalado(i.nombre) != nil and resolutor_error == ""
+            x = _mejor_de(i.repo, i.nombre)
+            if x != nil and version_entera(x.e.epoch, x.e.version, x.e.release, i.epoch, i.version, i.release) > 0
+                # lo que no se puede subir, o rompería a otro, se queda como está y se dice por qué
+                copia = _rs_copiar()
+                _resolver(x, "", i, false)
+                mal = resolutor_error
+                if mal == ""
+                    mal = _rs_rompe()
+                end
+                if mal == "too-complex"
+                    return false
+                end
+                if mal != ""
+                    _rs_volver(copia)
+                    resolutor_error = ""
+                    _paso("=", i.nombre, i.repo, mal, "", 1, nil)
+                end
+            end
+        end
+    end
+    for x in _cache
+        if resolutor_error == "" and _instalado(x.e.nombre) == nil and _planeado(x.e.nombre) == nil
+            sustituye = false
+            for a in formato_lista(x.e.replaces, false, false)
+                for o in a.opciones
+                    i = _instalado(_nombre_pkg(o))
+                    if i != nil and i.repo == x.repo
+                        sustituye = true
+                    end
+                end
+            end
+            if sustituye
+                n = resolutor_pasos.length
+                _resolver(x, "", nil, false)
+                # si no quitó nada (otro autor), en una actualización no se instala
+                quito = false
+                k = n
+                while k < resolutor_pasos.length
+                    if resolutor_pasos[k].tipo == "-"
+                        quito = true
+                    end
+                    k = k + 1
+                end
+                if not quito
+                    var p: [PkgPaso] = []
+                    k = 0
+                    while k < n
+                        p.push(resolutor_pasos[k])
+                        k = k + 1
+                    end
+                    resolutor_pasos = p
+                    var q: [EntradaRepo] = []
+                    for y in _planeados
+                        if y.e.nombre != x.e.nombre
+                            q.push(y)
+                        end
+                    end
+                    _planeados = q
+                end
+            end
+        end
+    end
+    return resolutor_error == ""
+end
+
+# El plan en las líneas de los vectores de prueba ("+ a 1.0 main (explicit)", "^ b 1.0 -> 2.0 main", "- c")
+func resolutor_lineas() -> [String]
+    var r: [String] = []
+    if resolutor_error != ""
+        r.push("error " + resolutor_error)
+        return r
+    end
+    for p in resolutor_pasos
+        if p.tipo == "-"
+            r.push("- " + p.nombre)
+        elif p.tipo == "="
+            r.push("= " + p.nombre + " (" + p.motivo + ")")
+        elif p.tipo == "+"
+            id = ""
+            if p.entrada.e.id != 0
+                id = " #" + str_from_int(p.entrada.e.id, 10)
+            end
+            r.push("+ " + p.nombre + " " + formato_version_texto(p.entrada.e) + " " + p.repo + id + " (" + p.motivo + ")")
+        else
+            e = p.entrada.e
+            vieja = p.vieja
+            nueva = e.version
+            if e.epoch > 0
+                nueva = str_from_int(e.epoch, 10) + ":" + nueva
+            end
+            # con release en las dos si alguna lo lleva
+            if e.release != 1 or p.vieja_rel != 1
+                vieja = vieja + "-" + str_from_int(p.vieja_rel, 10)
+                nueva = nueva + "-" + str_from_int(e.release, 10)
+            end
+            r.push("^ " + p.nombre + " " + vieja + " -> " + nueva + " " + p.repo)
+        end
+    end
+    return r
+end
+

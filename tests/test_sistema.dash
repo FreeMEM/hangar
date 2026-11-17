@@ -1,0 +1,56 @@
+# Test: los cambios en el sistema (src/sistema.dash). El bloque de un paquete en S:User-Startup (asignaciones y
+# arranque, con las rutas completadas), cambiarlo, quitarlo sin tocar lo demás del fichero, y que deshacer la
+# transacción lo deja como estaba; rutas que no valen; los ficheros de configuración; y la base con C y S.
+# expect-out: lineas [Assign TRASFONDO: "Work:Trasfondo"|Run >NIL: "Work:Trasfondo/Trasfondo"|]
+# expect-out: malas [] seguras no no no si
+# expect-out: puesto [; mio|Echo hola|;BEGIN pkg trasfondo|Assign TRASFONDO: "Work:Trasfondo"|;END pkg trasfondo|]
+# expect-out: cambiado 1 bloque
+# expect-out: quitado [; mio|Echo hola|]
+# expect-out: deshecho igual: si
+# expect-out: config si no
+# expect-out: base bloque=si config=1 Work:T/T.prefs
+import "../src/sistema.dash"
+
+func barras(t: String) -> String
+    return str_replace(t, "\n", "|")
+end
+
+func cuenta(t: String, x: String) -> Int
+    n = 0
+    i = str_find(t, x)
+    while i >= 0
+        n = n + 1
+        t = t[i + x.length:]
+        i = str_find(t, x)
+    end
+    return n
+end
+
+Main
+    recibos_cajon = "RAM:BaseSis"
+    tr_cajon = "RAM:BaseSis"
+    arranque_ruta = "RAM:User-Startup"
+    Print "lineas [" + barras(bloque_lineas("Work:", "TRASFONDO: Trasfondo", "Run >NIL: Trasfondo/Trasfondo")) + "]"
+    Print "malas [" + barras(bloque_lineas("Work:", "X: SYS:Fuera, Y: ../arriba, mal nombre: a", "")) + "] seguras " + recibo_si_no(ruta_segura("a//b")) + " " + recibo_si_no(ruta_segura("SYS:x")) + " " + recibo_si_no(ruta_segura("../x")) + " " + recibo_si_no(ruta_segura("Prog/x"))
+    file_write_text("RAM:User-Startup", "; mio\nEcho hola\n")
+    original = file_read_text("RAM:User-Startup")
+    tr_empezar("Instalar Trasfondo")
+    bloque_poner("Trasfondo", bloque_lineas("Work:", "TRASFONDO: Trasfondo", ""))
+    Print "puesto [" + barras(file_read_text("RAM:User-Startup")) + "]"
+    bloque_poner("Trasfondo", bloque_lineas("Work:", "TRASFONDO: Otro", ""))
+    Print "cambiado " + str_from_int(cuenta(file_read_text("RAM:User-Startup"), ";BEGIN pkg"), 10) + " bloque"
+    bloque_quitar("Trasfondo")
+    Print "quitado [" + barras(file_read_text("RAM:User-Startup")) + "]"
+    bloque_poner("Trasfondo", "Echo x\n")
+    tr_deshacer(tr_diario())
+    Print "deshecho igual: " + recibo_si_no(file_read_text("RAM:User-Startup") == original)
+    Print "config " + recibo_si_no(es_config("T/T.prefs, T/Otro", "t/t.prefs")) + " " + recibo_si_no(es_config("T/T.prefs", "T/T"))
+    var nada: [String] = []
+    r = recibo_nuevo(9, "T", "1.0", "Work:", nada)
+    r.bloque = true
+    var cs: [String] = ["Work:T/T.prefs"]
+    r.config = cs
+    recibo_guardar(r)
+    l = recibo_de("T")
+    Print "base bloque=" + recibo_si_no(l.bloque) + " config=" + str_from_int(l.config.length, 10) + " " + l.config[0]
+end

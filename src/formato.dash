@@ -1,0 +1,623 @@
+# El formato de paquetes 2 (docs/FORMATO_PAQUETES.md del servicio): las dependencias en la gramática estricta, su
+# forma canónica (la de los vectores de prueba, tests/vectores) y las entradas del índice y de las respuestas
+# firmadas. El servicio ya da los Requires de Aminet reescritos así: aquí no se adivina texto libre.
+
+import "versiones.dash"
+
+# Una opción de una dependencia
+struct Opcion
+    tipo: String      # "" si no se entiende; os cpu fpu mmu rtg tcpip chipset mem chip has pkg aminet assign
+    nombre: String    # has, pkg (con @repositorio si lo lleva), aminet, assign, chipset
+    op: String        # pkg: ">=", ">", "=", "<=", "<" o ""
+    version: String   # has y pkg
+    n: Int            # os (versión de exec), cpu, mem y chip (KB)
+end
+
+# Un elemento de una lista: sus opciones (vale con una), o el texto si no se entiende
+struct Alternativa
+    opciones: [Opcion]
+    texto: String
+    vale: Bool
+end
+
+func _opcion_mala() -> Opcion
+    return Opcion("", "", "", "", 0)
+end
+
+# Las palabras de un texto, en minúsculas
+func _palabras(t: String) -> [String]
+    var r: [String] = []
+    for w in str_split(str_lower(str_trim(t)), " ")
+        if w != ""
+            r.push(w)
+        end
+    end
+    return r
+end
+
+func _cifras(t: String) -> Bool
+    if t.length == 0
+        return false
+    end
+    i = 0
+    while i < t.length
+        c = str_code(t, i)
+        if c < 48 or c > 57
+            return false
+        end
+        i = i + 1
+    end
+    return true
+end
+
+func _numero(t: String) -> Int
+    n = 0
+    i = 0
+    while i < t.length
+        n = n * 10 + str_code(t, i) - 48
+        i = i + 1
+    end
+    return n
+end
+
+# "38", "v38", "20.1": una versión de librería
+func _es_version(w: String) -> Bool
+    t = w
+    if t.length > 0 and str_code(t, 0) == 118    # "v"
+        t = t[1:]
+    end
+    if t.length == 0 or str_code(t, 0) < 48 or str_code(t, 0) > 57
+        return false
+    end
+    i = 0
+    while i < t.length
+        c = str_code(t, i)
+        if (c < 48 or c > 57) and c != 46
+            return false
+        end
+        i = i + 1
+    end
+    return true
+end
+
+# La versión de exec de una del sistema ("3.1" -> 40); 0 si no se conoce
+func formato_exec(v: String) -> Int
+    if v == "1.2"
+        return 33
+    elif v == "1.3"
+        return 34
+    elif v == "2.0" or v == "2"
+        return 36
+    elif v == "2.04" or v == "2.0.4" or v == "2.05" or v == "2.1"
+        return 37
+    elif v == "3.0" or v == "3"
+        return 39
+    elif v == "3.1"
+        return 40
+    elif v == "3.5"
+        return 44
+    elif v == "3.9"
+        return 45
+    elif v == "3.1.4"
+        return 46
+    elif v == "3.2" or v == "3.2.1" or v == "3.2.2" or v == "3.2.3"
+        return 47
+    end
+    return 0
+end
+
+# Minúsculas, cifras y "- _ . +", empieza por letra o cifra, 26 como mucho, sin los finales de la base
+func formato_nombre_valido(n: String) -> Bool
+    if n.length == 0 or n.length > 26
+        return false
+    end
+    i = 0
+    while i < n.length
+        c = str_code(n, i)
+        letra = c >= 97 and c <= 122
+        cifra = c >= 48 and c <= 57
+        if not letra and not cifra
+            if i == 0 or (c != 45 and c != 95 and c != 46 and c != 43)
+                return false
+            end
+        end
+        i = i + 1
+    end
+    for f in [".info", ".new", ".old", ".pkg"]
+        if str_ends(n, f)
+            return false
+        end
+    end
+    return true
+end
+
+# Letras, cifras y ". _ - + ~", con alguna cifra, 64 como mucho
+func formato_version_valida(v: String) -> Bool
+    if v.length == 0 or v.length > 64
+        return false
+    end
+    cifra = false
+    i = 0
+    while i < v.length
+        c = str_code(v, i)
+        if c >= 48 and c <= 57
+            cifra = true
+        elif not ((c >= 97 and c <= 122) or (c >= 65 and c <= 90) or c == 46 or c == 95 or c == 45 or c == 43 or c == 126)
+            return false
+        end
+        i = i + 1
+    end
+    return cifra
+end
+
+func _cpu(w: String) -> Int
+    t = w
+    if str_starts(t, "mc")
+        t = t[2:]
+    end
+    for c in ["68000", "68010", "68020", "68030", "68040", "68060", "68080"]
+        if t == c
+            return _numero(t)
+        end
+    end
+    return 0
+end
+
+# "2mb", "512kb" (u = "") o "2" con u = "mb": los KB; 0 si no es memoria
+func _memoria(w: String, u: String) -> Int
+    i = 0
+    while i < w.length and str_code(w, i) >= 48 and str_code(w, i) <= 57
+        i = i + 1
+    end
+    if i == 0
+        return 0
+    end
+    n = _numero(w[:i])
+    unidad = w[i:]
+    if unidad == ""
+        unidad = u
+    elif u != ""
+        return 0
+    end
+    kb = 0
+    if unidad == "gb" or unidad == "g"
+        kb = n * 1024 * 1024        # aarch64-dashos: "4GB"
+    elif unidad == "mb" or unidad == "meg" or unidad == "m"
+        kb = n * 1024
+    elif unidad == "kb" or unidad == "k"
+        kb = n
+    end
+    if kb < 64
+        return 0
+    end
+    return kb
+end
+
+func _ruta_aminet(w: String) -> Bool
+    p = str_split(w, "/")
+    if p.length != 3 or p[1] == "" or p[2].length < 2
+        return false
+    end
+    for c in ["biz", "comm", "demo", "dev", "disk", "docs", "driver", "game", "gfx", "hard", "misc", "mods", "mus", "pix", "text", "util"]
+        if p[0] == c
+            return true
+        end
+    end
+    return false
+end
+
+func _mui(v: String) -> String
+    if v == "3.8" or v == "3"
+        return "19"
+    elif v == "4" or v == "4.0"
+        return "20"
+    elif v == "5" or v == "5.0"
+        return "21"
+    end
+    return v
+end
+
+func _libreria(w: String) -> Bool
+    for t in [".library", ".device", ".datatype", ".mcc", ".mcp"]
+        if str_ends(w, t) and w.length > t.length
+            return true
+        end
+    end
+    return false
+end
+
+# Una opción con la gramática estricta: todo el texto tiene que ser una sola cosa
+func formato_opcion(t: String) -> Opcion
+    ws = _palabras(t)
+    if ws.length == 0
+        return _opcion_mala()
+    end
+    w = ws[0]
+    # pkg:nombre[@repositorio] [op versión]
+    if str_starts(w, "pkg:")
+        nombre = w[4:]
+        repo = ""
+        a = str_find(nombre, "@")
+        if a >= 0
+            repo = nombre[a + 1:]
+            nombre = nombre[:a]
+            if not formato_nombre_valido(repo)
+                return _opcion_mala()
+            end
+        end
+        if not formato_nombre_valido(nombre)
+            return _opcion_mala()
+        end
+        if repo != ""
+            nombre = nombre + "@" + repo
+        end
+        if ws.length == 1
+            return Opcion("pkg", nombre, "", "", 0)
+        end
+        if ws.length == 3 and (ws[1] == ">=" or ws[1] == ">" or ws[1] == "=" or ws[1] == "<=" or ws[1] == "<")
+            if formato_version_valida(version_sin_epoch(ws[2]))
+                return Opcion("pkg", nombre, ws[1], ws[2], 0)
+            end
+        end
+        return _opcion_mala()
+    end
+    if ws.length == 2 and (w == "os" or w == "amigaos" or w == "kickstart")
+        e = formato_exec(ws[1])
+        if e > 0
+            return Opcion("os", "", "", "", e)
+        end
+        return _opcion_mala()
+    end
+    if ws.length == 1 and w.length > 1 and str_code(w, 0) == 118 and _cifras(w[1:])
+        e = _numero(w[1:])
+        if e >= 33 and e <= 50
+            return Opcion("os", "", "", "", e)
+        end
+    end
+    if ws.length == 1
+        if _cpu(w) > 0
+            return Opcion("cpu", "", "", "", _cpu(w))
+        elif w == "fpu" or w == "mmu" or w == "rtg" or w == "hypervisor"
+            return Opcion(w, "", "", "", 0)
+        elif w == "aga" or w == "ecs"
+            return Opcion("chipset", w, "", "", 0)
+        elif w == "tcp/ip" or w == "tcpip"
+            return Opcion("tcpip", "", "", "", 0)
+        elif w == "mui"
+            return Opcion("has", "muimaster.library", "", "", 0)
+        elif _ruta_aminet(w)
+            return Opcion("aminet", w, "", "", 0)
+        end
+    end
+    if ws.length == 2 and w == "mui" and _es_version(ws[1])
+        return Opcion("has", "muimaster.library", "", _mui(ws[1]), 0)
+    end
+    if ws.length == 2 and str_starts(w, "fonts:") and w.length > 6 and _cifras(ws[1])
+        return Opcion("has", w, "", ws[1], 0)
+    end
+    if _libreria(w)
+        if ws.length == 1
+            return Opcion("has", w, "", "", 0)
+        end
+        if ws.length == 2 and _es_version(ws[1])
+            v = ws[1]
+            if str_starts(v, "v")
+                v = v[1:]
+            end
+            return Opcion("has", w, "", v, 0)
+        end
+        return _opcion_mala()
+    end
+    # memoria: "2MB", "512KB", "2 MB", con "chip" detrás
+    chip = false
+    m = ws
+    if ws[ws.length - 1] == "chip"
+        chip = true
+        m = ws[:ws.length - 1]
+    end
+    kb = 0
+    if m.length == 1
+        kb = _memoria(m[0], "")
+    elif m.length == 2 and _cifras(m[0])
+        kb = _memoria(m[0], m[1])
+    end
+    if kb > 0
+        if chip
+            return Opcion("chip", "", "", "", kb)
+        end
+        return Opcion("mem", "", "", "", kb)
+    end
+    return _opcion_mala()
+end
+
+# Una opción de Provides: además, "assign:NOMBRE:"
+func formato_opcion_provides(t: String) -> Opcion
+    w = str_lower(str_trim(t))
+    if str_starts(w, "assign:")
+        n = w[7:]
+        if str_ends(n, ":") and n.length > 1 and str_find(n[:n.length - 1], ":") < 0 and str_find(n, "/") < 0 and str_find(n, " ") < 0
+            return Opcion("assign", n, "", "", 0)
+        end
+        return _opcion_mala()
+    end
+    return formato_opcion(t)
+end
+
+# Una lista (Requires...): cada elemento con sus opciones. Las alternativas ("|") solo valen si `alternativas`.
+func formato_lista(t: String, alternativas: Bool, provides: Bool) -> [Alternativa]
+    var r: [Alternativa] = []
+    for el in str_split(t, ",")
+        e = str_trim(el)
+        if e != ""
+            var ops: [Opcion] = []
+            vale = true
+            partes = str_split(e, "|")
+            if partes.length > 1 and not alternativas
+                vale = false
+            end
+            for p in partes
+                o = _opcion_mala()
+                if str_trim(p) != ""
+                    if provides
+                        o = formato_opcion_provides(p)
+                    else
+                        o = formato_opcion(p)
+                    end
+                end
+                if o.tipo == ""
+                    vale = false
+                end
+                ops.push(o)
+            end
+            r.push(Alternativa(ops, e, vale))
+        end
+    end
+    return r
+end
+
+# La forma canónica de una opción (docs/formato/vectores/LEEME.md del servicio)
+func formato_canonica(o: Opcion) -> String
+    t = o.tipo
+    if t == "os" or t == "cpu"
+        return t + " " + str_from_int(o.n, 10)
+    elif t == "mem" or t == "chip"
+        return t + " " + str_from_int(o.n, 10)
+    elif t == "chipset" or t == "aminet"
+        return t + " " + o.nombre
+    elif t == "assign"
+        return "assign " + o.nombre
+    elif t == "has"
+        if o.version == ""
+            return "has " + o.nombre
+        end
+        return "has " + o.nombre + " " + o.version
+    elif t == "pkg"
+        if o.op == ""
+            return "pkg " + o.nombre
+        end
+        return "pkg " + o.nombre + " " + o.op + " " + o.version
+    end
+    return t
+end
+
+# Un elemento en forma canónica: sus opciones separadas por " | ", o "! texto" si no se entiende
+func formato_canonica_alt(a: Alternativa) -> String
+    if not a.vale
+        return "! " + a.texto
+    end
+    t = ""
+    for o in a.opciones
+        if t != ""
+            t = t + " | "
+        end
+        t = t + formato_canonica(o)
+    end
+    return t
+end
+
+# Si es de la máquina (se comprueba, no se instala)
+func formato_de_maquina(o: Opcion) -> Bool
+    t = o.tipo
+    return t == "os" or t == "cpu" or t == "fpu" or t == "mmu" or t == "rtg" or t == "hypervisor" or t == "tcpip" or t == "chipset" or t == "mem" or t == "chip"
+end
+
+# ---------------------------------------------------------------------------------------------------------------
+# Las entradas del índice y de las respuestas firmadas
+
+struct Entrada
+    nombre: String
+    epoch: Int
+    version: String
+    release: Int
+    id: Int
+    rank: Int
+    arquitectura: String
+    url: String              # una o más (Url repetible), una por línea, en el orden en que se prueban
+    tamano: Int
+    sha256: String
+    requires: String
+    recommends: String
+    provides: String
+    conflicts: String
+    replaces: String
+    install: String
+    run: String
+    assigns: String
+    startup: [String]
+    config: String
+    permissions: String
+    corto: String
+    autor: String
+    uploader: String
+    variantes: [String]
+    tamano_instalado: Int     # Installed-Size: lo que ocupa descomprimido (0 si no se sabe)
+    declarado: Bool = true    # Declared: no = sus requisitos los adivinó el repositorio: avisan, no bloquean
+end
+
+# La cabecera de un índice o de una respuesta firmada
+struct Cabecera
+    tipo: String          # "PKG-INDEX 2", "PKG-INDEX-DELTA 2", "PKG-RESPONSE 2"
+    repositorio: String
+    arquitectura: String
+    serie: Int
+    caduca: String
+    desde: Int
+    query: String
+    nonce: String
+    quitados: [Int]       # los Removed: de un delta
+end
+
+func _entrada_vacia() -> Entrada
+    var s: [String] = []
+    var v: [String] = []
+    return Entrada("", 0, "", 1, 0, 0, "", "", 0, "", "", "", "", "", "", "", "", "", s, "", "", "", "", "", v, 0)
+end
+
+# Un campo "Nombre: valor" (en minúsculas el nombre); "" si la línea no lo es
+func _campo(l: String) -> String
+    p = str_find(l, ":")
+    if p <= 0
+        return ""
+    end
+    return str_lower(str_trim(l[:p]))
+end
+
+func _valor(l: String) -> String
+    return str_trim(l[str_find(l, ":") + 1:])
+end
+
+func _poner(e: Entrada, c: String, v: String)
+    if c == "name"
+        e.nombre = v
+    elif c == "epoch"
+        e.epoch = _numero(v)
+    elif c == "version"
+        e.version = v
+    elif c == "release"
+        e.release = _numero(v)
+    elif c == "id"
+        e.id = _numero(v)
+    elif c == "rank"
+        e.rank = _numero(v)
+    elif c == "architecture"
+        e.arquitectura = v
+    elif c == "url"
+        # repetible (P6a): el original y sus copias, por orden; van una por línea
+        if e.url == ""
+            e.url = v
+        else
+            e.url = e.url + "\n" + v
+        end
+    elif c == "size"
+        e.tamano = _numero(v)
+    elif c == "installed-size"
+        e.tamano_instalado = _numero(v)
+    elif c == "declared"
+        e.declarado = str_lower(str_trim(v)) != "no"
+    elif c == "sha256"
+        e.sha256 = v
+    elif c == "requires"
+        e.requires = v
+    elif c == "recommends"
+        e.recommends = v
+    elif c == "provides"
+        e.provides = v
+    elif c == "conflicts"
+        e.conflicts = v
+    elif c == "replaces"
+        e.replaces = v
+    elif c == "install"
+        e.install = v
+    elif c == "run"
+        e.run = v
+    elif c == "assigns"
+        e.assigns = v
+    elif c == "startup"
+        e.startup.push(v)
+    elif c == "config"
+        e.config = v
+    elif c == "permissions"
+        e.permissions = v
+    elif c == "short"
+        e.corto = v
+    elif c == "author"
+        e.autor = v
+    elif c == "uploader"
+        e.uploader = v
+    elif c == "variant"
+        e.variantes.push(v)
+    end
+end
+
+# La cabecera de un texto (el primer bloque)
+func formato_cabecera(texto: String) -> Cabecera
+    var q: [Int] = []
+    h = Cabecera("", "", "", 0, "", 0, "", "", q)
+    primera = true
+    for l0 in str_split(texto, "\n")
+        l = str_trim(l0)
+        if primera
+            h.tipo = l
+            primera = false
+        elif l == ""
+            # la cabecera acaba en la primera línea en blanco; los Removed: vienen después
+            primera = false
+        else
+            c = _campo(l)
+            v = _valor(l)
+            if c == "repository"
+                h.repositorio = v
+            elif c == "architecture" and h.arquitectura == ""
+                h.arquitectura = v
+            elif c == "serial" and h.serie == 0
+                h.serie = _numero(v)
+            elif c == "expires"
+                h.caduca = v
+            elif c == "since"
+                h.desde = _numero(v)
+            elif c == "query"
+                h.query = v
+            elif c == "nonce"
+                h.nonce = v
+            elif c == "removed"
+                h.quitados.push(_numero(v))
+            end
+        end
+    end
+    return h
+end
+
+# Las entradas de un índice o una respuesta: un bloque por entrada, tras la cabecera
+func formato_entradas(texto: String) -> [Entrada]
+    var r: [Entrada] = []
+    e = _entrada_vacia()
+    cabecera = true
+    for l0 in str_split(texto, "\n")
+        l = str_trim(l0)
+        if l == ""
+            if not cabecera and e.nombre != ""
+                r.push(e)
+            end
+            e = _entrada_vacia()
+            cabecera = false
+        elif not cabecera
+            _poner(e, _campo(l), _valor(l))
+        end
+    end
+    if not cabecera and e.nombre != ""
+        r.push(e)
+    end
+    return r
+end
+
+# La versión de una entrada para enseñarla: "1:2.0" si tiene epoch, y "-2" si el release no es 1
+func formato_version_texto(e: Entrada) -> String
+    t = e.version
+    if e.epoch > 0
+        t = str_from_int(e.epoch, 10) + ":" + t
+    end
+    if e.release != 1
+        t = t + "-" + str_from_int(e.release, 10)
+    end
+    return t
+end

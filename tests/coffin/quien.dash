@@ -1,0 +1,20 @@
+# Para el banco de Coffin: qué ventana hay en (x, y) de la pantalla del Workbench, y cuál está activa
+Main
+    x = Int(arg(0))
+    y = Int(arg(1))
+    n = wm_read()
+    a = wm_at(x, y)
+    act = wm_active()
+    i = 0
+    while i < n
+        m = ""
+        if wm_id(i) == a
+            m = m + " [en el punto]"
+        end
+        if wm_id(i) == act
+            m = m + " [activa]"
+        end
+        Print str_from_int(i, 10) + " " + wm_title(i) + " " + str_from_int(wm_box(i, 0), 10) + "," + str_from_int(wm_box(i, 1), 10) + " " + str_from_int(wm_box(i, 2), 10) + "x" + str_from_int(wm_box(i, 3), 10) + m
+        i = i + 1
+    end
+end

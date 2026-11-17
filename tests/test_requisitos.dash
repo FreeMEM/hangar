@@ -1,0 +1,40 @@
+# Test: lo que pide un programa (las líneas "nec" de la ficha) comprobado en el A1200 emulado (68020 sin FPU,
+# Kickstart 3.1, sin pila TCP/IP): qué tiene, qué falta y qué no se puede saber desde aquí.
+# expect-out: necesita 7
+# expect-out: Necesita:
+# expect-out:   un 68020 o mejor: sí
+# expect-out:   un 68030 o mejor: falta
+# expect-out:   AmigaOS 3.1 o mejor: sí
+# expect-out:   AmigaOS 3.2 o mejor: falta
+# expect-out:   reqtools.library 38: falta
+# expect-out:   chipset AGA
+# expect-out: Es para AmigaOS 4
+# expect-out: trae 80923
+# expect-out: instala system LIBS:cosas.library
+# expect-out: ejecuta Cosas/Prueba
+# expect-out: vuelve lo de antes: viejo
+import "../src/requisitos.dash"
+import "../src/versiones.dash"
+
+Main
+    t = "FICHA\nid\t5\nnombre\tPrueba\nnec\tcpu\t68020\t\t0\nnec\tcpu\t68030\t\t0\nnec\tos\t40\t\t0\nnec\tos\t47\t\t0\nnec\tlib\treqtools.library\t38\t80923\nnec\tchipset\tAGA\t\t0\nnec\tsistema\tAmigaOS 4\t\t0\ninstala\tsystem LIBS:cosas.library\nejecuta\tCosas/Prueba\n\nEl readme.\n"
+    f = api_leer_ficha(t)
+    Print "necesita #{f.necesita.length}"
+    for l in str_split(necesidades_texto(f), "\n")
+        if l != ""
+            Print str_trim(l)      # (el runner quita los espacios de delante de lo esperado)
+        end
+    end
+    Print "trae #{f.necesita[4].paquete}"
+    Print "instala #{f.instala}"
+    Print "ejecuta #{f.ejecuta}"
+    # Install: system copió encima de algo (guardado como .antes): al desinstalar, vuelve
+    dir_create("RAM:Sis")
+    file_write_text("RAM:Sis/cosas.library", "nuevo")
+    file_write_text("RAM:Sis/cosas.library.antes", "viejo")
+    recibos_cajon = "RAM:Recibos"
+    var fs: [String] = ["RAM:Sis/cosas.library"]
+    recibo_desinstalar(recibo_nuevo(9, "Cosas", "2.0", "RAM:Otro/", fs))
+    vuelto = file_read_text("RAM:Sis/cosas.library")
+    Print "vuelve lo de antes: #{vuelto}"
+end

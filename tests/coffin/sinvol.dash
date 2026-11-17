@@ -1,0 +1,13 @@
+# Para el banco de Coffin: dir_read de un volumen que no existe (con y sin los requesters de DOS) y luego PROGDIR:
+Main
+    Print "progdir antes: " + str_from_int(dir_read("PROGDIR:"), 10)
+    dos_requesters(false)
+    for k in (1..20)
+        n = dir_read("NoExiste:")
+        m = dir_read("Work:")
+    end
+    dos_requesters(true)
+    Print "progdir después: " + str_from_int(dir_read("PROGDIR:"), 10)
+    Print "fichero: " + str_from_int(file_size("PROGDIR:sinvol"), 10)
+    Print "fin"
+end

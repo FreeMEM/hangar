@@ -1,0 +1,194 @@
+# Inventario: qué programas y librerías hay en el disco y con qué versión, por su cadena "$VER:".
+#
+#   inv = inventario_recorrer(["C:", "LIBS:", "SYS:Utilities"], 2)     # los programas y librerías (hunk)
+#   for p in inv
+#       Print p.fichero + " " + str_from_int(p.tamano, 10) + " " + p.nombre + " " + p.version
+#   end
+#   texto = inventario_texto(inv)     # una línea por fichero, para api_reconocer
+#
+# La cadena es "$VER: nombre versión (fecha)" (a veces "$VER: nombre.library 40.12 (..)"). Se busca en todo el
+# fichero, a trozos de 256 KB, en los de hasta 8 MB: los programas de Dash la llevan al final (Forja, a 1 MB;
+# Tachyon, a 4,5 MB de 4,8).
+
+struct Instalado
+    nombre: String      # sin ".library", ".device"...: "mui", "AmigaAMP"
+    version: String     # "40.12"
+    ruta: String
+end
+
+const _INV_MAX = 8388608
+const _INV_LEE = 262144
+const _INV_SOLAPE = 128      # lo que se guarda del trozo anterior: una cadena cortada entre dos trozos
+
+# La versión de un fichero: nombre y versión de su "$VER:", o un Instalado con nombre "" si no tiene
+func inventario_version(ruta: String) -> Instalado
+    nada = Instalado("", "", ruta)
+    n = file_size(ruta)
+    if n < 8 or n > _INV_MAX
+        return nada
+    end
+    c = buffer_alloc(_INV_LEE)
+    b = buffer_alloc(_INV_LEE + _INV_SOLAPE)
+    if c == nil or b == nil
+        buffer_free(c)
+        buffer_free(b)
+        return nada
+    end
+    f = file_open(ruta, 1005)
+    if f == 0
+        buffer_free(c)
+        buffer_free(b)
+        return nada
+    end
+    cadena = ""
+    guardados = 0
+    sigue = true
+    while sigue
+        leidos = file_read(f, c, _INV_LEE)
+        if leidos <= 0
+            sigue = false
+        else
+            buffer_copy(b, guardados, c, 0, leidos)
+            hay = guardados + leidos
+            ultimo = leidos < _INV_LEE
+            # una cadena que empieza en lo que se guarda para el trozo siguiente se mira allí, entera
+            limite = hay - 5
+            if not ultimo
+                limite = hay - _INV_SOLAPE
+            end
+            i = buffer_find_byte(b, 0, limite, 36)          # "$"
+            while i >= 0 and cadena == ""
+                if buffer_equals(b, i, 5, "$VER:")
+                    fin = i + 5
+                    while fin < hay and fin - i < 125 and buffer_get_byte(b, fin) >= 32
+                        fin = fin + 1
+                    end
+                    cadena = str_trim(str_from_buffer(b, i + 5, fin - i - 5))
+                    if cadena == ""
+                        i = buffer_find_byte(b, i + 1, limite, 36)
+                    end
+                else
+                    i = buffer_find_byte(b, i + 1, limite, 36)
+                end
+            end
+            if cadena != "" or ultimo
+                sigue = false
+            else
+                buffer_copy(b, 0, b, hay - _INV_SOLAPE, _INV_SOLAPE)
+                guardados = _INV_SOLAPE
+            end
+        end
+    end
+    file_close(f)
+    buffer_free(c)
+    buffer_free(b)
+    if cadena == ""
+        return nada
+    end
+    return inventario_leer_cadena(cadena, ruta)
+end
+
+# "nombre versión (fecha) resto" → Instalado (el nombre sin extensión de librería)
+func inventario_leer_cadena(cadena: String, ruta: String) -> Instalado
+    partes = str_split(cadena, " ")
+    var limpias: [String] = []
+    for p in partes
+        if p != ""
+            limpias.push(p)
+        end
+    end
+    if limpias.length < 2
+        return Instalado("", "", ruta)
+    end
+    nombre = limpias[0]
+    version = limpias[1]
+    # "AmigaAMP 3.30" o "Prog v1.2": la versión empieza por número o por "v" y número
+    if version.length > 1 and (version[0] == "v" or version[0] == "V") and str_code(version, 1) >= 48 and str_code(version, 1) <= 57
+        version = version[1:]
+    end
+    if str_code(version, 0) < 48 or str_code(version, 0) > 57
+        return Instalado("", "", ruta)
+    end
+    for ext in [".library", ".device", ".datatype", ".resource", ".mcc", ".mcp", ".mui", ".class", ".gadget", ".image"]
+        if nombre.length > ext.length and str_lower(nombre[nombre.length - ext.length:]) == ext
+            nombre = nombre[:nombre.length - ext.length]
+        end
+    end
+    return Instalado(nombre, version, ruta)
+end
+
+# Si es un programa o una librería: un ejecutable hunk (empieza por $000003F3)
+func es_ejecutable(ruta: String) -> Bool
+    f = file_open(ruta, 1005)
+    if f == 0
+        return false
+    end
+    b = buffer_alloc(4)
+    si = file_read(f, b, 4) == 4 and buffer_get_byte(b, 0) == 0 and buffer_get_byte(b, 1) == 0 and buffer_get_byte(b, 2) == 3 and buffer_get_byte(b, 3) == 243
+    buffer_free(b)
+    file_close(f)
+    return si
+end
+
+# Un programa o librería del disco: su nombre de fichero y tamaño (para reconocerlo por sus ficheros) y lo que diga
+# su "$VER:" (nombre y versión, o vacíos)
+struct FicheroDisco
+    fichero: String
+    tamano: Int
+    nombre: String
+    version: String
+    ruta: String
+end
+
+func _inv_cajon(cajon: String, hondo: Int, salida: [FicheroDisco])
+    n = dir_read(cajon)
+    if n <= 0
+        return
+    end
+    # dir_read se pisa en cada llamada: primero los nombres
+    var nombres: [String] = []
+    var cajones: [Bool] = []
+    for i in (0..n - 1)
+        nombres.push(dir_entry_name(i))
+        cajones.push(dir_entry_is_dir(i))
+    end
+    base = cajon
+    if base[base.length - 1] != ":" and base[base.length - 1] != "/"
+        base = base + "/"
+    end
+    for i in (0..n - 1)
+        nombre = nombres[i]
+        ruta = base + nombre
+        if cajones[i]
+            if hondo > 0
+                _inv_cajon(ruta, hondo - 1, salida)
+            end
+        elif not (nombre.length > 5 and str_lower(nombre[nombre.length - 5:]) == ".info") and salida.length < 5000
+            if es_ejecutable(ruta)
+                v = inventario_version(ruta)
+                salida.push(FicheroDisco(nombre, file_size(ruta), v.nombre, v.version, ruta))
+            end
+        end
+    end
+end
+
+# Recorre los cajones (y sus subcajones hasta "hondo" niveles): los programas y librerías que hay. Sin el requester
+# de "Inserta el volumen" si falta alguno (Work:)
+func inventario_recorrer(cajones: [String], hondo: Int) -> [FicheroDisco]
+    var r: [FicheroDisco] = []
+    dos_requesters(false)
+    for c in cajones
+        _inv_cajon(c, hondo, r)
+    end
+    dos_requesters(true)
+    return r
+end
+
+# "fichero TAB tamaño TAB nombre TAB versión" por línea, para api_reconocer
+func inventario_texto(inv: [FicheroDisco]) -> String
+    t = ""
+    for p in inv
+        t = t + p.fichero + "\t" + str_from_int(p.tamano, 10) + "\t" + p.nombre + "\t" + p.version + "\n"
+    end
+    return t
+end

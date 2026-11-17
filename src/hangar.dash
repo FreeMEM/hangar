@@ -1,0 +1,2684 @@
+# Hangar: busca, instala y pone al día el software del Amiga. Busca en el catálogo de hangar.freemem.space, enseña la ficha, instala
+# (baja el .lha y lo descomprime, sin C:lha), actualiza, desinstala y ejecuta.
+@version "Hangar 0.14.6"
+import "api.dash"
+import "lha.dash"
+import "recibos.dash"
+import "inventario.dash"
+import "versiones.dash"
+import "requisitos.dash"
+import "transaccion.dash"
+import "dependencias.dash"
+import "sistema.dash"
+import "plan2.dash"
+import "instalador.dash"
+
+const VERSION = "0.14.6"
+
+const ID_BUSCAR = 1
+const ID_NOVEDADES = 2
+const ID_LISTA = 3
+const ID_INSTALAR = 4
+const ID_DESINSTALAR = 5
+const ID_EJECUTAR = 6
+const ID_SALIR = 7
+const ID_ACTUALIZACIONES = 8
+const ID_INSTALADOS = 9
+const ID_MAS = 10
+const ID_ACERCA = 11
+const ID_INVENTARIO = 12
+const ID_WEB = 13
+const ID_DESHACER = 17
+const ID_ACTUALIZAR_TODO = 18
+const ID_RETENER = 19
+const ID_VOLVER = 20
+const ID_LIMPIAR = 21
+const ID_VERIFICAR = 22
+const ID_DESTINO = 23
+const ID_MIRAR = 24
+const ID_ELEGIR = 25
+const ID_CONTAR = 26          # tras una acción: el número de Actualizar (N), otra vez
+
+# Lo que se baja: aquí se queda cada versión (para volver a ella) y aquí se descomprime antes de ponerla en su sitio
+const CACHE = "PROGDIR:Cache"
+const NUEVO = "PROGDIR:Cache/Nuevo/"
+
+# Lo que se enseña en la lista
+var actuales: [Paquete] = []
+# lo que enseña "Míos": los recibos, en el orden de la lista (su ficha se pide por nombre, no por número)
+var viendo_instalados: Bool = false
+var captura_anterior: String = "T:hangar_captura.iff"
+var instalados_vistos: [Recibo] = []
+var ficha_actual: Ficha = nil
+var consulta: String = ""     # "b:texto", "n:" (novedades), "u:" (actualizaciones), "i:" (instalados)
+var pagina: Int = 0
+var total: Int = 0
+
+var w_buscar: Int = 0
+var w_lista: Int = 0
+var w_titulo: Int = 0
+var w_datos: Int = 0
+var w_readme: Int = 0
+var w_instalar: Int = 0
+var w_desinstalar: Int = 0
+var w_ejecutar: Int = 0
+var w_web: Int = 0
+var w_mas: Int = 0
+var w_progreso: Int = 0
+var w_destino: Int = 0
+var w_sin_captura: Int = 0
+var w_act: Int = 0
+var n_nuevas: Int = 0          # lo de "Actualizar (N)"
+var mirar_callado: Bool = false # al arrancar tras mirar el disco: el título sigue con lo del disco
+var w_elegir: Int = 0
+var resultado: String = ""     # lo último que acabó (instalar, quitar...): se queda en el título tras refrescar
+var w_ventana: Int = 0
+var w_imagen: Int = 0
+var w_pestanas: Int = 0
+
+
+# El estado va en el título de la ventana: no ocupa sitio en una pantalla de 640 x 256
+# Desde el Shell (Hangar INSTALA x...) no hay ventana: lo que iría a ella sale por la consola
+var cli: Bool = false
+var cli_si: Bool = false        # la palabra SI: se acepta lo que se preguntaría
+var cli_ultimo: String = ""
+
+func estado(t: String)
+    if cli
+        if t != "" and t != cli_ultimo
+            Print t
+            cli_ultimo = t
+        end
+        return
+    end
+    if t == ""
+        mui_set_text(w_ventana, "Hangar " + VERSION)
+    else
+        mui_set_text(w_ventana, "Hangar " + VERSION + " - " + t)
+    end
+end
+
+# Una pregunta con botones ("_Seguir|_Cancelar"): el número del botón (1 el primero, 0 el último). Desde el Shell
+# se escribe y vale el primero solo con SI (si no, el último: no se hace)
+func preguntar(texto: String, botones: String) -> Int
+    if not cli
+        return mui_request(w_ventana, "Hangar", texto, botones)
+    end
+    Print str_replace(str_replace(texto, "\33c", ""), "\33b", "")
+    if str_find(botones, "|") < 0 or cli_si
+        return 1
+    end
+    Print "(No se hace: añade SI a la orden para aceptarlo.)"
+    return 0
+end
+
+func lista_poner(t: String)
+    if cli
+        Print t
+    else
+        mui_list_add(w_lista, t)
+    end
+end
+
+func lista_quieta(b: Bool)
+    if not cli
+        mui_list_quiet(w_lista, b)
+    end
+end
+
+func lista_vaciar()
+    if not cli
+        mui_list_clear(w_lista)
+    end
+end
+
+func mas_apagado()
+    if not cli
+        mui_set_enabled(w_mas, false)
+    end
+end
+
+# "1 programa", "3 programas"
+func cuantos(n: Int, uno: String, varios: String) -> String
+    if n == 1
+        return "1 " + uno
+    end
+    return str_from_int(n, 10) + " " + varios
+end
+
+# Tras una acción (instalar, quitar, deshacer...): la ficha al día, y en el título sigue lo que dijo la acción
+func refrescar()
+    if not cli
+        mui_timer(400, ID_CONTAR)
+        antes = mui_get_text(w_ventana)
+        ver_ficha(mui_get_value(w_lista))
+        if resultado != ""
+            estado(resultado)
+            resultado = ""
+        elif antes != "" and antes != "Hangar " + VERSION
+            mui_set_text(w_ventana, antes)
+        end
+    end
+end
+
+var cli_destino: String = ""
+
+# Dónde se instala: lo del campo "En:" de la ventana, o desde el Shell DESTINO=... (o el de siempre)
+func destino_elegido() -> String
+    if cli
+        if cli_destino != ""
+            return cli_destino
+        end
+        return destino_por_defecto()
+    end
+    return mui_get_text(w_destino)
+end
+
+func progreso(n: Int)
+    if not cli
+        mui_set_value(w_progreso, n)
+    end
+end
+
+# Un texto cortado a n caracteres (los textos de MUI ensanchan la ventana: en 640 x 256 no caben líneas largas)
+func corta(t: String, n: Int) -> String
+    if t.length <= n
+        return t
+    end
+    return t[:n - 3] + "..."
+end
+
+func tamano_texto(n: Int) -> String
+    if n >= 1048576
+        return str_from_int(n / 1048576, 10) + "." + str_from_int((n % 1048576) * 10 / 1048576, 10) + " MB"
+    end
+    if n >= 1024
+        return str_from_int(n / 1024, 10) + " KB"
+    end
+    return str_from_int(n, 10) + " B"
+end
+
+
+func linea_de(p: Paquete) -> String
+    return _linea_de(p)
+end
+
+func _linea_de(p: Paquete) -> String
+    v = ""
+    if p.version != ""
+        v = " " + p.version
+    end
+    marca = ""
+    if recibo_leer(p.id).id != 0
+        marca = "* "
+    end
+    return marca + p.nombre + v + "  -  " + p.corto
+end
+
+func limpiar_ficha()
+    if cli
+        return
+    end
+    ficha_actual = nil
+    mui_set_text(w_titulo, "")
+    mui_set_text(w_datos, "")
+    mui_set_text(w_readme, "")
+    mui_set_visible(w_sin_captura, false)
+    mui_set_enabled(w_instalar, false)
+    mui_set_enabled(w_desinstalar, false)
+    mui_set_enabled(w_ejecutar, false)
+    mui_set_enabled(w_web, false)
+end
+
+func poner_lista(l: Lista, anadir: Bool)
+    if l.error != ""
+        estado("Error: " + l.error)
+        return
+    end
+    lista_quieta(true)
+    if not anadir
+        lista_vaciar()
+        var nada: [Paquete] = []
+        actuales = nada
+        viendo_instalados = false
+        limpiar_ficha()
+    end
+    for p in l.paquetes
+        actuales.push(p)
+        lista_poner(linea_de(p))
+    end
+    lista_quieta(false)
+    total = l.total
+    pagina = l.pagina
+    mui_set_enabled(w_mas, actuales.length < total)
+    if total == 0 and consulta[:2] == "b:"
+        estado("No hay nada con \"" + consulta[2:] + "\"")
+        mui_set_text(w_titulo, "\33bNo hay nada con \"" + corta(consulta[2:], 30) + "\"")
+    else
+        estado(str_from_int(actuales.length, 10) + " de " + str_from_int(total, 10))
+    end
+end
+
+func cargar(anadir: Bool)
+    estado("Buscando...")
+    tipo = consulta[:2]
+    resto = consulta[2:]
+    if tipo == "b:"
+        poner_lista(api_buscar(resto, pagina), anadir)
+    elif tipo == "n:"
+        poner_lista(api_novedades(pagina), anadir)
+    end
+end
+
+func ver_ficha(i: Int)
+    if i < 0 or i >= actuales.length
+        limpiar_ficha()
+        return
+    end
+    estado("Cargando la ficha...")
+    var f: Ficha = nil
+    if viendo_instalados and i < instalados_vistos.length and instalados_vistos[i].id == actuales[i].id and instalados_vistos[i].repo != ""
+        rec = instalados_vistos[i]
+        f = api_ficha_pkg(rec.repo, recibo_clave(rec.nombre))
+        if f.error != ""
+            f = api_ficha(actuales[i].id)
+        end
+    else
+        f = api_ficha(actuales[i].id)
+    end
+    if f.error != ""
+        estado("Error: " + f.error)
+        return
+    end
+    ficha_actual = f
+    mui_set_text(w_titulo, "\33b" + corta(f.nombre + " " + f.version, 40))
+    d = corta(f.corto, 36) + "\n"
+    if f.autor != ""
+        d = d + "Autor: " + corta(f.autor, 29) + "\n"
+    end
+    d = d + "Tamaño: " + tamano_texto(f.tamano) + "\n"
+    if f.fecha != ""
+        d = d + "Fecha: " + f.fecha + "\n"
+    end
+    if f.arquitectura != ""
+        d = d + "Para: " + corta(f.arquitectura, 30) + "\n"
+    end
+    if f.necesita.length > 0
+        for l in str_split(necesidades_texto(f), "\n")
+            if l != ""
+                d = d + corta(l, 36) + "\n"
+            end
+        end
+    elif f.requiere != ""
+        d = d + "Necesita: " + corta(f.requiere, 26) + "\n"
+    end
+    r = recibo_de_ficha(f)
+    instalada = version_instalada(r)
+    sin_recibo = ""
+    if r.id == 0
+        sin_recibo = instalado_sin_recibo(f.nombre, [mui_get_text(w_destino), "SYS:", "Work:"])
+    end
+    if r.id != 0
+        d = d + corta("Instalado: " + version_ver(instalada) + " en " + r.destino, 36)
+    elif sin_recibo != ""
+        d = d + corta("Ya está en " + sin_recibo, 36)
+    end
+    # esconder y volver a enseñar: con MUI en RTG (CoffinOS) el texto nuevo quedaba encima del viejo
+    mui_set_visible(w_datos, false)
+    mui_set_text(w_datos, d)
+    mui_set_visible(w_datos, true)
+    mui_set_text(w_readme, f.readme)
+    # ocultar y volver a enseñar: así MUI recoloca la imagen con su tamaño nuevo
+    mui_set_visible(w_imagen, false)
+    mui_set_text(w_imagen, "T:hangar_vacia.iff")
+    hay_captura = false
+    if f.imagenes > 0
+        # un nombre distinto cada vez: Dtpic de MUI puede quedarse con lo que cargó de un nombre ya visto
+        file_delete(captura_anterior)
+        captura_anterior = "T:hangar_captura_" + str_from_int(f.id, 10) + ".iff"
+        if bajar(api_url_miniatura(f.id), captura_anterior) == ""
+            mui_set_text(w_imagen, captura_anterior)
+            hay_captura = true
+        end
+    end
+    mui_set_visible(w_imagen, true)
+    mui_set_visible(w_sin_captura, not hay_captura)
+    progreso(0)
+    mui_set_enabled(w_instalar, f.descarga != "")
+    if r.id != 0 and not version_mayor(f.version, instalada)
+        mui_set_text(w_instalar, "Reinstalar")      # la misma, o una más nueva que el catálogo (se actualizó sola)
+    elif r.id != 0 or sin_recibo != ""
+        mui_set_text(w_instalar, "Actualizar")
+    else
+        mui_set_text(w_instalar, "Instalar")
+    end
+    mui_set_enabled(w_desinstalar, r.id != 0)
+    mui_set_enabled(w_ejecutar, r.id != 0)
+    mui_set_enabled(w_web, f.web != "")
+    estado("")
+end
+
+# Baja una URL a un fichero con la barra de progreso, sin congelar la ventana. "" si fue bien
+func bajar(url: String, fichero: String) -> String
+    c = http_volcar(http_empezar_a_fichero(url, fichero, 30000))
+    while not http_avanzar(c)
+        t = http_total(c)
+        if t > 0
+            progreso(http_recibidos(c) * 100 / t)
+        end
+        if not cli
+            ev = mui_poll_event()
+            if ev == -1
+                http_cancelar(c)
+                return "cancelado"
+            end
+        end
+        time_delay(1)
+    end
+    progreso(100)
+    r = c.respuesta
+    if r.error != ""
+        return r.error
+    end
+    if r.estado != 200
+        return "el servidor respondió " + str_from_int(r.estado, 10)
+    end
+    return ""
+end
+
+
+func instalar()
+    mv = movidos_al_dia()
+    if ficha_actual == nil
+        return
+    end
+    f = ficha_actual
+    # con el formato 2 (la ficha dice su nombre y su repositorio): el plan sale de las respuestas firmadas
+    if f.pkg2 != "" and f.repo != ""
+        plan2_id_v1 = f.id
+        plan2_titulo_v1 = f.nombre
+        plan2_nombre_v1 = f.pkg2
+        i = -1
+        if not cli
+            i = mui_get_value(w_lista)
+        end
+        instalar_pkg(f.pkg2 + "@" + f.repo)
+        # en la lista de actualizaciones, lo ya actualizado sale de ella (sin nada elegido: el título sigue con lo hecho)
+        if instalado_bien and consulta == "u:" and i >= 0 and i < actuales.length and actuales[i].id == f.id
+            actuales.remove(i)
+            mui_list_remove(w_lista, i)
+            mui_set_value(w_lista, -1)
+        end
+        return
+    end
+    # sin entrada firmada del formato 2 no se instala (el camino de la versión 1 se cerró: la ficha sola no basta)
+    instalado_bien = false
+    estado_texto = f.nombre + " aún no está en el índice firmado: no se puede instalar"
+    estado(estado_texto)
+end
+
+# Instala un paquete con el formato 2 ("nombre" o "nombre@repositorio"): el plan del resolutor con las respuestas
+# firmadas (lo que necesita, lo recomendado, lo que sustituye), se enseña de una vez y va en una transacción
+# El recibo de lo que enseña una ficha: por su nombre del formato 2 si lo tiene (el número de una entrada del índice
+# 2 no es el del catálogo: buscar por número podría dar el recibo de otro paquete); si no, por su número
+func recibo_de_ficha(f: Ficha) -> Recibo
+    if f.pkg2 != ""
+        r = recibo_de(f.pkg2)
+        if r.id != 0 and (f.repo == "" or r.repo == "" or r.repo == f.repo)
+            return r
+        end
+        if r.id != 0
+            return recibo_leer(-1)
+        end
+    end
+    return recibo_leer(f.id)
+end
+
+func instalar_pkg(pedido: String)
+    instalado_bien = false
+    estado("Mirando lo que necesita " + pedido + " (comprobando firmas)...")
+    if not plan2_instalar(pedido)
+        estado_texto = "No se puede instalar " + pedido + ": " + plan2_error
+        estado(estado_texto)
+        return
+    end
+    # si lo pedido ya estaba y llega una versión nueva, es actualizar (el título y Deshacer lo dicen así)
+    verbo = "Instalar "
+    nom = pedido
+    a = str_find(nom, "@")
+    if a > 0
+        nom = nom[:a]
+    end
+    for p in resolutor_pasos
+        if p.nombre == nom and es_subida(p)
+            verbo = "Actualizar "
+        end
+    end
+    hacer_plan2(verbo + pedido)
+end
+
+# El volumen de una ruta ("Work:Programas/" -> "Work:"); "" si no tiene
+func volumen_de(ruta: String) -> String
+    p = str_find(ruta, ":")
+    if p < 0
+        return ""
+    end
+    return ruta[:p + 1]
+end
+
+# Si el plan cabe: lo que ocupa instalado, por volumen de destino, y en la caché el .lha y lo descomprimido del mayor
+# (se borra al acabar cada uno). "" si cabe o no se sabe (sin Installed-Size, un volumen que no se puede leer, o RAM:,
+# que crece sola); si no, qué falta.
+var prueba_libre_kb: Int = -1     # gancho de prueba (ESPACIO=N): lo libre de cada volumen, en KB
+
+func _libre_kb(v: String) -> Int
+    if prueba_libre_kb >= 0
+        return prueba_libre_kb
+    end
+    return path_free_kb(v)
+end
+
+func plan2_falta_espacio() -> String
+    var vols: [String] = []
+    var kb: [Int] = []
+    cache_kb = 0
+    for p in resolutor_pasos
+        if p.tipo == "+" or p.tipo == "^"
+            e = p.entrada.e
+            d = destino_elegido()
+            r = recibo_de(p.nombre)
+            if r.id != 0
+                d = r.destino
+            end
+            _sumar_kb(vols, kb, volumen_de(d), (e.tamano_instalado + 1023) / 1024)
+            n = (e.tamano + e.tamano_instalado + 1023) / 1024
+            if n > cache_kb
+                cache_kb = n
+            end
+        end
+    end
+    libre_cache = _libre_kb("PROGDIR:")
+    i = 0
+    while i < vols.length
+        v = vols[i]
+        if v != "" and str_upper(v) != "RAM:"
+            libre = _libre_kb(v)
+            hace = kb[i]
+            # el mismo volumen que la caché (lo libre coincide): se suma lo de la caché
+            if libre >= 0 and libre == libre_cache
+                hace = hace + cache_kb
+            end
+            if libre >= 0 and hace > libre
+                return "No hay sitio en " + v + " hacen falta " + str_from_int(hace, 10) + " KB y quedan " + str_from_int(libre, 10) + " KB"
+            end
+        end
+        i = i + 1
+    end
+    if libre_cache >= 0 and cache_kb > libre_cache
+        return "No cabe en la caché de Hangar: hacen falta " + str_from_int(cache_kb, 10) + " KB y quedan " + str_from_int(libre_cache, 10) + " KB"
+    end
+    return ""
+end
+
+func _sumar_kb(vols: [String], kb: [Int], v: String, n: Int)
+    i = 0
+    while i < vols.length
+        if vols[i] == v
+            kb[i] = kb[i] + n
+            return
+        end
+        i = i + 1
+    end
+    vols.push(v)
+    kb.push(n)
+end
+
+# Un requisito en la forma canónica ("has openpci.library 2 | pkg x", "os 40", "cpu 68020") en palabras
+func aviso_legible(c: String) -> String
+    var partes: [String] = []
+    for o in str_split(c, " | ")
+        w = str_split(str_trim(o), " ")
+        t = str_trim(o)
+        if w.length >= 2 and (w[0] == "has" or w[0] == "pkg" or w[0] == "aminet")
+            t = w[1]
+            if w.length >= 3
+                t = t + " " + str_trim(o[w[0].length + w[1].length + 2:])
+            end
+        elif w.length == 2 and w[0] == "os"
+            t = "AmigaOS de la versión " + w[1]
+            for par in [["36", "2.0"], ["37", "2.04"], ["39", "3.0"], ["40", "3.1"], ["44", "3.5"], ["45", "3.9"], ["46", "3.1.4"], ["47", "3.2"]]
+                if par[0] == w[1]
+                    t = "AmigaOS " + par[1]
+                end
+            end
+        elif w.length == 2 and w[0] == "cpu"
+            t = "un " + w[1]
+        end
+        partes.push(t)
+    end
+    r = ""
+    for t in partes
+        if r != ""
+            r = r + " o "
+        end
+        r = r + t
+    end
+    return r
+end
+
+# Ejecuta el plan del resolutor (resolutor_pasos) en una transacción, preguntando antes si hay más de un paso
+# Un paso del plan que pone una versión más nueva de algo ya instalado: "^", o "+" de lo pedido que ya está (el
+# resolutor no mira lo instalado de lo pedido explícitamente: lo planea como instalar)
+func es_subida(p: PkgPaso) -> Bool
+    if p.tipo == "^"
+        return true
+    end
+    if p.tipo != "+" or p.entrada == nil
+        return false
+    end
+    r = recibo_de(p.nombre)
+    return r.id != 0 and version_mayor(p.entrada.e.version, version_instalada(r))
+end
+
+func hacer_plan2(titulo: String)
+    if resolutor_pasos.length == 0
+        estado("Nada que hacer")
+        instalado_bien = true
+        return
+    end
+    resumen = ""
+    for p in resolutor_pasos
+        resumen = resumen + "\n  " + plan2_texto(p)
+    end
+    # lo que pide sin declararlo su autor (lo adivinó el repositorio) y no está: se dice, no bloquea
+    var vistos: [String] = []
+    for a in resolutor_avisos
+        if not (a in vistos)
+            vistos.push(a)
+            dp = str_find(a, ": ")
+            resumen = resumen + "\n  ojo: a " + a[:dp] + " puede faltarle " + aviso_legible(a[dp + 2:]) + " (lo dice su readme)"
+        end
+    end
+    if resolutor_pasos.length > 1 or resolutor_pasos[0].tipo != "+" or vistos.length > 0
+        if preguntar(titulo + ":" + resumen, "_Seguir|_Cancelar") != 1
+            estado("No se hizo")
+            return
+        end
+    end
+    # el espacio: si no cabe, no se empieza (docs/FORMATO_PAQUETES.md, Installed-Size)
+    falta = plan2_falta_espacio()
+    if falta != ""
+        estado_texto = falta
+        if not cli
+            preguntar(falta, "_Vale")
+        end
+        estado(falta)
+        return
+    end
+    if not tr_empezar(titulo)
+        preguntar("Hay una instalación a medias de antes.\nSe deshace ahora; luego vuelve a intentarlo.", "_Vale")
+        tr_recuperar()
+        return
+    end
+    subidas = 0
+    for p in resolutor_pasos
+        if es_subida(p)
+            subidas = subidas + 1
+        end
+    end
+    hecho = true
+    for p in resolutor_pasos
+        if hecho
+            if p.tipo == "-"
+                r = recibo_de(p.nombre)
+                if r.id != 0
+                    hecho = quitar_paquete(r)
+                end
+            elif p.tipo == "="
+                estado(plan2_texto(p))     # retenido: se dice y no se toca
+            else
+                g = ficha_de_entrada(p.entrada)
+                estado(plan2_texto(p) + "...")
+                hecho = instalar_ficha(g, destino_elegido(), motivo_de(p.motivo))
+            end
+        end
+    end
+    instalado_bien = hecho
+    if hecho
+        tr_cerrar()
+        # el número de Actualizar baja ya; el recuento con la red (ID_CONTAR) llega unos segundos después
+        if subidas >= n_nuevas
+            poner_nuevas(0)
+        elif subidas > 0
+            poner_nuevas(n_nuevas - subidas)
+        end
+        hecho_texto = titulo
+        a = str_find(hecho_texto, "@")
+        if a > 0
+            hecho_texto = hecho_texto[:a]
+        end
+        resultado = "Hecho: " + hecho_texto
+        estado(resultado)
+    else
+        fallos = tr_deshacer(tr_diario())
+        if fallos == 0
+            estado("No se hizo: todo está como antes. " + estado_texto)
+        else
+            estado("No se hizo y " + cuantos(fallos, "fichero no volvió", "ficheros no volvieron") + " a su sitio")
+        end
+    end
+    progreso(0)
+    refrescar()
+end
+
+# La ficha de un paquete con su firma comprobada (unos segundos): nil si no viene de Hangar o la cambió alguien por
+# el camino (o no se pudo leer); sin firma, se pregunta
+func ficha_comprobada(id: Int) -> Ficha
+    estado("Comprobando la firma de Hangar...")
+    g = api_ficha_firmada(id)
+    if g.error != ""
+        estado("Error: " + g.error)
+        return nil
+    end
+    if g.firma < 0
+        preguntar("La ficha de " + g.nombre + " no viene firmada por Hangar,\no alguien la cambió por el camino.\nNo se instala.", "_Vale")
+        return nil
+    end
+    # sin firma no se instala nunca (antes se podía "Instalar igual": una ficha sin firma por el camino bajaba la
+    # seguridad a la de no comprobar nada)
+    if g.firma == 0
+        preguntar("La ficha de " + g.nombre + " llega sin firma.\nNo se puede comprobar que venga de Hangar.\nNo se instala.", "_Vale")
+        return nil
+    end
+    return g
+end
+
+# Borra un cajón con todo lo que tenga dentro
+func borrar_arbol(cajon: String)
+    n = dir_read(cajon)
+    if n < 0
+        return
+    end
+    var nombres: [String] = []
+    var cajones: [Bool] = []
+    for i in (0..n - 1)
+        if n > 0
+            nombres.push(dir_entry_name(i))
+            cajones.push(dir_entry_is_dir(i))
+        end
+    end
+    i = 0
+    while i < nombres.length
+        if cajones[i]
+            borrar_arbol(cajon + "/" + nombres[i])
+        else
+            file_delete(cajon + "/" + nombres[i])
+        end
+        i = i + 1
+    end
+    file_delete(cajon)
+end
+
+var estado_texto: String = ""
+var instalado_bien: Bool = false       # la última instalación acabó bien (para el código de las órdenes)
+
+# Baja e instala un programa (su ficha) en destino (o donde ya esté), dentro de una transacción abierta: se baja a
+# la caché, se comprueban su tamaño y su SHA-256 (los de la ficha firmada), se descomprime aparte y cada fichero se
+# pone en su sitio guardando lo que hubiera (tr_poner). false si algo falla (quien llama deshace la transacción).
+# motivo: "pedido" (lo pide el usuario) o "dependencia" (lo necesita otro); al actualizar, lo pedido sigue pedido.
+func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
+    if destino == ""
+        destino = "SYS:"
+    end
+    anterior = recibo_de_ficha(f)
+    # lo pedido sigue pedido; y lo apuntado a mano, una vez lo instala Hangar, es suyo (su versión ya es la del paquete)
+    if anterior.id != 0 and (anterior.motivo == "pedido" or anterior.motivo == "adoptado")
+        motivo = "pedido"
+    end
+    if anterior.id != 0
+        destino = anterior.destino
+    else
+        ya = instalado_sin_recibo(f.nombre, [destino, "SYS:", "Work:"])
+        if ya != ""
+            destino = ya       # instalado a mano o por su actualizador: encima, no en otro cajón
+        end
+    end
+    if not str_ends(destino, ":") and not str_ends(destino, "/")
+        destino = destino + "/"
+    end
+    # sin la huella que firma Hangar no se instala: no habría forma de saber que lo bajado es lo publicado
+    if f.sha256 == ""
+        estado_texto = "Hangar no da la huella (SHA-256) de " + f.nombre + ": no se instala"
+        estado(estado_texto)
+        return false
+    end
+    dir_create(CACHE)
+    temporal = CACHE + "/" + recibo_clave(f.nombre) + "-" + recibo_clave(f.version) + ".lha"
+    # ya en la caché (una reinstalación, o volver a esta versión) y con su SHA-256: sin bajarlo otra vez
+    en_cache = f.sha256 != "" and file_exists(temporal) and api_sha256_fichero(temporal) == f.sha256
+    if not en_cache
+        # el original y sus copias (Url repetible, P6a), por orden: vale el primero que da lo firmado (tamaño y SHA-256)
+        mal = "no hay dónde bajarlo"
+        sitios = 0
+        for u0 in str_split(f.descarga, "\n")
+            u = str_trim(u0)
+            if u != "" and mal != ""
+                if sitios > 0
+                    estado(mal + ". Probando otro sitio...")
+                end
+                sitios = sitios + 1
+                estado("Bajando " + f.nombre + "...")
+                e = bajar(api_url_descarga(f, u), temporal)
+                if e != ""
+                    mal = "No se pudo bajar: " + e
+                elif f.tamano_fichero > 0 and file_size(temporal) != f.tamano_fichero
+                    mal = "Lo bajado no tiene el tamaño que dice Hangar"
+                else
+                    estado("Comprobando " + f.nombre + " (SHA-256)...")
+                    if api_sha256_fichero(temporal) != f.sha256
+                        mal = "Lo bajado no es lo que firmó Hangar (SHA-256 distinto)"
+                    else
+                        mal = ""
+                    end
+                end
+                if mal != ""
+                    file_delete(temporal)
+                    if e == "cancelado"
+                        break
+                    end
+                end
+            end
+        end
+        if mal != ""
+            estado_texto = mal
+            estado(estado_texto)
+            return false
+        end
+    end
+    # su nota en la caché: el SHA-256 comprobado, el release y el epoch (para volver a esta versión sin red)
+    file_write_text(temporal[:temporal.length - 4] + ".sha", f.sha256 + "\n" + str_from_int(f.release, 10) + "\n" + str_from_int(f.epoch, 10) + "\n" + f.version + "\n")
+    estado("Descomprimiendo...")
+    borrar_arbol(NUEVO[:NUEVO.length - 1])
+    e = lha_extraer(temporal, NUEVO)
+    if e != ""
+        estado_texto = "Error al descomprimir: " + e
+        return false
+    end
+    var puestos: [String] = []
+    if f.variantes != nil and f.variantes.length > 0
+        # Variant: el fichero que vale para este Amiga pasa a ser el de su nombre; los demás no se instalan
+        ev = aplicar_variantes(NUEVO, f.variantes)
+        if ev != ""
+            estado_texto = ev
+            return false
+        end
+        for x in lha_escritos
+            if file_exists(x)
+                puestos.push(x)
+            end
+        end
+        for v in f.variantes
+            p = str_find(v, "=")
+            if p > 0
+                d = NUEVO + str_trim(v[:p])
+                ya = false
+                for x in puestos
+                    if x == d
+                        ya = true
+                    end
+                end
+                if not ya and file_exists(d)
+                    puestos.push(d)
+                end
+            end
+        end
+    else
+        for x in lha_escritos
+            puestos.push(x)
+        end
+    end
+    estado("Instalando " + f.nombre + "...")
+    var escritos: [String] = []
+    var configs: [String] = []
+    # de los ajustes del usuario que se quedan: su ruta y el CRC del que trae el paquete (el de la base es ese: si no,
+    # la próxima vez parecerían sin cambiar y se pisarían)
+    var guardados: [String] = []
+    var guardados_crc: [Int] = []
+    nuevos_config = 0
+    con_guion = str_starts(str_lower(f.instala), "installer ")
+    guion = ""
+    if con_guion
+        guion = str_trim(f.instala[10:])
+    elif f.instala == "" or str_starts(str_lower(f.instala), "system")
+        # lo de Aminet no dice cómo se instala (o solo lo que Hangar dedujo de sus librerías: Install: system): si trae
+        # su guion de Installer, se ofrece (como lo haría el usuario; el guion sabe renombrar una librería por CPU) y
+        # Hangar apunta todo lo que copie, para quitarlo entero y saber dónde está
+        g = guion_del_paquete(NUEVO, puestos)
+        if g != ""
+            if preguntar(f.nombre + " trae su propio instalador (" + g + ").\n¿Lo uso? Hangar apunta todo lo que copie,\npara poder actualizarlo y quitarlo entero.", "_Usar su instalador|_Copiarlo sin él") == 1
+                con_guion = true
+                guion = g
+            end
+        end
+    end
+    # un .lha sin su propio cajón (lo de Aminet sin manifiesto: "ReadMe" y "req.library" sueltos) va a un cajón con
+    # el nombre del programa: si no, quedaría suelto en el destino y chocaría con los ficheros sueltos de otros
+    prefijo = ""
+    if not con_guion and (f.instala == "" or str_starts(str_lower(f.instala), "system"))
+        var cimas: [String] = []
+        sueltos = false
+        for x in puestos
+            rel = x[NUEVO.length:]
+            b = str_find(rel, "/")
+            if b > 0
+                if not (rel[:b] in cimas)
+                    cimas.push(rel[:b])
+                end
+            elif not str_ends(str_lower(rel), ".info")
+                sueltos = true
+            end
+        end
+        if sueltos or cimas.length > 1
+            prefijo = str_replace(str_replace(f.nombre, "/", "_"), ":", "_") + "/"
+        end
+    end
+    # un fichero, un dueño: lo que va a poner no puede ser de otro programa instalado (lo que sustituye ya se quitó
+    # antes en el plan). Los de LIBS:, C:... que comparten varios (Install: system) no se miran aquí.
+    if not con_guion
+        var duenos_f: [String] = []
+        var duenos_n: [String] = []
+        for r in recibos_todos()
+            if recibo_clave(r.nombre) != recibo_clave(f.nombre) and (anterior.id == 0 or recibo_clave(r.nombre) != recibo_clave(anterior.nombre))
+                for g in r.ficheros
+                    duenos_f.push(str_lower(g))
+                    duenos_n.push(r.nombre)
+                end
+            end
+        end
+        for x in puestos
+            d = destino + prefijo + x[NUEVO.length:]
+            bajo = str_lower(d)
+            i = 0
+            while i < duenos_f.length
+                if duenos_f[i] == bajo
+                    estado_texto = "No se instala " + f.nombre + ": " + d + " es de " + duenos_n[i]
+                    return false
+                end
+                i = i + 1
+            end
+        end
+    end
+    if con_guion
+        # con su guion de Installer: lo que escriba, apuntado por la foto de antes y después
+        estado("Instalando " + f.nombre + " con su Installer...")
+        instalador_otros = sitios_de_guion(destino)
+        for x in instalar_con_guion(NUEVO, guion, f.nombre, destino)
+            escritos.push(x)
+        end
+        if instalador_error != ""
+            estado_texto = "Installer: " + instalador_error
+            return false
+        end
+        # donde lo dejó el guion es su sitio (para seguirlo si se mueve, y en Míos)
+        sitio = sitio_de_lo_escrito(escritos)
+        if sitio != ""
+            destino = sitio
+        end
+        var nada: [String] = []
+        puestos = nada
+    end
+    for x in puestos
+        rel = x[NUEVO.length:]
+        d = destino + prefijo + rel
+        poner_en = d
+        if f.config != "" and es_config(f.config, rel)
+            configs.push(d)
+            # un fichero de configuración que el usuario cambió (o que ya estaba antes de Hangar) no se pisa: la
+            # versión nueva queda al lado como .new
+            if file_exists(d)
+                cambiado = true
+                i = 0
+                while i < anterior.ficheros.length
+                    if str_lower(anterior.ficheros[i]) == str_lower(d) and i < anterior.crcs.length
+                        cambiado = recibo_crc(d) != anterior.crcs[i]
+                    end
+                    i = i + 1
+                end
+                if cambiado
+                    poner_en = d + ".new"
+                    nuevos_config = nuevos_config + 1
+                    guardados.push(d)
+                    guardados_crc.push(recibo_crc(x))
+                end
+            end
+        end
+        if not tr_poner(x, poner_en)
+            estado_texto = "No se pudo escribir " + poner_en
+            return false
+        end
+        escritos.push(poner_en)
+        if poner_en != d
+            escritos.push(d)       # el del usuario queda en el recibo (es de este paquete)
+        end
+    end
+    borrar_arbol(NUEVO[:NUEVO.length - 1])
+    # lo de la versión anterior que ya no viene (solo lo que trajo el paquete: sus ajustes se quedan)
+    if anterior.id != 0
+        for viejo in anterior.ficheros
+            sigue = false
+            for d in escritos
+                if str_lower(d) == str_lower(viejo)
+                    sigue = true
+                end
+            end
+            if not sigue
+                tr_borrar(viejo)
+            end
+        end
+    end
+    # Install: system (el manifiesto): lo que va a LIBS:, C:..., pidiendo permiso; también al recibo
+    if str_starts(str_lower(f.instala), "system ") and not con_guion     # con su guion, lo copia el guion
+        for x in copiar_al_sistema(f, escritos)
+            escritos.push(x)
+        end
+    end
+    # sus asignaciones y lo que arranca con el sistema: su bloque en S:User-Startup
+    lineas = bloque_lineas(destino, f.asigna, f.arranque)
+    if con_guion
+        lineas = lineas + instalador_arranque     # lo que su guion añadió a S:User-Startup
+    end
+    hay_bloque = false
+    if lineas != ""
+        if not bloque_poner(f.nombre, lineas)
+            estado_texto = "No se pudo cambiar " + arranque_ruta
+            return false
+        end
+        hay_bloque = true
+    elif anterior.id != 0 and anterior.bloque
+        bloque_quitar(anterior.nombre)
+    end
+    if anterior.id != 0 and recibo_clave(anterior.nombre) != recibo_clave(f.nombre)
+        tr_recibo(anterior.nombre)
+        file_delete(recibo_ruta(anterior.nombre))
+    end
+    tr_recibo(f.nombre)
+    r = recibo_nuevo(f.id, f.nombre, f.version, destino, escritos)
+    r.lanzamiento = f.release
+    r.epoch = f.epoch
+    r.repo = f.repo
+    r.motivo = motivo
+    r.retenido = anterior.id != 0 and anterior.retenido
+    r.requiere = f.requiere
+    r.provee = f.provee
+    r.bloque = hay_bloque
+    r.config = configs
+    k = 0
+    while k < guardados.length
+        i = 0
+        while i < r.ficheros.length
+            if str_lower(r.ficheros[i]) == str_lower(guardados[k]) and i < r.crcs.length
+                r.crcs[i] = guardados_crc[k]
+            end
+            i = i + 1
+        end
+        k = k + 1
+    end
+    for x in escritos
+        if recibo_copia(x) != ""
+            r.antes.push(x)
+        end
+    end
+    if not recibo_guardar(r)
+        estado_texto = "No se pudo guardar en la base"
+        return false
+    end
+    if nuevos_config > 0
+        estado_texto = str_from_int(nuevos_config, 10) + " ajustes tuyos se quedan; los nuevos están al lado (.new)"
+        estado(f.nombre + " " + f.version + " instalado. " + estado_texto)
+    else
+        estado(f.nombre + " " + version_ver(f.version) + " instalado en " + destino + " (" + cuantos(puestos.length, "fichero", "ficheros") + ")")
+    end
+    return true
+end
+
+# Install: system LIBS:x.library, C:y (el manifiesto): esos ficheros del paquete, a su sitio en el sistema. Se pide
+# permiso; lo que hubiera se guarda como ".old" (vuelve al desinstalar) y una versión más nueva no se pisa.
+# Devuelve lo copiado, para el recibo.
+func copiar_al_sistema(f: Ficha, escritos: [String]) -> [String]
+    var hechos: [String] = []
+    var lista: [String] = []
+    texto = ""
+    for it in str_split(str_trim(f.instala[7:]), ",")
+        d = str_trim(it)
+        if d != "" and str_find(d, ":") > 0
+            lista.push(d)
+            texto = texto + "\n  " + d
+        end
+    end
+    if lista.length == 0
+        return hechos
+    end
+    if preguntar(f.nombre + " quiere copiar a tu sistema:" + texto + "\nLo que haya ahí se guarda como .old y vuelve si lo desinstalas.", "_Copiar|_No copiar") != 1
+        return hechos
+    end
+    for d in lista
+        base = str_lower(nombre_de_ruta(d))
+        origen = ""
+        for x in escritos
+            if str_lower(nombre_de_ruta(x)) == base
+                origen = x
+            end
+        end
+        if origen != ""
+            copiar = true
+            if file_exists(d)
+                ya = inventario_version(d).version
+                nueva = inventario_version(origen).version
+                # solo se pisa con una claramente más nueva: si es la misma, más vieja o no se sabe, se queda la que
+                # hay (una reqtools.library de 1997 pisó la 39.3 de Coffin)
+                if ya == "" or nueva == "" or not version_mayor(nueva, ya)
+                    copiar = false
+                    estado(d + " ya está (" + version_ver(ya) + "): se queda")
+                else
+                    tr_guardar(d + ".old")
+                    tr_guardar(d)
+                    file_delete(d + ".old")
+                    file_rename(d, d + ".old")
+                end
+            end
+            if copiar and tr_poner(origen, d)
+                hechos.push(d)
+            end
+        end
+    end
+    return hechos
+end
+
+func desinstalar()
+    mv = movidos_al_dia()
+    if ficha_actual == nil
+        return
+    end
+    r = recibo_de_ficha(ficha_actual)
+    if r.id == 0
+        return
+    end
+    aviso = ""
+    necesitan = dependientes(r)
+    if necesitan.length > 0
+        lista = ""
+        for x in necesitan
+            if lista != ""
+                lista = lista + ", "
+            end
+            lista = lista + x
+        end
+        aviso = "\n\nLo necesita: " + lista + ".\nSin él puede que no funcione."
+    end
+    if r.motivo == "adoptado"
+        aviso = aviso + "\n\nSe instaló a mano: se borra todo lo que hay en su cajón,\ntambién lo que hayas guardado ahí."
+    end
+    if preguntar("¿Quitar " + r.nombre + " " + version_ver(r.version) + "?\n" + cuantos(r.ficheros.length, "fichero", "ficheros") + " en " + r.destino + aviso, "_Quitar|_Cancelar") != 1
+        return
+    end
+    if not tr_empezar("Quitar " + r.nombre + " " + r.version)
+        tr_recuperar()
+        tr_empezar("Quitar " + r.nombre + " " + r.version)
+    end
+    if quitar_paquete(r)
+        # lo que se instaló para otros y ya no pide nadie: se ofrece quitarlo también (y lo que deje huérfano eso)
+        var fuera: [String] = [r.nombre]
+        quitados = 1
+        sigue = true
+        while sigue
+            sigue = false
+            h = huerfanos(fuera)
+            if h.length > 0
+                nombres = ""
+                for x in h
+                    nombres = nombres + "\n  " + x.nombre + " " + version_ver(x.version)
+                end
+                if preguntar("Se instalaron para otros programas y ya no los necesita ninguno:" + nombres, "_Quitarlos|_Dejarlos") == 1
+                    for x in h
+                        if quitar_paquete(x)
+                            fuera.push(x.nombre)
+                            quitados = quitados + 1
+                            sigue = true
+                        end
+                    end
+                end
+            end
+        end
+        tr_cerrar()
+        if quitados > 1
+            resultado = r.nombre + " quitado, y " + str_from_int(quitados - 1, 10) + " más que ya no hacían falta"
+            estado(resultado)
+        else
+            resultado = r.nombre + " quitado"
+            estado(resultado)
+        end
+    else
+        fallos = tr_deshacer(tr_diario())
+        estado("No se pudo quitar " + r.nombre + ": está como antes")
+    end
+    refrescar()
+end
+
+# Pone al día todo lo instalado con Hangar que tenga versión nueva (menos lo retenido), con sus dependencias, en una
+# sola transacción (como pacman -Syu): si una falla, todo vuelve a como estaba
+func actualizar_todo()
+    mv = movidos_al_dia()
+    # el formato 2: una pregunta firmada por repositorio y el plan del resolutor
+    estado("Mirando versiones (comprobando firmas)...")
+    if not plan2_actualizar()
+        estado("No se puede actualizar: " + plan2_error)
+        return
+    end
+    if resolutor_pasos.length > 0
+        hacer_plan2("Actualizar todo")
+        return
+    end
+    estado("Todo está al día")
+end
+
+func retener()
+    if ficha_actual == nil
+        return
+    end
+    r = recibo_de_ficha(ficha_actual)
+    if r.id == 0
+        return
+    end
+    r.retenido = not r.retenido
+    recibo_guardar(r)
+    if r.retenido
+        estado(r.nombre + " " + r.version + " retenido: no se actualizará")
+    else
+        estado(r.nombre + " ya se actualiza")
+    end
+end
+
+# Una versión a la que se puede volver: de la respuesta firmada versions?name= o de la caché (comprobada al
+# instalarla; sirve sin red y para lo de Aminet, que solo tiene la última en su sitio)
+struct Vuelta
+    version: String
+    release: Int
+    epoch: Int
+    sha256: String
+    url: String              # "" si está en la caché
+    tamano: Int
+end
+
+# Las versiones de un programa que hay en la caché con su nota (.sha), más viejas que la instalada
+func cache_anteriores(r: Recibo) -> [Vuelta]
+    var vs: [Vuelta] = []
+    pref = recibo_clave(r.nombre) + "-"
+    var nombres: [String] = []
+    n = dir_read(CACHE)
+    i = 0
+    while i < n
+        nombres.push(str_lower(dir_entry_name(i)))
+        i = i + 1
+    end
+    for x in nombres
+        if str_starts(x, pref) and str_ends(x, ".sha")
+            raiz = CACHE + "/" + x[:x.length - 4]
+            nota = file_read_text(CACHE + "/" + x)
+            if nota != nil and file_exists(raiz + ".lha")
+                w = str_split(nota, "\n")
+                if w.length >= 3 and w[0].length == 64
+                    ver = x[pref.length:x.length - 4]
+                    if w.length >= 4 and str_trim(w[3]) != ""
+                        ver = str_trim(w[3])
+                    end
+                    v = Vuelta(ver, Int(w[1]), Int(w[2]), w[0], "", file_size(raiz + ".lha"))
+                    if version_entera(v.epoch, v.version, v.release, r.epoch, r.version, r.lanzamiento) < 0
+                        vs.push(v)
+                    end
+                end
+            end
+        end
+    end
+    return vs
+end
+
+# La más nueva de unas versiones (-1 si no hay)
+func _la_mayor(vs: [Vuelta]) -> Int
+    m = -1
+    i = 0
+    while i < vs.length
+        if m < 0 or version_entera(vs[i].epoch, vs[i].version, vs[i].release, vs[m].epoch, vs[m].version, vs[m].release) > 0
+            m = i
+        end
+        i = i + 1
+    end
+    return m
+end
+
+# Vuelve a la versión anterior a la instalada. Con el formato 2 (lo instalado sabe su repositorio): las versiones de
+# versions?name= (firmadas) y las de la caché; la más nueva de las anteriores. Lo de antes, con el historial de la v1.
+func volver_atras()
+    mv = movidos_al_dia()
+    if ficha_actual == nil
+        return
+    end
+    r = recibo_de_ficha(ficha_actual)
+    if r.id == 0
+        return
+    end
+    if r.repo == ""
+        _volver_atras1()
+        return
+    end
+    estado("Leyendo las versiones de " + r.nombre + "...")
+    vs = cache_anteriores(r)
+    for rc in api2_repos
+        if rc.nombre == r.repo
+            resp = api2_versiones(rc, recibo_clave(r.nombre))
+            if resp.error == ""
+                for e in resp.entradas
+                    if e.nombre == recibo_clave(r.nombre) and version_entera(e.epoch, e.version, e.release, r.epoch, r.version, r.lanzamiento) < 0
+                        vs.push(Vuelta(e.version, e.release, e.epoch, e.sha256, e.url, e.tamano))
+                    end
+                end
+            else
+                estado("Sin las versiones del servidor (" + resp.error + "): solo lo de la caché")
+            end
+        end
+    end
+    k = _la_mayor(vs)
+    if k < 0
+        preguntar("No hay ninguna versión de " + r.nombre + " anterior a la " + r.version + ", ni en el servidor ni en la caché.", "_Vale")
+        return
+    end
+    v = vs[k]
+    nota = ""
+    if v.url == ""
+        nota = "\n(Está en la caché: no hace falta la red.)"
+    end
+    if preguntar("¿Volver de " + r.nombre + " " + r.version + " a la " + v.version + "?" + nota, "_Volver|_Cancelar") != 1
+        return
+    end
+    f = ficha_actual
+    f.version = v.version
+    f.release = v.release
+    f.epoch = v.epoch
+    f.sha256 = v.sha256
+    f.tamano_fichero = v.tamano
+    if v.url != ""
+        f.descarga = v.url
+    end
+    _volver_a(r, f, v.version)
+end
+
+# Instala esa versión en una transacción y la deja retenida (si no, la próxima actualización la volvería a subir)
+func _volver_a(r: Recibo, f: Ficha, version: String)
+    if not tr_empezar("Volver a " + r.nombre + " " + version)
+        tr_recuperar()
+        tr_empezar("Volver a " + r.nombre + " " + version)
+    end
+    if instalar_ficha(f, r.destino, r.motivo)
+        nuevo = recibo_leer(r.id)
+        nuevo.retenido = true
+        recibo_guardar(nuevo)
+        tr_cerrar()
+        estado(r.nombre + " vuelve a la " + version + " (retenido)")
+    else
+        tr_deshacer(tr_diario())
+        estado("No se pudo volver: está como antes. " + estado_texto)
+    end
+    refrescar()
+end
+
+# Lo de la versión 1: el historial firmado de Hangar
+# Vuelve a la versión anterior a la instalada: la del historial firmado de Hangar, de la caché si está (lo de
+# Aminet y GitHub solo tiene la última en su sitio) o de su url si aún sirve (las de Hangar, siempre)
+func _volver_atras1()
+    if ficha_actual == nil
+        return
+    end
+    r = recibo_de_ficha(ficha_actual)
+    if r.id == 0
+        return
+    end
+    estado("Leyendo las versiones de " + r.nombre + "...")
+    h = api_historial(r.id)
+    if h.error != ""
+        estado("Error: " + h.error)
+        return
+    end
+    if h.firma < 0
+        preguntar("El historial de " + r.nombre + " no viene firmado por Hangar.", "_Vale")
+        return
+    end
+    actual = version_instalada(r)
+    elegida = -1
+    i = 0
+    while elegida < 0 and i < h.lista.length
+        if version_mayor(actual, h.lista[i].version)
+            elegida = i
+        end
+        i = i + 1
+    end
+    if elegida < 0
+        preguntar("No hay ninguna versión de " + r.nombre + " anterior a la " + actual + ".", "_Vale")
+        return
+    end
+    v = h.lista[elegida]
+    en_cache = file_exists(CACHE + "/" + recibo_clave(r.nombre) + "-" + recibo_clave(v.version) + ".lha")
+    nota = ""
+    if not en_cache
+        nota = "\n(No está en la caché: se baja de su sitio, si aún está.)"
+    end
+    if preguntar("¿Volver de " + r.nombre + " " + actual + " a la " + v.version + " (" + v.fecha + ")?" + nota, "_Volver|_Cancelar") != 1
+        return
+    end
+    f = ficha_actual
+    f.version = v.version
+    f.release = v.release
+    f.sha256 = v.sha256
+    f.tamano_fichero = v.tamano
+    f.descarga = v.url
+    if not tr_empezar("Volver a " + r.nombre + " " + v.version)
+        tr_recuperar()
+        tr_empezar("Volver a " + r.nombre + " " + v.version)
+    end
+    if instalar_ficha(f, r.destino, r.motivo)
+        nuevo = recibo_leer(r.id)
+        nuevo.retenido = true       # si no, la próxima actualización la volvería a subir
+        recibo_guardar(nuevo)
+        tr_cerrar()
+        estado(r.nombre + " vuelve a la " + v.version + " (retenido)")
+    else
+        tr_deshacer(tr_diario())
+        estado("No se pudo volver: está como antes. " + estado_texto)
+    end
+    refrescar()
+end
+
+# Dónde buscar un programa que el usuario movió a mano: los sitios de instalar y sus cajones de primer nivel
+func sitios_para_buscar() -> [String]
+    var r: [String] = []
+    var raices: [String] = []
+    for d in destinos_posibles()
+        raices.push(d)
+    end
+    for d in ["SYS:Utilities/", "SYS:Tools/", "SYS:"]
+        if not (d in raices)
+            raices.push(d)
+        end
+    end
+    dos_requesters(false)
+    for d in raices
+        if not (d in r)
+            r.push(d)
+        end
+        n = dir_read(d)
+        var cajones: [String] = []
+        i = 0
+        while i < n
+            if dir_entry_is_dir(i)
+                cajones.push(dir_entry_name(i))
+            end
+            i = i + 1
+        end
+        for c in cajones
+            sub = d + c + "/"
+            if not (sub in r)
+                r.push(sub)
+            end
+        end
+    end
+    dos_requesters(true)
+    return r
+end
+
+# Lo instalado que el usuario movió a mano: un paquete sin ninguno de sus ficheros donde se instaló se busca, con sus
+# mismos ficheros (tamaño), en los sitios de instalar y en sus cajones; si está, se apunta el sitio nuevo (recibo y
+# bloque de S:User-Startup). Da "Nombre: de A a B" por cada uno. Lo de LIBS:, C:... (Install: system) no se mueve.
+func buscar_movidos() -> [String]
+    var hechos: [String] = []
+    var sitios: [String] = []
+    buscado = false
+    for r in recibos_todos()
+        dest = r.destino
+        if dest != "" and not str_ends(dest, ":") and not str_ends(dest, "/")
+            dest = dest + "/"
+        end
+        # sus ficheros dentro de su destino (los de LIBS:, C:... no cuentan) y si queda alguno en su sitio
+        var rel: [String] = []
+        var tam: [Int] = []
+        alguno = false
+        i = 0
+        while i < r.ficheros.length
+            f = r.ficheros[i]
+            if dest != "" and str_starts(str_lower(f), str_lower(dest)) and f.length > dest.length
+                rel.push(f[dest.length:])
+                if i < r.tamanos.length
+                    tam.push(r.tamanos[i])
+                else
+                    tam.push(-1)
+                end
+                if file_exists(f)
+                    alguno = true
+                end
+            end
+            i = i + 1
+        end
+        if rel.length > 0 and not alguno
+            if not buscado
+                sitios = sitios_para_buscar()
+                buscado = true
+            end
+            nuevo = ""
+            for s in sitios
+                if nuevo == "" and str_lower(s) != str_lower(dest)
+                    ok = true
+                    k = 0
+                    mirados = 0
+                    while ok and k < rel.length and mirados < 4
+                        if not str_ends(str_lower(rel[k]), ".info")
+                            n = file_size(s + rel[k])
+                            if n < 0 or (tam[k] >= 0 and n != tam[k])
+                                ok = false
+                            end
+                            mirados = mirados + 1
+                        end
+                        k = k + 1
+                    end
+                    if ok and mirados > 0
+                        nuevo = s
+                    end
+                end
+            end
+            if nuevo != ""
+                var fs: [String] = []
+                for f in r.ficheros
+                    if str_starts(str_lower(f), str_lower(dest)) and f.length > dest.length
+                        fs.push(nuevo + f[dest.length:])
+                    else
+                        fs.push(f)
+                    end
+                end
+                r.ficheros = fs
+                r.destino = nuevo
+                if r.bloque
+                    bloque_mover(r.nombre, dest, nuevo)
+                end
+                recibo_guardar(r)
+                hechos.push(r.nombre + ": de " + dest + " a " + nuevo)
+            end
+        end
+    end
+    return hechos
+end
+
+# Lo apuntado a mano (o de antes del formato 2) sin repositorio: su ficha del catálogo lo dice; sin él, las
+# actualizaciones del formato 2 no lo ven (salen siempre del mismo repositorio). true si lo completó
+func recibo_completar_repo(r: Recibo) -> Bool
+    if r.repo != "" or r.id <= 0
+        return false
+    end
+    f = api_ficha(r.id)
+    if f.error != "" or f.repo == ""
+        return false
+    end
+    r.repo = f.repo
+    # y su nombre del formato 2 (el de Aminet sale del fichero: "filex68k" de "FileX-68K"): por él se pregunta
+    if f.pkg2 != "" and recibo_clave(r.nombre) != f.pkg2
+        file_delete(recibo_ruta(r.nombre))
+        r.nombre = f.pkg2
+    end
+    return true
+end
+
+# El botón "Actualizar (N)"
+func poner_nuevas(n: Int)
+    n_nuevas = n
+    if cli
+        return
+    end
+    if n > 0
+        mui_set_text(w_act, "Actualizar (" + str_from_int(n, 10) + ")")
+    else
+        mui_set_text(w_act, "Actualizar")
+    end
+end
+
+# Si lo instalado con Hangar tiene versión nueva (una pregunta firmada por repositorio): al empezar se dice en el
+# título y en el botón Actualizar ("Actualizar (3)"). Callado (tras una acción o tras mirar el disco): solo el
+# botón, sin tocar el título, que sigue diciendo lo que se hizo
+func contar_versiones(callado: Bool)
+    if recibos_todos().length == 0
+        poner_nuevas(0)
+        return
+    end
+    if not callado
+        estado("Mirando si hay versiones nuevas...")
+    end
+    for r in recibos_todos()
+        if recibo_completar_repo(r)
+            recibo_guardar(r)
+        end
+    end
+    n = 0
+    if not plan2_actualizar()
+        if not callado
+            estado("No se pudo mirar si hay versiones nuevas: " + plan2_error)
+        end
+        return
+    else
+        for p in resolutor_pasos
+            if p.tipo == "^"
+                n = n + 1
+            end
+        end
+    end
+    poner_nuevas(n)
+    if n > 0
+        if callado
+            return
+        end
+        if n == 1
+            estado("1 programa tiene versión nueva: pulsa Actualizar")
+        else
+            estado(cuantos(n, "programa", "programas") + " tienen versión nueva: pulsa Actualizar")
+        end
+    else
+        if not callado
+            estado("Lo instalado con Hangar está al día")
+        end
+    end
+end
+
+# Antes de tocar lo instalado (quitar, actualizar, ejecutar) y al ver Míos: lo que el usuario movió a mano con
+# Hangar abierto, apuntado ya; se dice en el título ("" si nada se movió)
+func movidos_al_dia() -> String
+    m = buscar_movidos()
+    if m.length == 0
+        return ""
+    end
+    t = "Lo moviste y ya tengo apuntado su sitio nuevo: " + m[0]
+    if m.length > 1
+        t = cuantos(m.length, "programa movido", "programas movidos") + " a mano: ya tengo apuntado su sitio nuevo"
+    end
+    estado(t)
+    return t
+end
+
+# Al empezar y en Verificar: si se movió algo a mano, se apunta y se dice
+func avisar_movidos()
+    m = buscar_movidos()
+    if m.length == 0
+        return
+    end
+    t = ""
+    for x in m
+        t = t + "\n  " + x
+    end
+    preguntar("Has movido programas instalados con Hangar.\nYa tengo apuntado su sitio nuevo:" + t, "_Vale")
+end
+
+# Mira que lo instalado con Hangar siga como se instaló (CRC-32 y tamaño de cada fichero) y, si algo falta o
+# cambió, ofrece repararlo: reinstalar ese paquete en una transacción (lo que se pise se puede deshacer)
+func verificar()
+    avisar_movidos()
+    estado("Verificando lo instalado...")
+    lista_quieta(true)
+    lista_vaciar()
+    limpiar_ficha()
+    var lista: [Paquete] = []
+    actuales = lista
+    var rotos: [Recibo] = []
+    total_mal = 0
+    todos = recibos_todos()
+    # un .pkg cambiado o cortado (su suma no cuadra): se rehace desde la copia de la base, si está entera
+    rehechos = 0
+    for r in todos
+        if r.en_duda
+            c = recibo_de_copia(r.nombre)
+            if c.id != 0 and recibo_guardar(c)
+                rehechos = rehechos + 1
+            else
+                actuales.push(Paquete(r.id, r.nombre, r.version, "", 0, "", r.destino))
+                lista_poner("? " + r.nombre + ": su ficha en la base no cuadra y no hay copia buena")
+            end
+        end
+    end
+    if rehechos > 0
+        todos = recibos_todos()
+        estado(str_from_int(rehechos, 10) + " fichas de la base rehechas desde su copia")
+    end
+    for r in todos
+        mal = recibo_verificar(r)
+        if mal.length > 0
+            rotos.push(r)
+            total_mal = total_mal + mal.length
+            actuales.push(Paquete(r.id, r.nombre, r.version, "", 0, "", r.destino))
+            lista_poner("! " + r.nombre + " " + r.version + ": " + cuantos(mal.length, "fichero", "ficheros") + "")
+            for m in mal
+                actuales.push(Paquete(r.id, r.nombre, r.version, "", 0, "", r.destino))
+                lista_poner("    " + m)
+            end
+        end
+    end
+    lista_quieta(false)
+    mas_apagado()
+    if rotos.length == 0
+        estado(cuantos(todos.length, "programa verificado", "programas verificados") + ": todo bien")
+        return
+    end
+    estado(cuantos(rotos.length, "programa", "programas") + " con " + cuantos(total_mal, "fichero", "ficheros") + " que faltan o cambiaron")
+    no_estan = cuantos(rotos.length, "programa no está", "programas no están")
+    if preguntar(no_estan + " como se instalaron.\n¿Reinstalarlos? Lo que se pise se puede deshacer.", "_Reparar|_Dejarlo") != 1
+        return
+    end
+    if not tr_empezar("Reparar " + cuantos(rotos.length, "programa", "programas") + "")
+        tr_recuperar()
+        tr_empezar("Reparar " + cuantos(rotos.length, "programa", "programas") + "")
+    end
+    hecho = true
+    for r in rotos
+        if hecho
+            # la misma versión, de su entrada firmada del formato 2
+            var g: Ficha = nil
+            if r.repo != ""
+                g = plan2_ficha(r.repo, recibo_clave(r.nombre), r.version)
+            end
+            if g == nil
+                estado_texto = r.nombre + " " + r.version + " ya no está en el índice firmado: no se puede reparar"
+            end
+            hecho = g != nil and instalar_ficha(g, r.destino, r.motivo)
+        end
+    end
+    if hecho
+        tr_cerrar()
+        estado(cuantos(rotos.length, "programa reparado", "programas reparados") + "")
+    else
+        tr_deshacer(tr_diario())
+        estado("No se pudo reparar: está como antes. " + estado_texto)
+    end
+end
+
+# Borra de la caché lo que no es la versión instalada de nada
+func limpiar_cache()
+    var guardar: [String] = []
+    for r in recibos_todos()
+        b = str_lower(recibo_clave(r.nombre) + "-" + recibo_clave(r.version))
+        guardar.push(b + ".lha")
+        guardar.push(b + ".sha")
+        # la versión anterior más nueva que haya, para volver sin red
+        vs = cache_anteriores(r)
+        k = _la_mayor(vs)
+        if k >= 0
+            b = str_lower(recibo_clave(r.nombre) + "-" + vs[k].version)
+            guardar.push(b + ".lha")
+            guardar.push(b + ".sha")
+        end
+    end
+    n = dir_read(CACHE)
+    if n <= 0
+        estado("La caché está vacía")
+        return
+    end
+    var nombres: [String] = []
+    var cajones: [Bool] = []
+    for i in (0..n - 1)
+        nombres.push(dir_entry_name(i))
+        cajones.push(dir_entry_is_dir(i))
+    end
+    borrados = 0
+    i = 0
+    while i < nombres.length
+        x = nombres[i]
+        sigue = false
+        for g in guardar
+            if str_lower(x) == g
+                sigue = true
+            end
+        end
+        if not cajones[i] and not sigue and file_delete(CACHE + "/" + x)
+            borrados = borrados + 1
+        end
+        i = i + 1
+    end
+    estado(cuantos(borrados, "fichero borrado", "ficheros borrados") + " de la caché")
+end
+
+# Deshace la última instalación, actualización o desinstalación que acabó bien
+func deshacer_ultima()
+    que = tr_ultima()
+    if que == ""
+        preguntar("No hay nada que deshacer.", "_Vale")
+        return
+    end
+    if preguntar("¿Deshacer \"" + que + "\"?\nTodo vuelve a como estaba antes.", "_Deshacer|_Cancelar") != 1
+        return
+    end
+    fallos = tr_deshacer(tr_copias() + "/Diario")
+    if fallos == 0
+        estado("Deshecho: " + que)
+    else
+        estado("Deshecho, pero " + cuantos(fallos, "fichero no volvió", "ficheros no volvieron") + " a su sitio")
+    end
+    if ficha_actual != nil
+        refrescar()
+    end
+end
+
+# Quita un paquete dentro de una transacción: cada fichero se borra guardándolo, lo que pisó del sistema vuelve
+# (su .antes) y su recibo se borra; luego los cajones que queden vacíos. false si algo no se pudo.
+func quitar_paquete(r: Recibo) -> Bool
+    i = 0
+    while i < r.ficheros.length
+        f = r.ficheros[i]
+        # un fichero de configuración que el usuario cambió se queda (sus ajustes)
+        guardar = false
+        if r.config != nil
+            for c in r.config
+                if str_lower(c) == str_lower(f) and file_exists(f) and i < r.crcs.length and recibo_crc(f) != r.crcs[i]
+                    guardar = true
+                end
+            end
+        end
+        i = i + 1
+        if not guardar and not tr_borrar(f)
+            return false
+        end
+        copia = recibo_copia(f)
+        if copia != ""
+            if not tr_poner(copia, f) or not tr_borrar(copia)
+                return false
+            end
+        end
+    end
+    if r.bloque and not bloque_quitar(r.nombre)
+        return false
+    end
+    tr_recibo(r.nombre)
+    file_delete(recibo_ruta(r.nombre))
+    # los cajones vacíos, de dentro afuera (no van al diario: deshacer los vuelve a crear)
+    var cajones: [String] = []
+    for f in r.ficheros
+        c = f
+        barra = 0
+        while barra >= 0 and c.length > r.destino.length
+            barra = -1
+            i = 0
+            while i < c.length
+                if c[i] == "/"
+                    barra = i
+                end
+                i = i + 1
+            end
+            if barra > r.destino.length - 1
+                c = c[:barra]
+                cajones.push(c)
+            else
+                barra = -1
+            end
+        end
+    end
+    otra = true
+    while otra
+        otra = false
+        mejor = -1
+        i = 0
+        while i < cajones.length
+            if cajones[i] != "" and (mejor < 0 or cajones[i].length > cajones[mejor].length)
+                mejor = i
+            end
+            i = i + 1
+        end
+        if mejor >= 0
+            c = cajones[mejor]
+            i = 0
+            while i < cajones.length
+                if cajones[i] == c
+                    cajones[i] = ""
+                end
+                i = i + 1
+            end
+            if dir_read(c) == 0
+                file_delete(c)
+            end
+            otra = true
+        end
+    end
+    return true
+end
+
+# El programa de un paquete instalado: un fichero con su icono (.info) que no es un cajón ni un documento conocido;
+# primero el que se llama como el paquete
+func principal(r: Recibo) -> String
+    mejor = ""
+    for f in r.ficheros
+        if f.length > 5 and str_lower(f[f.length - 5:]) == ".info"
+            base = f[:f.length - 5]
+            nombre = base
+            barra = str_find(str_replace(base, ":", "/"), "/")
+            while barra >= 0
+                nombre = nombre[barra + 1:]
+                barra = str_find(nombre, "/")
+            end
+            minus = str_lower(nombre)
+            documento = str_find(minus, "readme") >= 0 or str_find(minus, "leeme") >= 0 or str_find(minus, ".guide") >= 0 or str_find(minus, "install") >= 0 or str_find(minus, ".doc") >= 0 or str_find(minus, ".txt") >= 0
+            if file_exists(base) and file_size(base) > 0 and not documento
+                if str_lower(nombre) == str_lower(r.nombre)
+                    return base
+                end
+                if mejor == ""
+                    mejor = base
+                end
+            end
+        end
+    end
+    return mejor
+end
+
+func ejecutar()
+    mv = movidos_al_dia()
+    if ficha_actual == nil
+        return
+    end
+    r = recibo_de_ficha(ficha_actual)
+    p = principal(r)
+    if ficha_actual.ejecuta != "" and r.id != 0
+        # lo que dice el manifiesto (Run:), desde donde se instaló
+        sep = "/"
+        if str_ends(r.destino, ":") or str_ends(r.destino, "/")
+            sep = ""
+        end
+        if file_exists(r.destino + sep + ficha_actual.ejecuta)
+            p = r.destino + sep + ficha_actual.ejecuta
+        end
+    end
+    if p == ""
+        # sin icono: una orden del Shell (AmiCloser/C/AmiCloser), por su nombre; se dice dónde está
+        orden_shell = ""
+        for f in r.ficheros
+            nombre_f = f
+            barra = str_find(str_replace(nombre_f, ":", "/"), "/")
+            while barra >= 0
+                nombre_f = nombre_f[barra + 1:]
+                barra = str_find(nombre_f, "/")
+            end
+            if orden_shell == "" and str_lower(nombre_f) == str_lower(r.nombre) and es_ejecutable(f)
+                orden_shell = f
+            end
+        end
+        if orden_shell != ""
+            estado("Es una orden del Shell: " + orden_shell)
+            preguntar(r.nombre + " es una orden del Shell, no tiene ventana.\nÚsala desde un Shell:\n\n  " + orden_shell, "_Vale")
+        else
+            estado("No sé cuál es el programa: ábrelo desde " + r.destino)
+        end
+        return
+    end
+    # desde su cajón (como un doble clic): en Coffin, wb_open dice que sí y no lo abre (AmiWordle)
+    i = p.length - 1
+    while i >= 0 and p[i] != "/" and p[i] != ":"
+        i = i - 1
+    end
+    antes = dir_current()
+    abierto = false
+    if dir_change(p[:i + 1])
+        abierto = run_program("\"" + p + "\"")
+        dir_change(antes)
+    end
+    if not abierto and not wb_open(p)
+        estado("No se pudo abrir " + p)
+        return
+    end
+    estado("Abriendo " + p)
+end
+
+# Lo instalado con Hangar que tiene versión nueva en el catálogo
+func actualizaciones()
+    estado("Mirando versiones...")
+    rs = recibos_todos()
+    var lista: [Paquete] = []
+    lista_quieta(true)
+    lista_vaciar()
+    limpiar_ficha()
+    actuales = lista
+    hay = 0
+    for r in rs
+        f = api_ficha(r.id)
+        v = version_instalada(r)
+        if f.error == "" and not r.retenido and version_mayor(f.version, v)      # solo más nuevas; lo retenido, no
+            actuales.push(Paquete(f.id, f.nombre, f.version, f.cajon, f.tamano, f.fecha, f.corto))
+            lista_poner(r.nombre + " " + v + " -> " + f.version + "  -  " + f.corto)
+            hay = hay + 1
+        end
+    end
+    lista_quieta(false)
+    mas_apagado()
+    estado(cuantos(hay, "actualización", "actualizaciones") + " de " + cuantos(rs.length, "programa instalado", "programas instalados") + " con Hangar")
+end
+
+# Cómo se ve el nombre de un paquete: el del formato 2 va en minúsculas ("amicloser"); si alguno de sus ficheros o
+# cajones se llama igual, con las mayúsculas de ese ("AmiCloser")
+func nombre_ver(r: Recibo) -> String
+    clave = str_lower(r.nombre)
+    for f in r.ficheros
+        trozos = str_split(str_replace(f, ":", "/"), "/")
+        for x in trozos
+            if str_lower(x) == clave and x != clave
+                return x
+            end
+        end
+    end
+    return r.nombre
+end
+
+func instalados()
+    movido = movidos_al_dia()
+    rs = recibos_todos()
+    lista_quieta(true)
+    lista_vaciar()
+    limpiar_ficha()
+    var lista: [Paquete] = []
+    actuales = lista
+    instalados_vistos = rs
+    viendo_instalados = true
+    for r in rs
+        actuales.push(Paquete(r.id, r.nombre, r.version, "", 0, "", r.destino))
+        marca = "* "
+        if r.motivo == "dependencia"
+            marca = "+ "       # lo trajo otro programa
+        end
+        if r.retenido
+            marca = "= "       # no se actualiza
+        end
+        # en la ventana, con sus mayúsculas; en el Shell y ARexx, el nombre que se escribe en las órdenes
+        n_ver = r.nombre
+        if not cli
+            n_ver = nombre_ver(r)
+        end
+        lista_poner(marca + n_ver + " " + version_ver(r.version) + "  -  " + r.destino)
+    end
+    lista_quieta(false)
+    mas_apagado()
+    if movido != ""
+        estado(movido)
+    else
+        estado(cuantos(rs.length, "programa instalado", "programas instalados") + " con Hangar")
+    end
+end
+
+# El disco entero (C:, LIBS:, Utilities..., y Work: con sus subcajones) contra el catálogo: cada programa o librería
+# se reconoce por su fichero (nombre y tamaño) o por su $VER:, y sale una vez lo que tiene versión nueva
+func inventario()
+    estado("Leyendo los programas del disco...")
+    inv = inventario_recorrer(["C:", "LIBS:", "DEVS:", "SYS:Utilities", "SYS:Tools", "SYS:System", "SYS:Prefs"], 1)
+    estado("Leyendo los programas de Work:...")
+    for f in inventario_recorrer(["Work:"], 3)
+        inv.push(f)
+    end
+    # y los otros sitios de programas de este Amiga (en Coffin, Programs:)
+    for d in destinos_posibles()
+        if d != "Work:" and d != "SYS:" and d != "SYS:Utilities/" and d != "SYS:Tools/"
+            estado("Leyendo los programas de " + d + "...")
+            for f in inventario_recorrer([d], 1)
+                inv.push(f)
+            end
+        end
+    end
+    estado("Comparando " + cuantos(inv.length, "programa", "programas") + " con el catálogo...")
+    v = api2_reconocer(inventario_texto(inv))
+    if v.error != ""
+        estado("Error: " + v.error)
+        return
+    end
+    lista_quieta(true)
+    lista_vaciar()
+    limpiar_ficha()
+    var lista: [Paquete] = []
+    actuales = lista
+    var vistos: [Int] = []
+    conocidos = 0
+    k = 0
+    while k < v.lista.length
+        c = v.lista[k]
+        if c.estado != "desconocido"
+            conocidos = conocidos + 1
+        end
+        ya = c.id <= 0
+        for x in vistos
+            if x == c.id
+                ya = true
+            end
+        end
+        if not ya and c.estado != "desconocido"
+            vistos.push(c.id)
+            # de un programa con varios ficheros, manda el que lleva su nombre: la misma versión que se apunta
+            pc = v.lista[fichero_principal(v, inv, k)]
+            if pc.estado == "nueva"
+                actuales.push(Paquete(pc.id, pc.nombre, pc.version, "", 0, "", ""))
+                lista_poner(pc.nombre + " " + pc.local + " -> " + pc.version)
+            end
+        end
+        k = k + 1
+    end
+    lista_quieta(false)
+    mas_apagado()
+    resumen = "En el catálogo hay versión nueva de " + cuantos(actuales.length, "programa", "programas") + " del disco; " + str_from_int(conocidos, 10) + " de " + cuantos(inv.length, "fichero reconocido", "ficheros reconocidos")
+    estado(resumen)
+    apuntados = adoptar(inv, v)
+    if apuntados > 0
+        estado(resumen + "; " + cuantos(apuntados, "apuntado", "apuntados") + " en Hangar")
+    end
+    # sin ninguno elegido: el título sigue diciendo lo del disco (una ficha elegida lo borraba)
+    if not cli
+        mui_set_value(w_lista, -1)
+    end
+end
+
+# De los ficheros del disco que son el mismo programa del catálogo, el que lleva su nombre (trasfondo, no
+# TrasfondoPrefs, que puede tener otra versión): su versión es la del programa en la lista del disco y al apuntarlo
+func fichero_principal(v: Reconocidos, inv: [FicheroDisco], k: Int) -> Int
+    id = v.lista[k].id
+    nom = str_lower(v.lista[k].nombre)
+    j = 0
+    while j < v.lista.length and j < inv.length
+        if v.lista[j].id == id and v.lista[j].estado != "desconocido" and str_lower(inv[j].fichero) == nom
+            return j
+        end
+        j = j + 1
+    end
+    return k
+end
+
+# Los programas del catálogo que se instalaron a mano (los reconoció el disco y no están en la base): se ofrece
+# apuntarlos en Hangar para actualizarlos y quitarlos como los demás
+func adoptar(inv: [FicheroDisco], v: Reconocidos) -> Int
+    var cuales: [Int] = []
+    nombres = ""
+    k = 0
+    while k < v.lista.length and k < inv.length
+        c = v.lista[k]
+        ya = false
+        for x in cuales
+            if x == k or (v.lista[x].id == c.id)
+                ya = true
+            end
+        end
+        # solo lo de los sitios de programas: lo de C:, LIBS:, DEVS:, SYS:System... es del sistema (cientos de
+        # ficheros que el catálogo también tiene) y no se apunta
+        ruta = str_lower(inv[k].ruta)
+        del_sistema = str_starts(ruta, "c:") or str_starts(ruta, "libs:") or str_starts(ruta, "devs:") or str_starts(ruta, "sys:system") or str_starts(ruta, "sys:prefs") or str_starts(ruta, "sys:c/") or str_starts(ruta, "sys:libs/") or str_starts(ruta, "sys:devs/")
+        if not del_sistema and c.estado != "desconocido" and c.id > 0 and not ya and c.ruta != "" and recibo_leer(c.id).id == 0
+            cuales.push(k)
+            # en la pregunta, unos pocos (una petición con cientos de líneas no se puede leer y MUI 3.8 no la aguanta)
+            if cuales.length <= 12
+                nombres = nombres + "\n  " + c.nombre + " " + c.local + " (" + corta(inv[k].ruta, 40) + ")"
+            end
+        end
+        k = k + 1
+    end
+    if cuales.length == 0
+        return 0
+    end
+    if cuales.length > 12
+        nombres = nombres + "\n  y " + str_from_int(cuales.length - 12, 10) + " más"
+    end
+    if preguntar(cuantos(cuales.length, "programa instalado", "programas instalados") + " a mano son del catálogo:" + nombres + "\n¿Apuntarlos en Hangar, para actualizarlos y quitarlos?", "_Apuntarlos|_No") != 1
+        return 0
+    end
+    if not tr_empezar("Apuntar " + cuantos(cuales.length, "programa instalado", "programas instalados") + " a mano")
+        tr_recuperar()
+        tr_empezar("Apuntar " + cuantos(cuales.length, "programa instalado", "programas instalados") + " a mano")
+    end
+    for k0 in cuales
+        k = fichero_principal(v, inv, k0)
+        ruta_k = str_lower(inv[k].ruta)
+        if str_starts(ruta_k, "c:") or str_starts(ruta_k, "libs:") or str_starts(ruta_k, "devs:") or str_starts(ruta_k, "sys:system")
+            k = k0
+        end
+        c = v.lista[k]
+        var d: [String] = []
+        fs = adopcion(inv[k].ruta, c.ruta, c.nombre, d)
+        r = recibo_nuevo(c.id, c.nombre, c.local, d[0], fs)
+        r.motivo = "adoptado"
+        recibo_completar_repo(r)
+        tr_recibo(c.nombre)
+        recibo_guardar(r)
+    end
+    tr_cerrar()
+    return cuales.length
+end
+
+# Un IFF vacío (16 x 1) para el hueco de la captura hasta que haya una
+func imagen_vacia() -> String
+    bytes = [70, 79, 82, 77, 0, 0, 0, 56, 73, 76, 66, 77, 66, 77, 72, 68, 0, 0, 0, 20, 0, 16, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 10, 11, 0, 16, 0, 1, 67, 77, 65, 80, 0, 0, 0, 6, 0, 0, 0, 255, 255, 255, 66, 79, 68, 89, 0, 0, 0, 2, 0, 0]
+    b = buffer_alloc(bytes.length)
+    for i in (0..bytes.length - 1)
+        buffer_set_byte(b, i, bytes[i])
+    end
+    file_save("T:hangar_vacia.iff", b, bytes.length)
+    buffer_free(b)
+    return "T:hangar_vacia.iff"
+end
+
+# Dónde se suele instalar: los volúmenes y asignaciones de programas que tiene este Amiga, por orden de preferencia
+# (Coffin no tiene Work:, pero sí Programs:). SYS: el último: instalar en la raíz del sistema no es lo deseable.
+# Donde un guion de Installer puede dejar el programa: los sitios de programas de este Amiga (en Coffin, Programs:),
+# Work: y las Utilities y Tools del sistema
+func sitios_de_guion(destino: String) -> [String]
+    var r: [String] = []
+    for d in destinos_posibles()
+        if not (d in r) and str_lower(d) != str_lower(destino)
+            r.push(d)
+        end
+    end
+    for d in ["SYS:Utilities/", "SYS:Tools/"]
+        if not (d in r) and str_lower(d) != str_lower(destino)
+            r.push(d)
+        end
+    end
+    return r
+end
+
+func destinos_posibles() -> [String]
+    var r: [String] = []
+    # sin el requester de "Inserta el volumen Work" en los Amigas que no lo tienen
+    dos_requesters(false)
+    for d in ["Work:", "Programs:", "Programas:", "Apps:", "Software:", "Games:", "Juegos:", "Tools:", "SYS:Utilities/", "SYS:Tools/", "SYS:"]
+        if dir_read(d) >= 0
+            r.push(d)
+        end
+    end
+    dos_requesters(true)
+    return r
+end
+
+func destino_por_defecto() -> String
+    e = env_get("Hangar/destino")
+    if e != ""
+        return e
+    end
+    for d in destinos_posibles()
+        if d != "Games:" and d != "Juegos:" and d != "Tools:"
+            return d
+        end
+    end
+    return "SYS:"
+end
+
+func destinos_texto() -> String
+    t = ""
+    for d in destinos_posibles()
+        if t != ""
+            t = t + "|"
+        end
+        t = t + d
+    end
+    return t
+end
+
+# El usuario eligió o escribió otro destino: se recuerda (ENVARC:Hangar/destino) para la próxima vez
+func destino_cambiado()
+    d = str_trim(mui_get_text(w_destino))
+    if d == ""
+        return
+    end
+    if not str_ends(d, ":") and not str_ends(d, "/")
+        d = d + "/"
+        mui_set_text(w_destino, d)
+    end
+    dos_requesters(false)
+    existe = dir_read(d) >= 0
+    dos_requesters(true)
+    if not existe
+        estado("No existe " + d + ": se creará al instalar")
+    end
+    env_set("Hangar/destino", d, true)
+    estado("Se instalará en " + d)
+end
+
+# El paquete del catálogo que se llama así (o con ese número): nil si no está
+func buscar_paquete(nombre: String) -> Ficha
+    n = str_trim(nombre)
+    if n != "" and str_code(n, 0) >= 48 and str_code(n, 0) <= 57
+        f = api_ficha(Int(n))
+        if f.error == ""
+            return f
+        end
+        return nil
+    end
+    l = api_buscar(n, 0)
+    if l.error != ""
+        estado("Error: " + l.error)
+        return nil
+    end
+    for p in l.paquetes
+        if str_lower(p.nombre) == str_lower(n)
+            return api_ficha(p.id)
+        end
+    end
+    return nil
+end
+
+# Una orden (del Shell o de ARexx): BUSCA texto, INSTALA x, QUITA x, ACTUALIZA, LISTA, VERIFICA, DESHAZ, RETEN x,
+# SUELTA x, VUELVE x, VERSION. Devuelve el código de retorno: 0 bien, 5 no se hizo (falta SI o no hay nada), 10 error.
+func orden(palabras: [String]) -> Int
+    if palabras.length == 0
+        return 5
+    end
+    que = str_upper(palabras[0])
+    resto = ""
+    i = 1
+    while i < palabras.length
+        p = palabras[i]
+        if str_upper(p) == "SI" or str_upper(p) == "YES"
+            cli_si = true
+        elif str_starts(str_upper(p), "DESTINO=")
+            cli_destino = p[8:]
+        elif str_starts(str_upper(p), "CORTE=") or str_starts(str_upper(p), "CORTE_DESHAZ=") or str_starts(str_upper(p), "ESPACIO=")
+            i = i      # ganchos de la prueba de cortes, ya leídos al empezar
+        else
+            if resto != ""
+                resto = resto + " "
+            end
+            resto = resto + p
+        end
+        i = i + 1
+    end
+    if que == "BUSCA" or que == "SEARCH"
+        l = api_buscar(resto, 0)
+        if l.error != ""
+            Print "Error: " + l.error
+            return 10
+        end
+        for p in l.paquetes
+            Print str_from_int(p.id, 10) + "  " + p.nombre + " " + p.version + "  -  " + p.corto
+        end
+        return 0
+    elif que == "INSTALA" or que == "INSTALL"
+        f = buscar_paquete(resto)
+        if f == nil
+            Print "No hay ningún paquete que se llame " + resto
+            return 10
+        end
+        ficha_actual = f
+        instalado_bien = false
+        instalar()
+        if instalado_bien
+            return 0
+        end
+        return 5
+    elif que == "QUITA" or que == "REMOVE"
+        r = recibo_de(resto)
+        if r.id == 0
+            Print resto + " no está instalado con Hangar"
+            return 10
+        end
+        ficha_actual = api_ficha(r.id)
+        if ficha_actual.error != ""
+            ficha_actual.id = r.id
+        end
+        desinstalar()
+        if recibo_leer(r.id).id == 0
+            return 0
+        end
+        return 5
+    elif que == "ACTUALIZA" or que == "UPGRADE"
+        actualizar_todo()
+        return 0
+    elif que == "LISTA" or que == "LIST"
+        instalados()
+        return 0
+    elif que == "VERIFICA" or que == "VERIFY"
+        verificar()
+        return 0
+    elif que == "DESHAZ" or que == "UNDO"
+        deshacer_ultima()
+        return 0
+    elif que == "RETEN" or que == "SUELTA" or que == "HOLD" or que == "UNHOLD"
+        r = recibo_de(resto)
+        if r.id == 0
+            Print resto + " no está instalado con Hangar"
+            return 10
+        end
+        r.retenido = que == "RETEN" or que == "HOLD"
+        recibo_guardar(r)
+        if r.retenido
+            Print r.nombre + " " + r.version + " retenido"
+        else
+            Print r.nombre + " ya se actualiza"
+        end
+        return 0
+    elif que == "VUELVE" or que == "ROLLBACK"
+        r = recibo_de(resto)
+        if r.id == 0
+            Print resto + " no está instalado con Hangar"
+            return 10
+        end
+        ficha_actual = api_ficha(r.id)
+        if ficha_actual.error != ""
+            Print "Error: " + ficha_actual.error
+            return 10
+        end
+        antes = r.version
+        volver_atras()
+        if recibo_leer(r.id).version != antes
+            return 0
+        end
+        return 5
+    elif que == "FRENTE" or que == "FRONT"
+        # otro Hangar que se abre con este en marcha: esta ventana delante
+        if w_ventana != 0
+            mui_window_activate(w_ventana)
+        end
+        return 0
+    elif que == "VERSION"
+        Print "Hangar " + VERSION
+        return 0
+    end
+    Print "Órdenes: BUSCA texto, INSTALA nombre, QUITA nombre, ACTUALIZA, LISTA, VERIFICA, DESHAZ, RETEN nombre, SUELTA nombre, VUELVE nombre, VERSION"
+    Print "Con SI se acepta lo que se preguntaría (sin él solo se enseña); DESTINO=Work: dónde instalar."
+    return 5
+end
+
+# Las palabras de un texto (las que van entre comillas, enteras)
+func partir(t: String) -> [String]
+    var r: [String] = []
+    p = ""
+    comillas = false
+    i = 0
+    while i < t.length
+        c = str_code(t, i)
+        if c == 34
+            comillas = not comillas
+        elif c == 32 and not comillas
+            if p != ""
+                r.push(p)
+            end
+            p = ""
+        else
+            p = p + t[i:i + 1]
+        end
+        i = i + 1
+    end
+    if p != ""
+        r.push(p)
+    end
+    return r
+end
+
+Main
+    b = env_get("Hangar/servidor")
+    if b != ""
+        api_base = b
+    end
+    # otra clave de confianza ("id hexadecimal"): para un repositorio de pruebas (tests/punta.py)
+    k = str_trim(env_get("Hangar/clave"))
+    e = str_find(k, " ")
+    if e > 0
+        clave_hangar_id = k[:e]
+        clave_hangar = str_trim(k[e + 1:])
+    end
+    # los repositorios del formato 2: los de fábrica, o los del servidor de pruebas (con su clave)
+    api2_repos_de_fabrica()
+    if b != "" and str_ends(b, "/amiga/v1")
+        raiz = b[:b.length - 9] + "/pkg/v2/"
+        clave2 = api2_repos[0].clave
+        if e > 0
+            clave2 = clave_hangar
+        end
+        for r in api2_repos
+            r.url = raiz + r.nombre
+            r.clave = clave2
+            r.clave_id = api2_clave_id(clave2)
+        end
+    end
+    # otra raíz de confianza para los keys (la del servidor de pruebas, tests/punta2.py)
+    kr = str_trim(env_get("Hangar/raiz"))
+    if kr.length == 64
+        var solo: [String] = [kr]
+        api2_raices = solo
+    end
+    api2_keys_cargar()
+    # los recibos de antes de la 0.5 pasan a la base (PROGDIR:Base)
+    recibos_migrar()
+    recibos_a_v2()
+    # los ganchos de la prueba de cortes (tests/cortes.py): CORTE=N y CORTE_DESHAZ=N
+    ai = 0
+    while ai < arg_count()
+        w = str_upper(arg(ai))
+        if str_starts(w, "CORTE=")
+            tr_corte = Int(w[6:])
+        elif str_starts(w, "CORTE_DESHAZ=")
+            tr_corte_deshacer = Int(w[13:])
+        elif str_starts(w, "ESPACIO=")
+            prueba_libre_kb = Int(w[8:])
+        end
+        ai = ai + 1
+    end
+    # una instalación que se cortó a mitad (un cuelgue, un reinicio): se deshace
+    cortada = tr_recuperar()
+    # desde el Shell, con una orden: sin ventana
+    # (desde el Workbench, un argumento es la ruta de un icono, con ":": entonces, la ventana)
+    if arg_count() > 0 and str_find(arg(0), ":") < 0
+        cli = true
+        if cortada >= 0
+            Print "Una instalación se cortó a mitad la última vez: se ha deshecho."
+        end
+        var ps: [String] = []
+        for k in (0..arg_count() - 1)
+            ps.push(arg(k))
+        end
+        program_exit(orden(ps))
+    end
+    mui_app_begin("Hangar", "HANGAR")
+    w_ventana = mui_window_begin("Hangar " + VERSION, 1)
+        mui_menu_begin("Hangar")
+            mui_menu_item("Acerca de...", "?", ID_ACERCA)
+            mui_menu_separator()
+            mui_menu_item("Deshacer la última...", "Z", ID_DESHACER)
+            mui_menu_separator()
+            mui_menu_item("Actualizar todo...", "U", ID_ACTUALIZAR_TODO)
+            mui_menu_item("Verificar lo instalado...", "K", ID_VERIFICAR)
+            mui_menu_item("Limpiar la caché", "L", ID_LIMPIAR)
+            mui_menu_separator()
+            # lo del programa elegido, aparte: "Retener" pegado a "Actualizar todo" se elegía sin querer
+            mui_menu_item("Retener o soltar el elegido", "R", ID_RETENER)
+            mui_menu_item("Volver a la versión anterior...", "V", ID_VOLVER)
+            mui_menu_separator()
+            mui_menu_item("Salir", "Q", ID_SALIR)
+        mui_menu_end()
+        mui_hgroup_begin()
+            w_buscar = mui_string("", 80)
+            bb = mui_button("_Buscar")
+            bn = mui_button("_Nuevo")
+            bi = mui_button("_Míos")
+            ba = mui_button("Act_ualizar")
+            w_act = ba
+            bv = mui_button("_Disco")
+        mui_group_end()
+        mui_hgroup_begin()
+            mui_vgroup_begin()
+                w_lista = mui_list()
+                w_mas = mui_button("_Más resultados")
+            mui_group_end()
+            mui_balance()
+            mui_vgroup_begin()
+                w_titulo = mui_text("")
+                w_pestanas = mui_register_begin("Ficha|Léeme|Captura")
+                    # la ficha arriba (sola, MUI la centraba en todo el alto de la pestaña)
+                    mui_vgroup_begin()
+                        w_datos = mui_text("")
+                        mui_space()
+                    mui_group_end()
+                    # sin alto fijo: llena la pestaña (Dash PR #176)
+                    w_readme = mui_text_editor(0)
+                    mui_vgroup_begin()
+                        w_sin_captura = mui_text("\33cEste programa no tiene captura")
+                        mui_hgroup_begin()
+                            mui_space()
+                            w_imagen = mui_image(imagen_vacia())
+                            mui_space()
+                        mui_group_end()
+                    mui_group_end()
+                mui_group_end()
+                mui_hgroup_begin()
+                    w_instalar = mui_button("_Instalar")
+                    w_desinstalar = mui_button("_Quitar")
+                    w_ejecutar = mui_button("_Ejecutar")
+                    w_web = mui_button("_Web")
+                mui_group_end()
+                mui_hgroup_begin()
+                    mui_label("En:")
+                    w_destino = mui_combo(destino_por_defecto(), destinos_texto())
+                    w_elegir = mui_button("_Elegir...")
+                    mui_weight(w_elegir, 15)
+                    w_progreso = mui_gauge(100)
+                    mui_weight(w_progreso, 40)
+                mui_group_end()
+            mui_group_end()
+        mui_group_end()
+    mui_window_end()
+
+    mui_on_ack(w_buscar, ID_BUSCAR)
+    mui_on_ack(w_destino, ID_DESTINO)
+    mui_on_press(w_elegir, ID_ELEGIR)
+    mui_on_press(bb, ID_BUSCAR)
+    mui_on_press(bn, ID_NOVEDADES)
+    mui_on_press(bi, ID_INSTALADOS)
+    mui_on_press(ba, ID_ACTUALIZACIONES)
+    mui_on_press(bv, ID_INVENTARIO)
+    mui_on_change(w_lista, ID_LISTA)
+    mui_on_press(w_mas, ID_MAS)
+    mui_on_press(w_instalar, ID_INSTALAR)
+    mui_on_press(w_desinstalar, ID_DESINSTALAR)
+    mui_on_press(w_ejecutar, ID_EJECUTAR)
+    mui_on_press(w_web, ID_WEB)
+    # no a pantalla entera: con MCP (Coffin), un clic en ella la trae delante y tapaba las peticiones
+    mui_window_size(w_ventana, 85, 85)
+    limpiar_ficha()
+    mas_apagado()
+    # el puerto ARexx HANGAR: las mismas órdenes que desde el Shell (ADDRESS HANGAR 'INSTALA AmiWordle SI')
+    arexx = rexx_port("HANGAR")
+    # un solo Hangar con ventana: dos a la vez escribirían en la misma base. Si ya hay otro, se trae delante y este se va
+    if not arexx
+        rexx_send("HANGAR", "FRENTE")
+        if rexx_rc() == 0
+            mui_app_end()
+            program_exit(0)
+        end
+    end
+    abierta = mui_window_open(w_ventana)
+    if not abierta
+        Print "Hangar: no se pudo abrir la ventana"
+    else
+        mui_set_active(w_ventana, w_buscar)
+        if cortada >= 0
+            preguntar("Una instalación se cortó a mitad la última vez.\nSe ha deshecho: todo está como antes.", "_Vale")
+        end
+        consulta = "n:"
+        pagina = 0
+        cargar(false)
+        # lo que el usuario movió a mano, apuntado; la primera vez, qué hay ya en el disco; y si hay versiones nuevas
+        avisar_movidos()
+        if env_get("Hangar/escaneado") == ""
+            env_set("Hangar/escaneado", "si", true)
+            if preguntar("¿Miro qué programas tienes ya en el disco?\nAsí Hangar sabe lo que hay, te avisa de versiones nuevas\ny puede apuntar lo que instalaste a mano. Tarda unos segundos.", "_Mirar|_Ahora no") == 1
+                inventario()
+                mirar_callado = true       # el título sigue con lo del disco; el número, en el botón
+            end
+        end
+        mui_timer(1500, ID_MIRAR)
+    end
+
+    while abierta
+        ev = 0
+        if arexx
+            ev = mui_wait_event_signals(rexx_signal())
+        else
+            ev = mui_wait_event()
+        end
+        if ev == 0 and arexx
+            o = rexx_get()
+            while o != ""
+                # sin ventana para preguntar: lo que diría va al título; con SI se acepta
+                cli = true
+                cli_si = false
+                cli_destino = ""
+                rc = orden(partir(o))
+                cli = false
+                rexx_reply(rc, cli_ultimo)
+                refrescar()
+                o = rexx_get()
+            end
+        end
+        if ev == -1 or ev == ID_SALIR
+            break
+        end
+        if ev == ID_BUSCAR
+            q = str_trim(mui_get_text(w_buscar))
+            if q != ""
+                consulta = "b:" + q
+                pagina = 0
+                cargar(false)
+            end
+        elif ev == ID_NOVEDADES
+            consulta = "n:"
+            pagina = 0
+            cargar(false)
+        elif ev == ID_MAS
+            pagina = pagina + 1
+            cargar(true)
+        elif ev == ID_LISTA
+            ver_ficha(mui_get_value(w_lista))
+        elif ev == ID_INSTALAR
+            instalar()
+        elif ev == ID_DESINSTALAR
+            desinstalar()
+        elif ev == ID_EJECUTAR
+            ejecutar()
+        elif ev == ID_ACTUALIZACIONES
+            consulta = "u:"
+            actualizaciones()
+        elif ev == ID_INSTALADOS
+            consulta = "i:"
+            instalados()
+        elif ev == ID_INVENTARIO
+            consulta = "d:"
+            inventario()
+        elif ev == ID_DESTINO
+            destino_cambiado()
+        elif ev == ID_ELEGIR
+            # la petición de cajones (Dash PR #176): el elegido pasa a "En:" y se recuerda
+            c = dialog_drawer("¿Dónde instalar?", str_trim(mui_get_text(w_destino)))
+            if c != ""
+                mui_set_text(w_destino, c)
+                destino_cambiado()
+            end
+        elif ev == ID_MIRAR
+            contar_versiones(mirar_callado)
+            mirar_callado = false
+        elif ev == ID_CONTAR
+            contar_versiones(true)
+        elif ev == ID_WEB
+            if ficha_actual != nil and ficha_actual.web != ""
+                run_command("Run >NIL: OpenURL \"" + ficha_actual.web + "\"")
+            end
+        elif ev == ID_DESHACER
+            deshacer_ultima()
+        elif ev == ID_ACTUALIZAR_TODO
+            actualizar_todo()
+        elif ev == ID_RETENER
+            retener()
+        elif ev == ID_VOLVER
+            volver_atras()
+        elif ev == ID_LIMPIAR
+            limpiar_cache()
+        elif ev == ID_VERIFICAR
+            verificar()
+        elif ev == ID_ACERCA
+            preguntar("\33cHangar " + VERSION + "\nBusca, instala y pone al día\nel software del Amiga\n\nhttps://hangar.freemem.space", "_Vale")
+        end
+    end
+    mui_app_end()
+end

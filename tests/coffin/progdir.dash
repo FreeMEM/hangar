@@ -1,0 +1,12 @@
+# Para el banco de Coffin: ¿la tarea de red de fondo (dash_task) se lleva el PROGDIR: del programa al acabar?
+import "../../lib/tachyon/http.dash"
+
+Main
+    for k in (1..4)
+        h = http_get("http://hangar.freemem.space/salud", 15000)
+        Print "vuelta " + str_from_int(k, 10) + " red " + str_from_int(h.estado, 10)
+        time_delay(200)      # 4 s: la tarea de red acaba a los 2 s sin tráfico
+        Print "  progdir " + str_from_int(dir_read("PROGDIR:"), 10) + " fichero " + str_from_int(file_size("PROGDIR:progdir"), 10)
+    end
+    Print "fin"
+end

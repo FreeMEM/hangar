@@ -1,0 +1,26 @@
+# Para el banco de Coffin: afrente TITULO trae delante y activa la ventana con ese título; afrente -atras TITULO la
+# manda detrás de las demás
+Main
+    atras = arg(0) == "-atras"
+    t = arg(0)
+    if atras
+        t = arg(1)
+    end
+    n = wm_read()
+    i = 0
+    while i < n
+        if wm_title(i) == t or (str_ends(t, "*") and str_starts(wm_title(i), t[:t.length - 1]))
+            if atras
+                wm_back(wm_id(i))
+                Print "detrás: " + wm_title(i)
+            else
+                wm_front(wm_id(i))
+                wm_activate(wm_id(i))
+                Print "delante: " + wm_title(i)
+            end
+            return
+        end
+        i = i + 1
+    end
+    Print "no está: " + t
+end

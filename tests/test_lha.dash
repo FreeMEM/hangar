@@ -1,0 +1,74 @@
+# Test: lha_extraer con archivos de LHa for UNIX (-lh5-, -lh6-, -lh7-, cabeceras de nivel 1 y 2), de tools/lha.py
+# de Tachyon (-lh5-, nivel 0, como LhA del Amiga) y sin comprimir (-lh0-), bajados del servidor falso. Cada uno da
+# 4 ficheros (uno vacío, en un subcajón) que suman 21936130 bytes. Los nombres con ".." o ":" no se escriben.
+# emu-server: falso.py 47122
+# expect-out: n0lh5 ok 4 21936130
+# expect-out: n1lh5 ok 4 21936130
+# expect-out: n1lh6 ok 4 21936130
+# expect-out: n1lh7 ok 4 21936130
+# expect-out: n2lh5 ok 4 21936130
+# expect-out: n2lh6 ok 4 21936130
+# expect-out: n2lh7 ok 4 21936130
+# expect-out: lh0 ok 4 21936130
+# expect-out: LEEME 34: Hola desde Hangar.
+# expect-out: malo: nombre peligroso en el archivo: ../fuera
+# expect-out: malo2: nombre peligroso en el archivo: SYS:fuera
+# expect-out: fuera no existe
+# expect-out: rutas [a/b] [Cajon/fichero] []
+import "../src/lha.dash"
+import "../lib/tachyon/http.dash"
+
+func suma(f: String) -> Int
+    n = file_size(f)
+    s = 0
+    if n > 0
+        b = buffer_alloc(n)
+        file_load(f, b, n)
+        for i in (0..n - 1)
+            s = s + buffer_get_byte(b, i)
+        end
+        buffer_free(b)
+    end
+    return s
+end
+
+Main
+    nombres = ["n0lh5", "n1lh5", "n1lh6", "n1lh7", "n2lh5", "n2lh6", "n2lh7", "lh0"]
+    for n in nombres
+        r = http_a_fichero("http://127.0.0.1:47122/prueba/" + n + ".lha", "RAM:" + n + ".lha", 20000)
+        if r.estado != 200
+            Print n + " no bajó: " + r.error
+        end
+        e = lha_extraer("RAM:" + n + ".lha", "RAM:" + n)
+        if e != ""
+            Print n + " error " + e
+        else
+            s = 0
+            for f in lha_escritos
+                s = s + suma(f)
+            end
+            Print n + " ok " + str_from_int(lha_escritos.length, 10) + " " + str_from_int(s, 10)
+        end
+    end
+    leeme = ""
+    for f in lha_escritos
+        if f.length >= 5 and f[f.length - 5:] == "LEEME"
+            leeme = f
+        end
+    end
+    t = file_read_text(leeme)
+    if t == nil
+        Print "LEEME no se lee: [" + leeme + "]"
+    else
+        Print "LEEME " + str_from_int(file_size(leeme), 10) + ": " + str_split(t, "\n")[0]
+    end
+    for n in ["malo", "malo2"]
+        http_a_fichero("http://127.0.0.1:47122/prueba/" + n + ".lha", "RAM:" + n + ".lha", 20000)
+        Print n + ": " + lha_extraer("RAM:" + n + ".lha", "RAM:malo/")
+    end
+    if not file_exists("RAM:fuera") and not file_exists("SYS:fuera")
+        Print "fuera no existe"
+    end
+    # "//" sube un cajón en el Amiga: se junta en una; y el separador 0xFF de los de nivel 2
+    Print "rutas [" + lha_ruta_limpia("a//b") + "] [" + lha_ruta_limpia("Cajon" + str_char(255) + "/fichero") + "] [" + lha_ruta_limpia("..//x/..") + "]"
+end

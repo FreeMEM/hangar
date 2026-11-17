@@ -1,0 +1,363 @@
+# Guiones de Installer (docs/PAQUETES_LOOP.md del servicio, K13): un paquete con "Install: installer Guion" se instala
+# con el Installer del sistema y su guion, como lo haría el usuario, y Hangar apunta lo que escribió: una foto de los
+# cajones que suelen tocar (el destino, LIBS:, C:, DEVS:, L:, Fonts: y S:) antes y después, y lo nuevo o cambiado va
+# al recibo (y lo nuevo al diario, para deshacerlo). S:User-Startup y S:Startup-Sequence se guardan antes; lo demás
+# que el guion cambie (una librería que ya estaba) se apunta pero no se puede deshacer.
+#
+# El Installer no viene con todos los Workbench: si no está en C: ni en SYS:Utilities, se usa el del paquete
+# Installer-43_3 de Aminet (que Hangar instala antes, como una dependencia).
+
+import "transaccion.dash"
+
+var instalador_forzado: String = ""     # (para los tests: otro programa en su lugar)
+# lo que va tras el guion: el nombre del programa (%n) y el modo para principiantes (pregunta lo mínimo)
+var instalador_args: String = " APPNAME \"%n\" MINUSER NOVICE DEFUSER NOVICE"
+
+# El programa Installer: el del sistema o el de un paquete instalado con Hangar ("" si no hay)
+func instalador_ruta() -> String
+    if instalador_forzado != ""
+        return instalador_forzado
+    end
+    for r in ["C:Installer", "SYS:Utilities/Installer", "SYS:System/Installer", "SYS:Tools/Installer"]
+        if file_exists(r)
+            return r
+        end
+    end
+    for rec in recibos_todos()
+        if str_find(str_lower(rec.nombre), "installer") == 0
+            for f in rec.ficheros
+                if str_ends(str_lower(f), "/installer")
+                    return f
+                end
+            end
+        end
+    end
+    return ""
+end
+
+# Los ficheros de un cajón con su tamaño y fecha ("ruta TAB tamaño TAB fecha"), hasta hondo niveles
+func _foto_cajon(cajon: String, hondo: Int, salida: [String])
+    n = dir_read(cajon)
+    if n <= 0
+        return
+    end
+    var nombres: [String] = []
+    var cajones: [Bool] = []
+    var datos: [String] = []
+    for i in (0..n - 1)
+        nombres.push(dir_entry_name(i))
+        cajones.push(dir_entry_is_dir(i))
+        datos.push(str_from_int(dir_entry_size(i), 10) + "\t" + str_from_int(dir_entry_date(i), 10))
+    end
+    base = cajon
+    if not str_ends(base, ":") and not str_ends(base, "/")
+        base = base + "/"
+    end
+    i = 0
+    while i < nombres.length
+        if cajones[i]
+            if hondo > 0
+                _foto_cajon(base + nombres[i], hondo - 1, salida)
+            end
+        else
+            salida.push(base + nombres[i] + "\t" + datos[i])
+        end
+        i = i + 1
+    end
+end
+
+# Otros sitios donde un guion puede poner el programa (su @default-dest no es el destino de Hangar: Work:, los sitios
+# de programas): los pone quien llama, y se miran dos cajones hacia dentro
+var instalador_otros: [String] = []
+
+# La foto de lo que un guion de Installer puede tocar
+func foto_sistema(destino: String) -> [String]
+    var f: [String] = []
+    dos_requesters(false)
+    _foto_cajon(destino, 3, f)
+    for o in instalador_otros
+        if str_lower(o) != str_lower(destino)
+            _foto_cajon(o, 2, f)
+        end
+    end
+    for c in ["LIBS:", "C:", "DEVS:", "L:", "FONTS:", "S:", "SYS:WBStartup", "SYS:Classes", "ENVARC:"]
+        _foto_cajon(c, 1, f)
+    end
+    # los catálogos: LOCALE:Catalogs/<idioma>/<programa>.catalog (o un cajón más)
+    _foto_cajon("LOCALE:Catalogs", 2, f)
+    dos_requesters(true)
+    return f
+end
+
+func _ruta_de(linea: String) -> String
+    e = str_find(linea, "\t")
+    if e < 0
+        return linea
+    end
+    return linea[:e]
+end
+
+# Lo que cambió entre dos fotos: "N ruta" (nuevo) o "C ruta" (cambiado). Con un diccionario: con los sitios de
+# programas en la foto son miles de líneas
+func foto_diferencia(antes: [String], despues: [String]) -> [String]
+    var r: [String] = []
+    var vistos: {String: String} = {}
+    for a in antes
+        vistos[str_lower(_ruta_de(a))] = a
+    end
+    for d in despues
+        ruta = _ruta_de(d)
+        clave = str_lower(ruta)
+        if not vistos.has(clave)
+            r.push("N " + ruta)
+        elif vistos[clave] != d
+            r.push("C " + ruta)
+        end
+    end
+    return r
+end
+
+# Ejecuta un guion de Installer (en su cajón, para sus rutas relativas) y espera a que acabe. false si no se pudo
+# empezar o tardó más de 30 minutos.
+func instalador_ejecutar(instalador: String, guion: String, nombre: String) -> Bool
+    cajon = guion
+    i = cajon.length - 1
+    while i >= 0 and str_code(cajon, i) != 47 and str_code(cajon, i) != 58
+        i = i - 1
+    end
+    cajon = cajon[:i + 1]
+    marca = "T:hangar_installer_fin"
+    file_delete(marca)
+    # FailAt: aunque el Installer acabe con error (o lo cancele el usuario), el guion sigue y deja la marca de fin
+    t = "FailAt 1000000\nCD \"" + cajon + "\"\n\"" + instalador + "\" \"" + guion + "\"" + str_replace(instalador_args, "%n", nombre) + "\nEcho >" + marca + " \"fin\"\n"
+    if not file_write_text("T:hangar_installer", t)
+        return false
+    end
+    if not run_program("C:Execute T:hangar_installer")
+        return false
+    end
+    hasta = time_ms() + 30 * 60 * 1000
+    while not file_exists(marca)
+        if time_ms() > hasta
+            return false
+        end
+        time_delay(25)
+    end
+    file_delete(marca)
+    file_delete("T:hangar_installer")
+    return true
+end
+
+# El guion de Installer que trae un .lha (lo de Aminet no lo declara): un fichero "Install..." que no es un
+# ejecutable y tiene órdenes del Installer. Antes "Install" que "Install-English" y lo menos hondo. Su ruta dentro de
+# staged, o ""
+func guion_del_paquete(staged: String, ficheros: [String]) -> String
+    mejor = ""
+    puntos = 0
+    for x in ficheros
+        rel = x[staged.length:]
+        b = rel
+        k = str_find(b, "/")
+        hondo = 0
+        while k >= 0
+            b = b[k + 1:]
+            k = str_find(b, "/")
+            hondo = hondo + 1
+        end
+        nb = str_lower(b)
+        if str_starts(nb, "install") and not str_ends(nb, ".info") and hondo <= 2 and file_size(x) < 200000
+            t = file_read_text(x)
+            # (un ejecutable empieza por bytes 0: como texto sale vacío)
+            if t != nil and t.length > 0
+                tl = str_lower(t)
+                es = str_find(tl, "(welcome") >= 0 or str_find(tl, "(copyfiles") >= 0 or str_find(tl, "(copylib") >= 0 or str_find(tl, "@default-dest") >= 0 or str_find(tl, "(askdir") >= 0
+                if es
+                    p = 10 - hondo * 3
+                    if nb == "install"
+                        p = p + 5
+                    elif str_find(nb, "english") >= 0 or str_ends(nb, "-en") or str_ends(nb, "_en")
+                        p = p + 3
+                    end
+                    if file_exists(x + ".info")
+                        p = p + 2
+                    end
+                    if p > puntos
+                        puntos = p
+                        mejor = rel
+                    end
+                end
+            end
+        end
+    end
+    return mejor
+end
+
+# La última vez que sale c en t (-1 si no sale)
+func _ultima(t: String, c: String) -> Int
+    k = -1
+    i = str_find(t, c)
+    while i >= 0
+        k = i
+        i = str_find_from(t, c, i + 1)
+    end
+    return k
+end
+
+# Dónde dejó el programa un guion (su sitio, como el destino de Hangar: "Work:" si lo puso en Work:Prog/): el cajón
+# común de lo que escribió fuera del sistema, un nivel más arriba. "" si todo fue al sistema
+func sitio_de_lo_escrito(escritos: [String]) -> String
+    comun = ""
+    for x in escritos
+        xl = str_lower(x)
+        del_sistema = false
+        for s in ["libs:", "c:", "devs:", "l:", "fonts:", "s:", "envarc:", "locale:", "sys:classes/", "sys:wbstartup/"]
+            if str_starts(xl, s)
+                del_sistema = true
+            end
+        end
+        if not del_sistema
+            # su cajón
+            k = _ultima(x, "/")
+            if k < 0
+                k = str_find(x, ":")
+            end
+            cajon = x[:k + 1]
+            if comun == ""
+                comun = cajon
+            else
+                while comun != "" and not str_starts(str_lower(cajon), str_lower(comun))
+                    comun = _arriba(comun)
+                end
+            end
+        end
+    end
+    if comun == "" or str_ends(comun, ":")
+        return comun
+    end
+    # el icono del cajón del programa al lado ("Juegos/Pac.info" con "Juegos/Pac/..."): ese cajón común ya es su sitio
+    for x in escritos
+        if str_starts(str_lower(x), str_lower(comun)) and str_ends(str_lower(x), ".info")
+            resto = x[comun.length:x.length - 5]
+            if str_find(resto, "/") < 0
+                for y in escritos
+                    if str_starts(str_lower(y), str_lower(comun + resto + "/"))
+                        return comun
+                    end
+                end
+            end
+        end
+    end
+    return _arriba(comun)
+end
+
+# "Work:Prog/" -> "Work:"; "Work:A/B/" -> "Work:A/"; "Work:" -> ""
+func _arriba(c: String) -> String
+    if str_ends(c, ":")
+        return ""
+    end
+    s = c[:c.length - 1]
+    k = _ultima(s, "/")
+    if k < 0
+        k = str_find(s, ":")
+    end
+    if k < 0
+        return ""
+    end
+    return s[:k + 1]
+end
+
+# Instala con el guion de Installer de un paquete ya descomprimido en staged ("PROGDIR:Cache/Nuevo/") y apunta lo que
+# escribió. Devuelve los ficheros para el recibo; "" en error si algo falló.
+var instalador_error: String = ""
+var instalador_cambiados: Int = 0
+# lo que el guion añadió a S:User-Startup: sale de ahí y va al bloque del paquete, que se quita al desinstalarlo
+var instalador_arranque: String = ""
+
+func _texto_o_nada(ruta: String) -> String
+    t = file_read_text(ruta)
+    if t == nil
+        return ""
+    end
+    return t
+end
+
+# Las líneas que el guion añadió a S:User-Startup (las de después que no estaban antes, en su orden), y el fichero
+# sin ellas: [añadidas, resto]
+func arranque_separar(antes: String, despues: String) -> [String]
+    var quedan: [String] = []
+    for l in str_split(antes, "\n")
+        quedan.push(l)
+    end
+    nuevas = ""
+    resto = ""
+    for l in str_split(despues, "\n")
+        k = -1
+        i = 0
+        while i < quedan.length and k < 0
+            if quedan[i] == l
+                k = i
+            end
+            i = i + 1
+        end
+        if k >= 0
+            quedan.remove(k)
+            resto = resto + l + "\n"
+        elif str_trim(l) != ""
+            nuevas = nuevas + l + "\n"
+        end
+    end
+    while str_ends(resto, "\n\n")
+        resto = resto[:resto.length - 1]
+    end
+    return [nuevas, resto]
+end
+
+func instalar_con_guion(staged: String, guion: String, nombre: String, destino: String) -> [String]
+    var escritos: [String] = []
+    instalador_error = ""
+    instalador_cambiados = 0
+    instalador_arranque = ""
+    inst = instalador_ruta()
+    if inst == ""
+        instalador_error = "no hay Installer en este Amiga"
+        return escritos
+    end
+    ruta_guion = staged + guion
+    # el Installer es otro proceso: "PROGDIR:" (el cajón de Hangar) allí no existe y pide el volumen. La ruta real
+    # ("System:Utilities/Hangar/Cache/Nuevo/x/Install")
+    real = file_real_path(ruta_guion)
+    if real != ""
+        ruta_guion = real
+    end
+    if not file_exists(ruta_guion)
+        instalador_error = "el paquete no trae su guion " + guion
+        return escritos
+    end
+    # lo que los guiones suelen cambiar y se puede guardar entero
+    tr_guardar("S:User-Startup")
+    tr_guardar("S:Startup-Sequence")
+    us_antes = _texto_o_nada("S:User-Startup")
+    antes = foto_sistema(destino)
+    if not instalador_ejecutar(inst, ruta_guion, nombre)
+        instalador_error = "el Installer no se pudo ejecutar o no acabó"
+        return escritos
+    end
+    us_despues = _texto_o_nada("S:User-Startup")
+    if us_despues != us_antes
+        partes = arranque_separar(us_antes, us_despues)
+        if partes[0] != "" and file_write_text("S:User-Startup", partes[1])
+            instalador_arranque = partes[0]
+        end
+    end
+    # al recibo solo lo nuevo: lo que ya estaba y cambió (una librería, S:User-Startup) no se borra al quitarlo
+    for d in foto_diferencia(antes, foto_sistema(destino))
+        ruta = d[2:]
+        if str_starts(d, "N ")
+            tr_apuntar_nuevo(ruta)
+            escritos.push(ruta)
+        else
+            instalador_cambiados = instalador_cambiados + 1
+        end
+    end
+    return escritos
+end

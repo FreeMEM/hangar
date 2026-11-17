@@ -1,0 +1,85 @@
+Hangar
+======
+
+Busca programas, juegos y demos, míralos, instálalos y tenlos al día, todo desde el propio Amiga. El catálogo vive
+en https://hangar.freemem.space e incluye el software de Aminet y los programas que publican sus autores.
+
+Qué necesita
+------------
+
+- AmigaOS 3.0 o mejor, 68020 o mejor.
+- MUI 3.8 o MUI 5.
+- Una pila TCP/IP (bsdsocket.library): Roadshow, Miami, AmiTCP o la de tu emulador.
+- No hace falta LhA: Hangar descomprime los .lha él solo.
+
+Cómo se usa
+-----------
+
+Doble clic en el icono de Hangar. Escribe lo que buscas y pulsa Buscar, o mira las Novedades. Elige un programa
+en la lista para ver su ficha. "En" dice en qué cajón se instala: su lista trae los sitios de tu Amiga (Work:,
+Programs:, Games:, SYS:Utilities...) y puedes escribir otro; Hangar recuerda el último.
+
+La primera vez, Hangar pregunta si mira qué programas tienes ya en el disco: así te avisa de sus versiones nuevas y
+puede apuntar los que instalaste a mano. Al abrirse mira si lo instalado con él tiene versión nueva
+("Actualizar (2)"). Si mueves a mano un programa instalado con Hangar, Hangar lo encuentra, apunta su sitio nuevo
+y te lo dice (al abrirse, en Míos y antes de actualizarlo, ejecutarlo o quitarlo).
+
+- Instalar: Hangar mira lo que necesita el programa (y lo que necesitan esas cosas), te lo enseña de una vez y lo
+  instala todo junto. Antes comprueba que la ficha viene firmada por Hangar y que lo bajado es lo que firmó (tarda
+  unos segundos). Si no cabe en el disco, no empieza y dice cuánto falta.
+  Lo que pide un programa según su readme, si no lo declaró su autor, se avisa pero no impide instalarlo.
+  Si el programa trae su propio instalador (un guion "Install" del Installer), Hangar te pregunta si lo usa: lo
+  lanza como lo harías tú y apunta todo lo que copie (su cajón, LIBS:, C:, DEVS:, Fonts:, ENVARC:, catálogos,
+  WBStartup...) y lo que añada a S:User-Startup, para poder actualizarlo y quitarlo entero.
+- Quitar: borra lo que se instaló. Te avisa si otro programa lo necesita, y te ofrece quitar lo que se instaló
+  solo para él. Los ajustes que hayas cambiado se quedan.
+- Ejecutar: abre el programa instalado (si es una orden del Shell, te dice dónde está).
+- Míos: lo que has instalado con Hangar (* pedido, + traído para otro, = retenido).
+- Actualizar: lo instalado que tiene versión nueva.
+- Disco: mira los programas de C:, LIBS:, DEVS:, Utilities, Tools, System, Prefs, Work: y los demás sitios de
+  programas, dice cuáles tienen una versión nueva en el catálogo y te ofrece apuntar en Hangar lo que instalaste
+  a mano.
+
+Menú Hangar:
+
+- Deshacer la última: vuelve atrás la última instalación, actualización o desinstalación entera.
+- Actualizar todo: pone al día todo lo instalado con Hangar de una vez.
+- Retener o soltar: un programa retenido no se actualiza.
+- Volver a la versión anterior: la que dé el servidor o la que quede en la caché (esta sin red). Queda
+  retenida.
+- Limpiar la caché: borra las descargas viejas (Hangar/Cache), salvo lo instalado y la versión anterior.
+- Verificar lo instalado: mira que nada falte ni haya cambiado, y lo repara.
+
+Todo va con red de seguridad: si algo falla a mitad, o el Amiga se cuelga o se reinicia, Hangar lo deshace y queda
+como estaba. Lo que hay instalado está en Hangar/Base, un fichero de texto por programa.
+
+Desde el Shell
+--------------
+
+    Hangar BUSCA texto
+    Hangar INSTALA nombre [SI] [DESTINO=Work:]
+    Hangar QUITA nombre [SI]
+    Hangar ACTUALIZA [SI]
+    Hangar LISTA
+    Hangar VERIFICA [SI]
+    Hangar DESHAZ [SI]
+    Hangar RETEN nombre
+    Hangar SUELTA nombre
+    Hangar VUELVE nombre [SI]
+
+Sin SI, lo que Hangar preguntaría solo se enseña y no se hace. Da 0 si fue bien, 5 si no se hizo y 10 si hubo un
+error. En inglés también: SEARCH, INSTALL, REMOVE, UPGRADE, LIST, VERIFY, UNDO, HOLD, UNHOLD, ROLLBACK, YES.
+
+Con la ventana abierta, las mismas órdenes por ARexx: ADDRESS HANGAR 'INSTALA AmiWordle SI'.
+
+Variables (opcionales)
+----------------------
+
+ENV:Hangar/destino   el cajón donde se instala por defecto
+ENV:Hangar/servidor  otro servidor (por defecto http://hangar.freemem.space/amiga/v1)
+
+Licencias
+---------
+
+Hangar está hecho con Dash (https://github.com/FreeMEM/dash) y usa la red de Tachyon
+(https://github.com/FreeMEM/tachyon), las dos con licencia MIT: ver el cajón Licencias.

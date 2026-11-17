@@ -1,0 +1,39 @@
+# Test: instalar con el formato 2 (src/plan2.dash): la máquina de verdad (un A1200 emulado: 68020 sin FPU, AGA) y
+# las variantes por procesador en un cajón descomprimido: gana la primera que vale y las demás no se quedan.
+# expect-out: maquina cpu 68020 fpu no aga
+# expect-out: variantes []: Prog = [020] 060 no 000 no; Libs/x.library = [000]
+# expect-out: ninguna: ninguna variante de Y vale para este Amiga
+# expect-out: motivos pedido dependencia dependencia
+import "../src/plan2.dash"
+
+func si_no(b: Bool) -> String
+    if b
+        return "si"
+    end
+    return "no"
+end
+
+Main
+    m = maquina_real()
+    Print "maquina cpu " + str_from_int(m.cpu, 10) + " fpu " + si_no(m.fpu) + " " + m.chipset
+    dir_create("RAM:N")
+    dir_create("RAM:N/P")
+    dir_create("RAM:N/Libs")
+    file_write_text("RAM:N/P/Prog.060", "060")
+    file_write_text("RAM:N/P/Prog.020", "020")
+    file_write_text("RAM:N/P/Prog.000", "000")
+    file_write_text("RAM:N/Libs/x.library.040", "040")
+    file_write_text("RAM:N/Libs/x.library.000", "000")
+    var v: [String] = []
+    v.push("P/Prog = P/Prog.060; 68060, FPU")
+    v.push("P/Prog = P/Prog.020; 68020")
+    v.push("P/Prog = P/Prog.000")
+    v.push("Libs/x.library = Libs/x.library.040; 68040")
+    v.push("Libs/x.library = Libs/x.library.000")
+    e = aplicar_variantes("RAM:N/", v)
+    Print "variantes [" + e + "]: Prog = [" + file_read_text("RAM:N/P/Prog") + "] 060 " + si_no(file_exists("RAM:N/P/Prog.060")) + " 000 " + si_no(file_exists("RAM:N/P/Prog.000")) + "; Libs/x.library = [" + file_read_text("RAM:N/Libs/x.library") + "]"
+    var w: [String] = []
+    w.push("Y = Y.060; 68060")
+    Print "ninguna: " + aplicar_variantes("RAM:N/", w)
+    Print "motivos " + motivo_de("explicit") + " " + motivo_de("dependency") + " " + motivo_de("recommended")
+end

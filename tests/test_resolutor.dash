@@ -1,0 +1,293 @@
+# Test generado por tools/vectores.py (no editar): los casos del resolutor del formato 2 (tests/vectores/
+# resolver.txt, copiados del servicio) con src/resolutor.dash.
+# expect-out: resolutor 33/33
+import "../src/resolutor.dash"
+
+func meter(repo: String, campos: String)
+    for e in formato_entradas("X\n\n" + campos)
+        resolutor_meter(repo, e)
+    end
+end
+
+func comprobar(titulo: String, esperado: String) -> Int
+    sale = ""
+    for l in resolutor_lineas()
+        sale = sale + l + "\n"
+    end
+    if sale == esperado
+        return 1
+    end
+    Print "MAL " + titulo
+    Print sale
+    return 0
+end
+
+Main
+    bien = 0
+    var libs: [String] = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: a\nVersion: 1.0\nRequires: pkg:b\n")
+    meter("main", "Name: b\nVersion: 1.0\nRequires: pkg:c >= 2\n")
+    meter("main", "Name: c\nVersion: 2.1\n")
+    resolutor_instalar("a")
+    bien = bien + comprobar("cadena: las dependencias antes", "+ c 2.1 main (dependency)\n+ b 1.0 main (dependency)\n+ a 1.0 main (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: a\nVersion: 1.0\nRequires: pkg:b | pkg:c\n")
+    meter("main", "Name: c\nVersion: 1.0\n")
+    resolutor_repo("aminet", 10, false)
+    meter("aminet", "Name: b\nVersion: 1.0\n")
+    resolutor_instalar("a")
+    bien = bien + comprobar("alternativa: la primera que se puede instalar", "+ b 1.0 aminet (dependency)\n+ a 1.0 main (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: a\nVersion: 1.0\nRequires: pkg:b | pkg:c\n")
+    meter("main", "Name: b\nVersion: 1.0\n")
+    meter("main", "Name: c\nVersion: 1.0\n")
+    resolutor_instalado(PkgInstalado("c", 0, "1.0", 1, "main", "explicit", false))
+    resolutor_instalar("a")
+    bien = bien + comprobar("alternativa ya cumplida por lo instalado", "+ a 1.0 main (explicit)\n")
+    libs = []
+    libs.push("muimaster.library 19")
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: a\nVersion: 1.0\nRequires: MUI 3.8 | pkg:mui >= 5\n")
+    meter("main", "Name: mui\nVersion: 5.0\n")
+    resolutor_instalar("a")
+    bien = bien + comprobar("alternativa cumplida por la máquina", "+ a 1.0 main (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: a\nVersion: 1.0\nRequires: 68060, FPU\n")
+    resolutor_instalar("a")
+    bien = bien + comprobar("la máquina no llega", "error machine cpu 68060\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: x\nVersion: 2.0\n")
+    resolutor_repo("aminet", 10, false)
+    meter("aminet", "Name: x\nVersion: 3.0\n")
+    resolutor_instalar("x")
+    bien = bien + comprobar("manda la prioridad, no la versión", "+ x 2.0 main (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: x\nVersion: 2.0\n")
+    resolutor_repo("aminet", 10, false)
+    meter("aminet", "Name: x\nVersion: 1.5\n")
+    resolutor_instalado(PkgInstalado("x", 0, "1.0", 1, "aminet", "explicit", false))
+    resolutor_actualizar()
+    bien = bien + comprobar("se actualiza desde su repositorio", "^ x 1.0 -> 1.5 aminet\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: x\nVersion: 2.0\n")
+    meter("main", "Name: y\nVersion: 2.0\n")
+    resolutor_instalado(PkgInstalado("x", 0, "1.0", 1, "main", "explicit", true))
+    resolutor_instalado(PkgInstalado("y", 0, "1.0", 1, "main", "explicit", false))
+    resolutor_actualizar()
+    bien = bien + comprobar("lo retenido no se actualiza", "^ y 1.0 -> 2.0 main\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68030, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: x\nVersion: 1.0\nId: 3\nRank: 2\n")
+    meter("main", "Name: x\nVersion: 1.0\nId: 1\nRank: 0\nRequires: 68060, FPU\n")
+    meter("main", "Name: x\nVersion: 1.0\nId: 2\nRank: 1\nRequires: 68020\n")
+    resolutor_instalar("x")
+    bien = bien + comprobar("entradas de la misma versión por procesador: la de Rank más bajo que vale", "+ x 1.0 main #2 (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: y\nVersion: 1.0\nEpoch: 1\n")
+    resolutor_instalado(PkgInstalado("y", 0, "2007.3", 1, "main", "explicit", false))
+    resolutor_actualizar()
+    bien = bien + comprobar("epoch: la numeración nueva parece más vieja", "^ y 2007.3 -> 1:1.0 main\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: y\nVersion: 1.0\nRelease: 2\n")
+    resolutor_instalado(PkgInstalado("y", 0, "1.0", 1, "main", "explicit", false))
+    resolutor_actualizar()
+    bien = bien + comprobar("release: mismo programa, paquete arreglado", "^ y 1.0-1 -> 1.0-2 main\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: z\nVersion: 1.0-rc1\n")
+    meter("main", "Name: z\nVersion: 1.0\n")
+    resolutor_instalado(PkgInstalado("z", 0, "1.0-beta", 1, "main", "explicit", false))
+    resolutor_actualizar()
+    bien = bien + comprobar("de prueba antes que la final", "^ z 1.0-beta -> 1.0 main\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: a\nVersion: 1.0\nRequires: foo.library 3\n")
+    meter("main", "Name: foolib\nVersion: 1.0\nProvides: foo.library 3\n")
+    resolutor_instalar("a")
+    bien = bien + comprobar("una librería que trae otro paquete", "+ foolib 1.0 main (dependency)\n+ a 1.0 main (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: a\nVersion: 1.0\nRequires: foo.library 4\n")
+    meter("main", "Name: foolib\nVersion: 1.0\nProvides: foo.library 3\n")
+    resolutor_instalar("a")
+    bien = bien + comprobar("la librería que hay es vieja", "error missing has foo.library 4\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: a\nVersion: 1.0\nRequires: pkg:zz\n")
+    resolutor_instalar("a")
+    bien = bien + comprobar("lo que no está", "error missing pkg zz\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: a\nVersion: 1.0\nConflicts: pkg:b\n")
+    meter("main", "Name: b\nVersion: 1.0\n")
+    resolutor_instalado(PkgInstalado("b", 0, "1.0", 1, "main", "explicit", false))
+    resolutor_instalar("a")
+    bien = bien + comprobar("conflicto con lo instalado", "error conflict a b\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("aminet", 10, false)
+    meter("aminet", "Name: foo13\nVersion: 1.3\nAuthor: Ana\nUploader: ana@example.org\nReplaces: util/misc/foo12.lha\n")
+    meter("aminet", "Name: foo12\nVersion: 1.2\nAuthor: Ana\nUploader: ana@example.org\n")
+    resolutor_instalado(PkgInstalado("foo12", 0, "1.2", 1, "aminet", "explicit", false))
+    resolutor_actualizar()
+    bien = bien + comprobar("sustituye a otro del mismo autor: se quita", "- foo12\n+ foo13 1.3 aminet (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: a\nVersion: 1.0\nRecommends: pkg:r\n")
+    meter("main", "Name: r\nVersion: 1.0\n")
+    resolutor_instalar("a")
+    bien = bien + comprobar("recomendado", "+ r 1.0 main (recommended)\n+ a 1.0 main (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: a\nVersion: 1.0\nRecommends: pkg:r\n")
+    resolutor_instalar("a")
+    bien = bien + comprobar("recomendado que no se puede: no bloquea", "+ a 1.0 main (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: a\nVersion: 1.0\nRequires: pkg:b\n")
+    meter("main", "Name: b\nVersion: 1.0\nRequires: pkg:a\n")
+    resolutor_instalar("a")
+    bien = bien + comprobar("ciclo: primero lo que pide el pedido", "+ b 1.0 main (dependency)\n+ a 1.0 main (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: a\nVersion: 1.0\nRequires: pkg:b >= 2\n")
+    meter("main", "Name: b\nVersion: 2.0\n")
+    resolutor_instalado(PkgInstalado("b", 0, "1.0", 1, "main", "dependency", false))
+    resolutor_instalar("a")
+    bien = bien + comprobar("dependencia con versión: se actualiza lo instalado", "^ b 1.0 -> 2.0 main\n+ a 1.0 main (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("aminet", 10, false)
+    meter("aminet", "Name: mui99\nVersion: 9.9\nAuthor: Malo\nUploader: malo@example.org\nReplaces: util/libs/mui38usr.lha\n")
+    meter("aminet", "Name: mui38usr\nVersion: 3.8\nAuthor: Stefan\nUploader: stefan@example.org\n")
+    resolutor_instalado(PkgInstalado("mui38usr", 0, "3.8", 1, "aminet", "explicit", false))
+    resolutor_instalar("mui99")
+    bien = bien + comprobar("en Aminet, Replaces de otro autor no vale", "+ mui99 9.9 aminet (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: nuevo\nVersion: 1.0\nReplaces: pkg:viejo\n")
+    resolutor_repo("aminet", 10, false)
+    meter("aminet", "Name: viejo\nVersion: 1.0\n")
+    resolutor_instalado(PkgInstalado("viejo", 0, "1.0", 1, "aminet", "explicit", false))
+    resolutor_instalar("nuevo")
+    bien = bien + comprobar("Replaces de otro repositorio no vale", "+ nuevo 1.0 main (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: libx\nVersion: 2.0\n")
+    resolutor_repo("aminet", 10, false)
+    meter("aminet", "Name: a\nVersion: 1.0\nRequires: pkg:libx\n")
+    meter("aminet", "Name: libx\nVersion: 1.0\n")
+    resolutor_instalar("a@aminet")
+    bien = bien + comprobar("las dependencias, primero en el repositorio de quien las pide", "+ libx 1.0 aminet (dependency)\n+ a 1.0 aminet (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("dashos", 5, true)
+    meter("dashos", "Name: mui\nVersion: 5.0\nProvides: muimaster.library 21\n")
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: mui\nVersion: 6.6\n")
+    meter("main", "Name: a\nVersion: 1.0\nRequires: muimaster.library 21\n")
+    resolutor_instalar("mui")
+    bien = bien + comprobar("un repositorio protegido no se tapa", "+ mui 5.0 dashos (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("dashos", 5, true)
+    meter("dashos", "Name: mui\nVersion: 5.0\nProvides: muimaster.library 21\n")
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: falso\nVersion: 1.0\nProvides: muimaster.library 21\n")
+    meter("main", "Name: a\nVersion: 1.0\nRequires: muimaster.library 21\n")
+    resolutor_instalar("a")
+    bien = bien + comprobar("lo que ofrece un repositorio protegido tampoco", "+ mui 5.0 dashos (dependency)\n+ a 1.0 main (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("uno", 10, false)
+    meter("uno", "Name: x\nVersion: 1.0\n")
+    resolutor_repo("dos", 10, false)
+    meter("dos", "Name: x\nVersion: 2.0\n")
+    resolutor_instalar("x")
+    bien = bien + comprobar("empate de prioridad: se pregunta", "error ambiguous x uno dos\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: x\nVersion: 2.0\n")
+    resolutor_repo("aminet", 10, false)
+    meter("aminet", "Name: x\nVersion: 3.0\n")
+    resolutor_instalar("x@aminet")
+    bien = bien + comprobar("con nombre@repositorio, el que se pide", "+ x 3.0 aminet (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: a\nVersion: 1.0\nRequires: pkg:b | pkg:c\n")
+    meter("main", "Name: b\nVersion: 1.0\nRequires: pkg:zz\n")
+    meter("main", "Name: c\nVersion: 1.0\n")
+    resolutor_instalar("a")
+    bien = bien + comprobar("marcha atrás: la primera alternativa falla más abajo y se usa la segunda", "+ c 1.0 main (dependency)\n+ a 1.0 main (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: a\nVersion: 1.0\nRequires: pkg:b | pkg:c\n")
+    meter("main", "Name: b\nVersion: 1.0\nRequires: pkg:d, pkg:zz\n")
+    meter("main", "Name: c\nVersion: 1.0\n")
+    meter("main", "Name: d\nVersion: 1.0\n")
+    resolutor_instalar("a")
+    bien = bien + comprobar("marcha atrás: lo de la alternativa que falla no queda en el plan", "+ c 1.0 main (dependency)\n+ a 1.0 main (explicit)\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: x\nVersion: 2.0\n")
+    meter("main", "Name: y\nVersion: 1.0\nRequires: pkg:x < 2\n")
+    resolutor_instalado(PkgInstalado("x", 0, "1.0", 1, "main", "explicit", false))
+    resolutor_instalado(PkgInstalado("y", 0, "1.0", 1, "main", "explicit", false))
+    resolutor_instalar("x")
+    bien = bien + comprobar("instalar no rompe lo instalado", "error breaks y pkg x < 2\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: x\nVersion: 2.0\n")
+    meter("main", "Name: y\nVersion: 1.0\nRequires: pkg:x < 2\n")
+    meter("main", "Name: z\nVersion: 2.0\n")
+    resolutor_instalado(PkgInstalado("x", 0, "1.0", 1, "main", "explicit", false))
+    resolutor_instalado(PkgInstalado("y", 0, "1.0", 1, "main", "explicit", false))
+    resolutor_instalado(PkgInstalado("z", 0, "1.0", 1, "main", "explicit", false))
+    resolutor_actualizar()
+    bien = bien + comprobar("actualizar todo retiene lo que rompería a otro y lo dice", "= x (breaks y pkg x < 2)\n^ z 1.0 -> 2.0 main\n")
+    libs = []
+    resolutor_empezar(Maquina(40, 68020, false, false, false, false, "", 0, 0, libs))
+    resolutor_repo("main", 20, false)
+    meter("main", "Name: a\nVersion: 1.0\n")
+    meter("main", "Name: y\nVersion: 1.0\nConflicts: pkg:a\n")
+    resolutor_instalado(PkgInstalado("y", 0, "1.0", 1, "main", "explicit", false))
+    resolutor_instalar("a")
+    bien = bien + comprobar("lo instalado que choca con lo nuevo", "error conflict y a\n")
+    Print "resolutor " + str_from_int(bien, 10) + "/33"
+end

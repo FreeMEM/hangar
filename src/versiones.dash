@@ -1,0 +1,350 @@
+# Versiones: cuál es más nueva y qué versión hay de verdad en el disco. Los programas que se actualizan solos
+# (Tachyon, Trasfondo) dejan viejo el recibo; Hangar mira el "$VER:" del propio programa.
+
+import "inventario.dash"
+import "recibos.dash"
+
+# Los números de una versión: "0.9.2-alfa" -> [0, 9, 2]; "v1.2" -> [1, 2]
+func version_numeros(v: String) -> [Int]
+    var r: [Int] = []
+    for parte in str_split(str_trim(v), ".")
+        n = 0
+        hay = false
+        i = 0
+        while i < parte.length
+            c = str_code(parte, i)        # (parte[i] es el código, no un texto)
+            if c >= 48 and c <= 57
+                n = n * 10 + c - 48
+                hay = true
+            elif hay or (c != 118 and c != 86)    # "v" o "V" delante de las cifras
+                i = parte.length        # tras las cifras ("2-alfa"), nada más
+            end
+            i = i + 1
+        end
+        if not hay
+            return r
+        end
+        r.push(n)
+    end
+    return r
+end
+
+# Los trozos de una versión para compararla como el servidor (src/version.rs, docs/FORMATO_PAQUETES.md 3): separados
+# por ".", "-" o "_"; cada uno, su número y lo que lleve detrás. Un sufijo de prueba va antes que nada ("1.0-beta" <
+# "1.0"); otras letras, después ("2.3" < "2.3a").
+struct TrozoVersion
+    cifras: String   # las cifras sin ceros delante: se comparan como número sin desbordar
+    rango: Int       # 0 sin sufijo; dev -5, alfa/alpha -4, beta -3, pre -2, rc -1; otras letras 1
+    letras: String
+    num2: Int        # el número tras el sufijo: el 2 de "rc2"
+end
+
+func _version_trozos(v: String) -> [TrozoVersion]
+    var r: [TrozoVersion] = []
+    t = str_lower(str_trim(v))
+    if t.length > 0 and str_code(t, 0) == 118    # una "v" delante
+        t = t[1:]
+    end
+    e = str_find(t, " ")
+    if e >= 0
+        t = t[:e]
+    end
+    t = str_replace(str_replace(t, "-", "."), "_", ".")
+    for parte in str_split(t, ".")
+        i = 0
+        while i < parte.length and str_code(parte, i) >= 48 and str_code(parte, i) <= 57
+            i = i + 1
+        end
+        n = parte[:i]
+        while n.length > 0 and str_code(n, 0) == 48
+            n = n[1:]
+        end
+        letras = ""
+        while i < parte.length and (str_code(parte, i) < 48 or str_code(parte, i) > 57)
+            letras = letras + parte[i:i + 1]
+            i = i + 1
+        end
+        n2 = 0
+        while i < parte.length and str_code(parte, i) >= 48 and str_code(parte, i) <= 57
+            n2 = n2 * 10 + str_code(parte, i) - 48
+            i = i + 1
+        end
+        rango = 1
+        if letras == ""
+            rango = 0
+        elif letras == "dev"
+            rango = -5
+        elif letras == "alfa" or letras == "alpha"
+            rango = -4
+        elif letras == "beta"
+            rango = -3
+        elif letras == "pre"
+            rango = -2
+        elif letras == "rc"
+            rango = -1
+        end
+        if rango != 1
+            letras = ""
+        end
+        r.push(TrozoVersion(n, rango, letras, n2))
+    end
+    return r
+end
+
+# a va después que b por sus bytes
+func _texto_mayor(a: String, b: String) -> Bool
+    i = 0
+    while i < a.length and i < b.length
+        if str_code(a, i) != str_code(b, i)
+            return str_code(a, i) > str_code(b, i)
+        end
+        i = i + 1
+    end
+    return a.length > b.length
+end
+
+# -1 si a es más vieja que b, 0 si iguales, 1 si más nueva
+func version_comparar(a: String, b: String) -> Int
+    ta = _version_trozos(a)
+    tb = _version_trozos(b)
+    i = 0
+    while i < ta.length or i < tb.length
+        x = TrozoVersion("", 0, "", 0)
+        y = TrozoVersion("", 0, "", 0)
+        if i < ta.length
+            x = ta[i]
+        end
+        if i < tb.length
+            y = tb[i]
+        end
+        if x.cifras.length != y.cifras.length
+            if x.cifras.length > y.cifras.length
+                return 1
+            end
+            return -1
+        end
+        if x.cifras != y.cifras
+            if _texto_mayor(x.cifras, y.cifras)
+                return 1
+            end
+            return -1
+        end
+        if x.rango != y.rango
+            if x.rango > y.rango
+                return 1
+            end
+            return -1
+        end
+        if x.letras != y.letras
+            if _texto_mayor(x.letras, y.letras)
+                return 1
+            end
+            return -1
+        end
+        if x.num2 != y.num2
+            if x.num2 > y.num2
+                return 1
+            end
+            return -1
+        end
+        i = i + 1
+    end
+    return 0
+end
+
+# El epoch de una versión escrita en una palabra ("1:2.0" -> 1; "2.0" -> 0) y lo de después
+func version_epoch(v: String) -> Int
+    p = str_find(v, ":")
+    if p <= 0
+        return 0
+    end
+    n = 0
+    i = 0
+    while i < p
+        c = str_code(v, i)
+        if c < 48 or c > 57
+            return 0
+        end
+        n = n * 10 + c - 48
+        i = i + 1
+    end
+    return n
+end
+
+func version_sin_epoch(v: String) -> String
+    p = str_find(v, ":")
+    if p <= 0
+        return v
+    end
+    i = 0
+    while i < p
+        c = str_code(v, i)
+        if c < 48 or c > 57
+            return v
+        end
+        i = i + 1
+    end
+    return v[p + 1:]
+end
+
+# Como version_comparar, con el epoch delante ("1:1.0" > "9.9"; docs/FORMATO_PAQUETES.md del servicio, 3)
+func version_comparar_e(a: String, b: String) -> Int
+    ea = version_epoch(a)
+    eb = version_epoch(b)
+    if ea != eb
+        if ea > eb
+            return 1
+        end
+        return -1
+    end
+    return version_comparar(version_sin_epoch(a), version_sin_epoch(b))
+end
+
+# Una versión entera del formato 2: epoch, versión y release
+func version_entera(epoch_a: Int, v_a: String, rel_a: Int, epoch_b: Int, v_b: String, rel_b: Int) -> Int
+    if epoch_a != epoch_b
+        if epoch_a > epoch_b
+            return 1
+        end
+        return -1
+    end
+    k = version_comparar(v_a, v_b)
+    if k != 0
+        return k
+    end
+    if rel_a != rel_b
+        if rel_a > rel_b
+            return 1
+        end
+        return -1
+    end
+    return 0
+end
+
+# a es más nueva que b (las dos vacías o iguales: no)
+func version_mayor(a: String, b: String) -> Bool
+    return version_comparar(a, b) > 0
+end
+
+# Si la versión v cumple una condición como ">= 6.20", "< 2" o "= 1.0" (vacía: siempre)
+func version_cumple(v: String, condicion: String) -> Bool
+    c = str_trim(condicion)
+    if c == ""
+        return true
+    end
+    op = ""
+    for o in [">=", "<=", ">", "<", "="]
+        if op == "" and str_starts(c, o)
+            op = o
+        end
+    end
+    if op == ""
+        op = ">="       # "6.20" a secas: como mínimo esa
+    end
+    k = version_comparar_e(v, str_trim(c[op.length:]))
+    if op == "=" and str_starts(c, "=")
+        return k == 0
+    elif op == ">="
+        return k >= 0
+    elif op == "<="
+        return k <= 0
+    elif op == ">"
+        return k > 0
+    end
+    return k < 0
+end
+
+# El nombre de un fichero de una ruta ("Work:Tachyon/Tachyon" -> "Tachyon")
+func nombre_de_ruta(ruta: String) -> String
+    return _ver_nombre(ruta)
+end
+
+func _ver_nombre(ruta: String) -> String
+    i = ruta.length - 1
+    while i >= 0 and str_code(ruta, i) != 47 and str_code(ruta, i) != 58     # "/" y ":"
+        i = i - 1
+    end
+    return ruta[i + 1:ruta.length]
+end
+
+# La versión que hay de verdad: la del "$VER:" del programa del recibo (el fichero que se llama como el paquete, o
+# el primero con "$VER:" de su nombre); si cambió (se actualizó solo), el recibo se pone al día. Si no se encuentra,
+# la del recibo.
+func version_instalada(r: Recibo) -> String
+    if r.id == 0
+        return ""
+    end
+    # lo que instaló Hangar y sigue como lo dejó (el mismo CRC) es la versión de su paquete: el $VER del programa a
+    # veces dice otra (image2icon 1.20 lleva "1.19" dentro) y se ofrecería actualizar para siempre. El $VER manda si
+    # el programa cambió (se actualizó solo: Tachyon, Trasfondo) y en lo apuntado a mano
+    if r.motivo != "adoptado" and r.version != "" and r.version != "0"
+        nombre_bajo = str_lower(r.nombre)
+        i = 0
+        while i < r.ficheros.length
+            if str_lower(_ver_nombre(r.ficheros[i])) == nombre_bajo and i < r.crcs.length and r.crcs[i] != 0
+                if recibo_crc(r.ficheros[i]) == r.crcs[i]
+                    return r.version
+                end
+                i = r.ficheros.length
+            end
+            i = i + 1
+        end
+    end
+    nombre = str_lower(r.nombre)
+    v = ""
+    for f in r.ficheros
+        if v == "" and str_lower(_ver_nombre(f)) == nombre
+            v = inventario_version(f).version
+        end
+    end
+    mirados = 0
+    for f in r.ficheros
+        if v == "" and mirados < 8 and not str_ends(str_lower(f), ".info")
+            i = inventario_version(f)
+            if i.nombre != ""
+                mirados = mirados + 1
+                if str_lower(i.nombre) == nombre
+                    v = i.version
+                end
+            end
+        end
+    end
+    if v == ""
+        return r.version
+    end
+    if v != r.version
+        r.version = v
+        recibo_guardar(r)
+    end
+    return v
+end
+
+# Un programa instalado sin recibo (a mano, o por su propio actualizador): su cajón "Nombre" con el programa
+# "Nombre" dentro, en alguno de esos sitios. Da el sitio (para instalar encima, no en otro cajón) o ""
+func instalado_sin_recibo(nombre: String, sitios: [String]) -> String
+    # sin el requester de "Inserta el volumen Work" en los Amigas que no lo tienen
+    dos_requesters(false)
+    for s in sitios
+        if s != ""
+            sep = "/"
+            if str_ends(s, ":") or str_ends(s, "/")
+                sep = ""
+            end
+            ruta = s + sep + nombre + "/" + nombre
+            if file_exists(ruta) and inventario_version(ruta).nombre != ""
+                dos_requesters(true)
+                return s
+            end
+        end
+    end
+    dos_requesters(true)
+    return ""
+end
+
+# Una versión para enseñarla: "0" (lo de Aminet que no la dice en su readme ni tiene fecha) es "sin versión"
+func version_ver(v: String) -> String
+    if v == "" or v == "0"
+        return "(sin versión)"
+    end
+    return v
+end

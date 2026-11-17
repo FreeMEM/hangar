@@ -1,0 +1,8 @@
+# Para el banco de Coffin: wb_open de una ruta y lo que devuelve
+Main
+    if wb_open(arg(0))
+        Print "wb_open " + arg(0) + ": si"
+    else
+        Print "wb_open " + arg(0) + ": no"
+    end
+end

@@ -1,0 +1,70 @@
+> OS 3.1, 68020, MUI 3.8
+os 40
+cpu 68020
+has muimaster.library 19
+
+> V39, 68030, FPU, MMU, AGA, RTG, TCP/IP
+os 39
+cpu 68030
+fpu
+mmu
+chipset aga
+rtg
+tcpip
+
+> OS 3.2, ECS, 2MB, 1MB chip, 512KB
+os 47
+chipset ecs
+mem 2048
+chip 1024
+mem 512
+
+> hypervisor, 4GB
+hypervisor
+mem 4194304
+
+> reqtools.library 38, NList.mcc 20.1, ahi.device, Fonts:topaz 11
+has reqtools.library 38
+has nlist.mcc 20.1
+has ahi.device
+has fonts:topaz 11
+
+> pkg:codesets >= 6.20, pkg:mui = 5.0, pkg:x < 2, pkg:y, pkg:z >= 1:2.0
+pkg codesets >= 6.20
+pkg mui = 5.0
+pkg x < 2
+pkg y
+pkg z >= 1:2.0
+
+> util/libs/ReqToolsUsr.lha
+aminet util/libs/reqtoolsusr.lha
+
+> MUI 3.8 | pkg:mui >= 5, 68020 | 68000
+has muimaster.library 19 | pkg mui >= 5
+cpu 68020 | cpu 68000
+
+> MUI 5, MUI 4
+has muimaster.library 21
+has muimaster.library 20
+
+> OS 3.1,, 68020 ,
+os 40
+cpu 68020
+
+> OS 3.1, un 68020 bonito, Picasso
+os 40
+! un 68020 bonito
+! Picasso
+
+> pkg:Mayus >= 1.0
+pkg mayus >= 1.0
+
+> pkg:mal nombre
+! pkg:mal nombre
+
+> 68080, MUI 3.8 | | pkg:mui
+cpu 68080
+! MUI 3.8 | | pkg:mui
+
+> pkg:x |
+! pkg:x |

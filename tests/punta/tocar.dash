@@ -1,0 +1,6 @@
+# Para tests/punta.py: cambia un fichero instalado (lo arregla Verificar) y los ajustes del usuario de K
+Main
+    file_write_text("RAM:P/A/A", "roto")
+    file_write_text("RAM:P/K/K.prefs", "mis ajustes")
+    Print "tocado"
+end

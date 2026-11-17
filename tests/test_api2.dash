@@ -1,0 +1,112 @@
+# Test: las respuestas firmadas del formato 2 (src/api2.dash) contra el servidor falso (tests/servers/falso.py):
+# una buena, y las que no valen: tocada por el camino, con otro Nonce, de otro repositorio y con la Serial que baja.
+# emu-server: falso.py 47124
+# expect-out: id bien
+# expect-out: buena: tunefinder 1.6 Requires reqtools.library 38 serial 100
+# expect-out: quien trae: reqtoolsusr 38.1
+# expect-out: actualizaciones: tunefinder
+# expect-out: reconocido: TuneFinder nueva 4050 1.4->1.5 TuneFinder/TuneFinder|Otro desconocido 0|
+# expect-out: main: sintonia 1:1.0-2
+# expect-out: tocada: no viene firmada por su clave
+# expect-out: otro nonce: no es la de esta pregunta (repetida)
+# expect-out: otro repo: es de otra cosa
+# expect-out: vieja: es más vieja que la última vista
+# expect-out: nonce sube: si
+# expect-out: caché: tunefinder 1
+# expect-out: segundos: 1857777157 920160000
+# expect-out: keys guardado: si
+# expect-out: rotada: rot
+# expect-out: anulada: no viene firmada por su clave
+# expect-out: keys sin raíz: el keys de main no viene firmado por una raíz
+import "../src/api2.dash"
+
+Main
+    api2_estado = "RAM:hangar_estado"
+    file_delete(api2_estado)
+    # la clave de prueba del servidor falso (bytes 3 x 32)
+    k = "ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d1"
+    var rs: [RepoConf] = []
+    rs.push(RepoConf("aminet", "http://127.0.0.1:47124/pkg/v2/aminet", 10, false, k, api2_clave_id(k)))
+    rs.push(RepoConf("main", "http://127.0.0.1:47124/pkg/v2/main", 20, false, k, api2_clave_id(k)))
+    api2_repos = rs
+    # la raíz de prueba del servidor falso (bytes 5 x 32): las respuestas valen por su keys
+    var rz: [String] = ["6e7a1cdd29b0b78fd13af4c5598feff4ef2a97166e3ca6f2e4fbfccd80505bf1"]
+    api2_raices = rz
+    file_delete("RAM:Claves-aminet")
+    file_delete("RAM:Claves-main")
+    a = rs[0]
+    if a.clave_id.length == 16
+        Print "id bien"
+    end
+    r = api2_paquete(a, "tunefinder")
+    if r.error != ""
+        Print "buena: " + r.error
+    else
+        e = r.entradas[0]
+        Print "buena: " + e.nombre + " " + e.version + " Requires " + e.requires + " serial " + str_from_int(r.cabecera.serie, 10)
+    end
+    r = api2_provee(a, "reqtools.library")
+    Print "quien trae: " + r.entradas[0].nombre + " " + r.entradas[0].version
+    r = api2_actualizaciones(a, "tunefinder 1.5 1\nnada 1.0 1\n")
+    t = r.error
+    for e in r.entradas
+        t = t + e.nombre
+    end
+    Print "actualizaciones: " + t
+    t = ""
+    rv = api2_reconocer("TuneFinder\t100\t\t\nOtro\t5\tOtro\t1\n")
+    t = rv.error
+    for x in rv.lista
+        if x.estado == "desconocido"
+            t = t + x.fichero + " " + x.estado + " " + str_from_int(x.id, 10) + "|"
+        else
+            t = t + x.fichero + " " + x.estado + " " + str_from_int(x.id, 10) + " " + x.local + "->" + x.version + " " + x.ruta + "|"
+        end
+    end
+    Print "reconocido: " + t
+    r = api2_paquete(rs[1], "sintonia")
+    Print "main: " + r.entradas[0].nombre + " " + formato_version_texto(r.entradas[0])
+    n1 = api2_nonce()
+    for caso in ["tocado", "otrononce", "otrorepo", "viejo"]
+        r = api2_paquete(a, caso)
+        nombre = caso
+        if caso == "tocado"
+            nombre = "tocada"
+        elif caso == "otrononce"
+            nombre = "otro nonce"
+        elif caso == "otrorepo"
+            nombre = "otro repo"
+        elif caso == "viejo"
+            nombre = "vieja"
+        end
+        e = r.error
+        p = str_find(e, " no ")
+        if p < 0
+            p = str_find(e, " es ")
+        end
+        Print nombre + ": " + e[p + 1:]
+    end
+    n2 = api2_nonce()
+    if n1[:8] != n2[:8] and n1 != n2
+        Print "nonce sube: si"
+    end
+    resolutor_empezar(nil)
+    api2_traer("tunefinder")
+    c = resolutor_en_cache("aminet", "tunefinder")
+    Print "caché: tunefinder " + str_from_int(c, 10)
+    Print "segundos: " + str_from_int(api2_segundos("2028-11-14T01:12:37Z"), 10) + " " + str_from_int(api2_segundos("1999-02-28T00:00:00Z"), 10)
+    if file_exists("RAM:Claves-aminet")
+        Print "keys guardado: si"
+    end
+    m = rs[1]
+    r = api2_paquete(m, "rot")
+    if r.error != ""
+        Print "rotada: " + r.error
+    else
+        Print "rotada: " + r.entradas[0].nombre
+    end
+    r = api2_paquete(m, "anulada")
+    Print "anulada: " + r.error[str_find(r.error, " no ") + 1:]
+    k2 = file_read_text("RAM:Claves-main")
+    Print "keys sin raíz: " + api2_keys_aplicar(m, k2, "ed25519 7599776c3085e3f9 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+end

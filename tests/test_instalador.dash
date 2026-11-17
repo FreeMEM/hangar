@@ -1,0 +1,40 @@
+# Test: instalar con un guion de Installer (src/instalador.dash). En lugar del Installer, C:Execute con un guion de
+# AmigaDOS que hace lo que haría uno: escribe en el destino y en LIBS: y cambia un fichero que ya estaba. Hangar lo
+# apunta por la foto de antes y después: lo nuevo al recibo y al diario (deshacer lo borra), lo cambiado solo se cuenta.
+# emu-system: DASH_EMU_SYS_COMPLETO
+# expect-out: diferencia [C RAM:F/a | N RAM:F/b]
+# expect-out: escritos 2 cambiados 1 error []
+# expect-out: nuevos: si si
+# expect-out: deshecho: no no; el que estaba sigue: si
+import "../src/instalador.dash"
+
+func si_no(b: Bool) -> String
+    if b
+        return "si"
+    end
+    return "no"
+end
+
+Main
+    recibos_cajon = "RAM:BaseInst"
+    tr_cajon = "RAM:BaseInst"
+    var antes: [String] = ["RAM:F/a\t5\t100"]
+    var despues: [String] = ["RAM:F/a\t6\t101", "RAM:F/b\t1\t101"]
+    d = foto_diferencia(antes, despues)
+    Print "diferencia [" + d[0] + " | " + d[1] + "]"
+    # el "paquete" descomprimido y su guion
+    # en PROGDIR:, como el Cache/Nuevo de Hangar: el Installer (otro proceso) no tiene ese PROGDIR: y pedía el volumen
+    dir_create("PROGDIR:Stage")
+    dir_create("PROGDIR:Stage/Prog")
+    dir_create("RAM:Dest2")
+    file_write_text("RAM:Dest2/viejo.txt", "estaba")
+    file_write_text("PROGDIR:Stage/Prog/hacer", "MakeDir RAM:Dest2/Prog\nEcho >RAM:Dest2/Prog/programa \"x\"\nEcho >LIBS:hangar_prueba.library \"lib\"\nEcho >RAM:Dest2/viejo.txt \"cambiado\"\n")
+    instalador_forzado = "C:Execute"
+    instalador_args = ""
+    tr_empezar("Instalar Prueba")
+    escritos = instalar_con_guion("PROGDIR:Stage/", "Prog/hacer", "Prueba", "RAM:Dest2/")
+    Print "escritos " + str_from_int(escritos.length, 10) + " cambiados " + str_from_int(instalador_cambiados, 10) + " error [" + instalador_error + "]"
+    Print "nuevos: " + si_no(file_exists("RAM:Dest2/Prog/programa")) + " " + si_no(file_exists("LIBS:hangar_prueba.library"))
+    tr_deshacer(tr_diario())
+    Print "deshecho: " + si_no(file_exists("RAM:Dest2/Prog/programa")) + " " + si_no(file_exists("LIBS:hangar_prueba.library")) + "; el que estaba sigue: " + si_no(file_exists("RAM:Dest2/viejo.txt"))
+end

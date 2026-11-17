@@ -1,0 +1,88 @@
+# Test: los programas que se actualizan solos (Tachyon, Trasfondo). La versión se compara por números (solo se
+# ofrecen las más nuevas), se lee del "$VER:" del propio programa aunque esté al final de un fichero grande (como
+# en los de Dash), el recibo se pone al día, y un programa sin recibo se encuentra donde está.
+# expect-out: mayor 0.9.2 0.9.1 si
+# expect-out: mayor 0.9.1 0.9.2 no
+# expect-out: mayor 2.10 2.9 si
+# expect-out: mayor 2.8.1 2.8 si
+# expect-out: mayor 1.0 1.0.0 no
+# expect-out: mayor 0.9.2-alfa 0.9.1-alfa si
+# expect-out: mayor v1.3 1.2 si
+# expect-out: al final de 600 KB: Grande 3.4
+# expect-out: instalada 0.9.2 (recibo 0.9.2)
+# expect-out: sin cambios 1.20
+# expect-out: sin recibo en RAM:Prueba/
+# expect-out: no está []
+# expect-out: disco 1: Prog 3000 Prog 2.1
+import "../src/versiones.dash"
+
+func si_no(b: Bool) -> String
+    if b
+        return "si"
+    end
+    return "no"
+end
+
+# un "ejecutable" de n bytes con su $VER cerca del final, como los de Dash
+func fichero_con_ver(ruta: String, n: Int, ver: String)
+    b = buffer_alloc(n)
+    i = 0
+    while i < n
+        buffer_set_byte(b, i, 0)
+        i = i + 1
+    end
+    t = "$VER: " + ver + " (08.11.2026)"
+    j = 0
+    while j < t.length
+        buffer_set_byte(b, n - 200 + j, str_code(t, j))
+        j = j + 1
+    end
+    f = file_open(ruta, 1006)
+    file_write(f, b, n)
+    file_close(f)
+    buffer_free(b)
+end
+
+Main
+    for par in [["0.9.2", "0.9.1"], ["0.9.1", "0.9.2"], ["2.10", "2.9"], ["2.8.1", "2.8"], ["1.0", "1.0.0"], ["0.9.2-alfa", "0.9.1-alfa"], ["v1.3", "1.2"]]
+        Print "mayor #{par[0]} #{par[1]} #{si_no(version_mayor(par[0], par[1]))}"
+    end
+    fichero_con_ver("RAM:grande", 600000, "Grande 3.4")
+    i = inventario_version("RAM:grande")
+    Print "al final de 600 KB: #{i.nombre} #{i.version}"
+    # se actualizó solo: el recibo dice 0.9.1, el programa es 0.9.2
+    dir_create("RAM:Prueba")
+    dir_create("RAM:Prueba/Tachyon")
+    fichero_con_ver("RAM:Prueba/Tachyon/Tachyon", 4000, "Tachyon 0.9.1")
+    recibos_cajon = "RAM:Recibos"
+    var fs: [String] = ["RAM:Prueba/Tachyon/Tachyon"]
+    recibo_guardar(recibo_nuevo(77, "Tachyon", "0.9.1", "RAM:Prueba/", fs))
+    fichero_con_ver("RAM:Prueba/Tachyon/Tachyon", 4000, "Tachyon 0.9.2")
+    v = version_instalada(recibo_leer(77))
+    Print "instalada #{v} (recibo #{recibo_leer(77).version})"
+    # sin tocar desde que lo instaló Hangar: manda el paquete aunque su $VER diga otra (image2icon 1.20 dice 1.19)
+    dir_create("RAM:Prueba/Imagen")
+    fichero_con_ver("RAM:Prueba/Imagen/Imagen", 4000, "Imagen 1.19")
+    var fs2: [String] = ["RAM:Prueba/Imagen/Imagen"]
+    recibo_guardar(recibo_nuevo(78, "Imagen", "1.20", "RAM:Prueba/", fs2))
+    Print "sin cambios #{version_instalada(recibo_leer(78))}"
+    Print "sin recibo en #{instalado_sin_recibo("Tachyon", ["RAM:Nada", "RAM:Prueba/"])}"
+    Print "no está [#{instalado_sin_recibo("Otro", ["RAM:Prueba/"])}]"
+    # el disco: solo los ejecutables (hunk), en los subcajones, y sin requester por un volumen que no está
+    dir_create("RAM:Disco")
+    dir_create("RAM:Disco/Sub")
+    fichero_con_ver("RAM:Disco/Sub/Prog", 3000, "Prog 2.1")
+    f = file_open("RAM:Disco/Sub/Prog", 1004)
+    h = buffer_alloc(4)
+    buffer_set_byte(h, 0, 0)
+    buffer_set_byte(h, 1, 0)
+    buffer_set_byte(h, 2, 3)
+    buffer_set_byte(h, 3, 243)
+    file_write(f, h, 4)
+    file_close(f)
+    fichero_con_ver("RAM:Disco/Datos", 3000, "Datos 1.0")
+    inv = inventario_recorrer(["RAM:Disco", "NoEsta:"], 2)
+    for d in inv
+        Print "disco #{inv.length}: #{d.fichero} #{d.tamano} #{d.nombre} #{d.version}"
+    end
+end

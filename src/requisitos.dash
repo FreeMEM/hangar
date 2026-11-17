@@ -1,0 +1,153 @@
+# Lo que pide un programa, comprobado en este Amiga (las líneas "nec" de la ficha): qué tiene y qué le falta, y el
+# programa del catálogo que lo trae para instalarlo antes.
+
+import "api.dash"
+import "recibos.dash"
+import "versiones.dash"
+
+func _si(b: Bool) -> Int
+    if b
+        return 1
+    end
+    return 0
+end
+
+# El número de delante del punto: "45.1" -> 45
+func _req_mayor(v: String) -> Int
+    i = str_find(v, ".")
+    if i > 0
+        v = v[:i]
+    end
+    if v == ""
+        return 0
+    end
+    return Int(v)
+end
+
+# La versión de una librería o clase MUI ("nlist.mcc" vive en LIBS:mui/); -1 si no está
+func _req_libreria(nombre: String) -> Int
+    v = library_version(nombre)
+    if v < 0 and (str_ends(nombre, ".mcc") or str_ends(nombre, ".mcp"))
+        v = library_version("mui/" + nombre)
+    end
+    return v
+end
+
+# 1 si este Amiga lo cumple, 0 si no, -1 si no se puede saber desde aquí (chipset, MMU, memoria)
+func necesidad_cumplida(n: Necesidad) -> Int
+    if n.tipo == "cpu"
+        return _si(cpu_model() >= Int(n.valor))
+    elif n.tipo == "fpu"
+        return _si(fpu_model() != 0)
+    elif n.tipo == "rtg"
+        return _si(rtg_available())
+    elif n.tipo == "os"
+        return _si(library_version("exec.library") >= Int(n.valor))
+    elif n.tipo == "lib"
+        v = _req_libreria(n.valor)
+        if v < 0
+            return 0
+        end
+        return _si(v >= _req_mayor(n.version))
+    elif n.tipo == "red"
+        return _si(library_version("bsdsocket.library") >= 0)
+    elif n.tipo == "paquete"
+        # instalado (por su número o por su nombre) y con la versión que pide ("pkg:codesets >= 6.20")
+        r = recibo_leer(n.paquete)
+        if r.id == 0 or n.paquete == 0
+            r = recibo_de(n.valor)
+        end
+        if r.id == 0
+            return 0
+        end
+        return _si(version_cumple(version_instalada(r), n.version))
+    elif n.tipo == "sistema"
+        return 0
+    end
+    return -1
+end
+
+# Lo que pide, en palabras ("MUI 3.8", "68020", "AmigaOS 3.1")
+func necesidad_texto(n: Necesidad) -> String
+    if n.tipo == "cpu"
+        return "un " + n.valor
+    elif n.tipo == "fpu"
+        return "FPU"
+    elif n.tipo == "mmu"
+        return "MMU"
+    elif n.tipo == "chipset"
+        return "chipset " + n.valor
+    elif n.tipo == "rtg"
+        return "tarjeta gráfica"
+    elif n.tipo == "os"
+        os = "AmigaOS de la versión " + n.valor
+        for par in [["36", "2.0"], ["37", "2.04"], ["39", "3.0"], ["40", "3.1"], ["44", "3.5"], ["45", "3.9"], ["46", "3.1.4"], ["47", "3.2"]]
+            if par[0] == n.valor
+                os = "AmigaOS " + par[1]
+            end
+        end
+        return os
+    elif n.tipo == "memoria" or n.tipo == "chip"
+        m = Int(n.valor)
+        t = str_from_int(m, 10) + " KB"
+        if m >= 1024
+            t = str_from_int(m / 1024, 10) + " MB"
+        end
+        if n.tipo == "chip"
+            return t + " de chip"
+        end
+        return t + " de memoria"
+    elif n.tipo == "lib"
+        if n.valor == "muimaster.library"
+            m = "MUI"
+            if n.version == "19"
+                m = "MUI 3.8"
+            elif n.version == "20"
+                m = "MUI 4"
+            elif n.version == "21"
+                m = "MUI 5"
+            end
+            return m
+        end
+        if n.version != ""
+            return n.valor + " " + n.version
+        end
+        return n.valor
+    elif n.tipo == "red"
+        return "una pila TCP/IP"
+    elif n.tipo == "paquete"
+        if n.version != ""
+            return n.valor + " " + n.version
+        end
+        return n.valor
+    elif n.tipo == "sistema"
+        return n.valor
+    end
+    return n.valor
+end
+
+# Para la ficha: "Necesita:" y una línea por cosa ("  MUI 3.8: sí", "  reqtools.library: falta"); lo de la CPU y el
+# sistema es lo mínimo ("un 68020 o mejor"), no lo que tiene la máquina
+func necesidades_texto(f: Ficha) -> String
+    t = ""
+    for n in f.necesita
+        c = necesidad_cumplida(n)
+        que = necesidad_texto(n)
+        if n.tipo == "cpu" or n.tipo == "os"
+            que = que + " o mejor"
+        end
+        if n.tipo == "sistema"
+            t = t + "Es para " + n.valor + "\n"
+        elif c == 1
+            t = t + "  " + que + ": sí\n"
+        elif c == 0
+            t = t + "  " + que + ": falta\n"
+        else
+            t = t + "  " + que + "\n"
+        end
+    end
+    if t != ""
+        t = "Necesita:\n" + t
+    end
+    return t
+end

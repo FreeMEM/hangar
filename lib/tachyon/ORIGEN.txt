@@ -1,0 +1,1 @@
+Copiados de FreeMEM/tachyon 5767a47 (2026-11-02), licencia MIT (LICENSE). No se editan aquí: se vuelven a copiar con tools/traer_tachyon.sh.

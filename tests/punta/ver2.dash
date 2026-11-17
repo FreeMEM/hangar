@@ -1,0 +1,43 @@
+# Para tests/punta2.py: cómo quedó el disco con el formato 2
+func si_no(b: Bool) -> String
+    if b
+        return "si"
+    end
+    return "no"
+end
+
+func leer(r: String) -> String
+    t = file_read_text(r)
+    if t == nil
+        return "-"
+    end
+    return str_trim(str_replace(t, "\n", " "))
+end
+
+Main
+    Print "X=" + leer("RAM:Q/X/X") + " X.000=" + si_no(file_exists("RAM:Q/X/X.000")) + " X.020=" + si_no(file_exists("RAM:Q/X/X.020"))
+    Print "yy=" + si_no(file_exists("RAM:Q/Y/Y")) + " ww=" + si_no(file_exists("RAM:Q/W/W")) + " rr=" + si_no(file_exists("RAM:Q/R/R"))
+    Print "foo12=" + si_no(file_exists("RAM:Q/F12/F")) + " foo13=" + si_no(file_exists("RAM:Q/F13/F")) + " malo=" + si_no(file_exists("RAM:Q/M/M"))
+    Print "uu=" + leer("RAM:Q/U/U")
+    base = "-"
+    t = file_read_text("PROGDIR:Base/xprog.pkg")
+    if t == nil
+        t = file_read_text("SYS:Base/xprog.pkg")
+    end
+    if t != nil
+        base = ""
+        for l in str_split(t, "\n")
+            if str_starts(l, "PKG-DB") or str_starts(l, "Repository:") or str_starts(l, "Reason:")
+                base = base + l + "|"
+            end
+        end
+    end
+    Print "base xprog: " + base
+    t2 = file_read_text("PROGDIR:Base/yy.pkg")
+    if t2 == nil
+        t2 = file_read_text("SYS:Base/yy.pkg")
+    end
+    if t2 != nil and str_find(t2, "Reason: dependency") >= 0 and str_find(t2, "Repository: aminet") >= 0
+        Print "base yy: dependency aminet"
+    end
+end

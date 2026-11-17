@@ -1,0 +1,549 @@
+# Las respuestas firmadas del formato 2 (docs/FORMATO_PAQUETES.md del servicio, 5, "Respuestas firmadas"): el Amiga
+# no puede con el índice entero de Aminet, así que pregunta por lo que necesita. Cada petición lleva un Nonce (un
+# contador guardado y azar) y la respuesta vale solo si: la firma Ed25519 es de la clave de respuestas de ese
+# repositorio (sobre "PKG-RESPONSE-2", un byte 0 y el cuerpo), el Nonce y la Query son los nuestros, el repositorio y
+# la arquitectura son los pedidos y la Serial no es menor que la última vista.
+
+import "api.dash"
+import "formato.dash"
+import "resolutor.dash"
+
+# Un repositorio de la lista (docs/FORMATO_PAQUETES.md, 5)
+struct RepoConf
+    nombre: String
+    url: String              # hasta /pkg/v2/<repo>
+    prioridad: Int
+    protegido: Bool
+    clave: String            # la clave pública de las respuestas, entera (64 cifras hexadecimales)
+    clave_id: String         # los 8 primeros bytes de su SHA-256 (se calcula)
+end
+
+var api2_arquitectura: String = "m68k-amigaos"
+var api2_estado: String = "PROGDIR:Base/Estado"
+var api2_repos: [RepoConf] = []
+# Las raíces de fábrica (docs/FORMATO_PAQUETES.md, 5, "Claves raíz y el fichero keys"): solo firman el fichero keys de
+# cada repositorio, que dice qué claves de respuestas valen. Un keys bueno puede anunciar otra (Root:).
+var api2_raices: [String] = ["7b94dd5a7bf57ada7d066717d08877d835cd14479a3f94262dcb127effb45b75", "051fb67bd99643f8a944135ab6dfb45a7687b1f8ad277de577b203e3a4daf8ab"]
+# Lo que dicen los keys ya comprobados: "repo id hex" de cada clave de respuestas y "repo id" de cada anulada
+var api2_claves: [String] = []
+var api2_anuladas: [String] = []
+var api2_con_keys: [String] = []      # los repositorios con keys leído (entonces la clave de fábrica ya no cuenta)
+var api2_keys_mirado: [String] = []   # los repositorios cuyo keys ya se pidió en esta ejecución
+var api2_keys_caduca: [String] = []   # "repo segundos" del Expires de su keys
+
+# La respuesta ya comprobada
+struct Respuesta2
+    error: String            # "" si vale
+    cabecera: Cabecera
+    entradas: [Entrada]
+    texto: String = ""       # el cuerpo entero (comprobado), para lo que no son entradas (identify)
+end
+
+# Los de fábrica: el de los autores (main) y Aminet, con la clave de respuestas del servicio
+func api2_repos_de_fabrica()
+    k = "4b5e83e8e3bd9c068be0c6e024361e0fa437f648b2655bfcd73b839200d4f744"
+    var r: [RepoConf] = []
+    r.push(RepoConf("main", "http://hangar.freemem.space/pkg/v2/main", 20, false, k, api2_clave_id(k)))
+    r.push(RepoConf("aminet", "http://hangar.freemem.space/pkg/v2/aminet", 10, false, k, api2_clave_id(k)))
+    api2_repos = r
+end
+
+# El id de una clave: los 8 primeros bytes del SHA-256 de la pública, en hexadecimal
+func api2_clave_id(hex: String) -> String
+    if hex.length != 64
+        return ""
+    end
+    b = buffer_alloc(32)
+    i = 0
+    while i < 32
+        buffer_set_byte(b, i, _hex_byte(hex[i * 2:i * 2 + 2]))
+        i = i + 1
+    end
+    s = sha256(b, 32)
+    buffer_free(b)
+    return s[:16]
+end
+
+func _hex_byte(t: String) -> Int
+    n = 0
+    i = 0
+    while i < t.length
+        c = str_code(str_lower(t), i)
+        d = 0
+        if c >= 48 and c <= 57
+            d = c - 48
+        elif c >= 97 and c <= 102
+            d = c - 87
+        end
+        n = n * 16 + d
+        i = i + 1
+    end
+    return n
+end
+
+func _hex8(n: Int) -> String
+    d = "0123456789abcdef"
+    t = ""
+    i = 0
+    while i < 8
+        t = d[n & 15:(n & 15) + 1] + t
+        n = n >> 4
+        i = i + 1
+    end
+    return t
+end
+
+# ---------------------------------------------------------------------------------------------------------------
+# El estado: el contador del Nonce y la última Serial de cada repositorio y arquitectura
+
+func _estado_lineas() -> [String]
+    var r: [String] = []
+    if not file_exists(api2_estado)
+        return r
+    end
+    for l in str_split(file_read_text(api2_estado), "\n")
+        if str_trim(l) != ""
+            r.push(str_trim(l))
+        end
+    end
+    return r
+end
+
+func _estado_leer(clave: String) -> Int
+    for l in _estado_lineas()
+        if str_starts(l, clave + " ")
+            return Int(l[clave.length + 1:])
+        end
+    end
+    return 0
+end
+
+func _estado_poner(clave: String, valor: Int)
+    t = ""
+    puesto = false
+    for l in _estado_lineas()
+        if str_starts(l, clave + " ")
+            t = t + clave + " " + str_from_int(valor, 10) + "\n"
+            puesto = true
+        else
+            t = t + l + "\n"
+        end
+    end
+    if not puesto
+        t = t + clave + " " + str_from_int(valor, 10) + "\n"
+    end
+    # el cajón de la base puede no estar aún (la primera vez, antes de instalar nada)
+    c = _api2_cajon()
+    if str_ends(c, "/")
+        dir_create(c[:c.length - 1])
+    end
+    file_write_text(api2_estado, t)
+end
+
+# El cajón del Estado (con su ":" o "/" final)
+func _api2_cajon() -> String
+    i = api2_estado.length - 1
+    while i >= 0 and api2_estado[i] != "/" and api2_estado[i] != ":"
+        i = i - 1
+    end
+    return api2_estado[:i + 1]
+end
+
+# Un Nonce nuevo: el contador (que sube y se guarda) y azar; 24 cifras hexadecimales
+func api2_nonce() -> String
+    n = _estado_leer("nonce") + 1
+    _estado_poner("nonce", n)
+    return _hex8(n) + _hex8(random()) + _hex8(time_ms())
+end
+
+# ---------------------------------------------------------------------------------------------------------------
+# Pedir y comprobar
+
+func _r2_error(e: String) -> Respuesta2
+    var q: [Int] = []
+    var es: [Entrada] = []
+    return Respuesta2(e, Cabecera("", "", "", 0, "", 0, "", "", q), es)
+end
+
+# La ruta y la consulta de una URL ("http://host:80/pkg/v2/x?y" -> "/pkg/v2/x?y")
+func _ruta_de_url(u: String) -> String
+    p = str_find(u, "://")
+    t = u
+    if p >= 0
+        t = u[p + 3:]
+    end
+    b = str_find(t, "/")
+    if b < 0
+        return "/"
+    end
+    return t[b:]
+end
+
+# Si una firma Ed25519 (en hexadecimal) de la etiqueta, un byte 0 y el texto es de esa clave pública
+func api2_firma_de(clave: String, etiqueta: String, texto: String, firma: String) -> Bool
+    n = etiqueta.length + 1 + texto.length
+    b = buffer_alloc(n)
+    str_to_buffer(etiqueta, b, 0)
+    buffer_set_byte(b, etiqueta.length, 0)
+    str_to_buffer(texto, b, etiqueta.length + 1)
+    vale = ed25519_verify(clave, firma, b, n)
+    buffer_free(b)
+    return vale
+end
+
+# La clave pública de respuestas de un repositorio con ese id ("" si no la hay o está anulada)
+func api2_clave_de(repo: RepoConf, id: String) -> String
+    if (repo.nombre + " " + id) in api2_anuladas
+        return ""
+    end
+    if not (repo.nombre in api2_con_keys)
+        if id == repo.clave_id
+            return repo.clave
+        end
+        return ""
+    end
+    for c in api2_claves
+        if str_starts(c, repo.nombre + " " + id + " ")
+            return c[repo.nombre.length + id.length + 2:]
+        end
+    end
+    return ""
+end
+
+# Si la firma Ed25519 (cabecera X-Pkg-Signature: id y firma) de un cuerpo es buena con una clave del repositorio
+func api2_firma_buena(repo: RepoConf, cabecera: String, cuerpo: String) -> Bool
+    if cabecera == nil or cabecera == ""
+        return false
+    end
+    e = str_find(cabecera, " ")
+    if e <= 0
+        return false
+    end
+    clave = api2_clave_de(repo, cabecera[:e])
+    if clave == ""
+        return false
+    end
+    return api2_firma_de(clave, "PKG-RESPONSE-2", cuerpo, str_trim(cabecera[e + 1:]))
+end
+
+# ---------------------------------------------------------------------------------------------------------------
+# El fichero keys de cada repositorio, firmado por una raíz
+
+# Los segundos desde 1970 de una fecha "2028-11-14T01:12:37Z" (0 si no se entiende)
+func api2_segundos(f: String) -> Int
+    if f.length < 19 or f[4] != "-" or f[10] != "T"
+        return 0
+    end
+    a = Int(f[:4])
+    m = Int(f[5:7])
+    d = Int(f[8:10])
+    # días desde 1970 (el algoritmo de Howard Hinnant, con el año empezando en marzo)
+    if m <= 2
+        a = a - 1
+    end
+    era = a / 400
+    ae = a - era * 400
+    mm = m + 9
+    if m > 2
+        mm = m - 3
+    end
+    da = (153 * mm + 2) / 5 + d - 1
+    de = ae * 365 + ae / 4 - ae / 100 + da
+    dias = era * 146097 + de - 719468
+    return dias * 86400 + Int(f[11:13]) * 3600 + Int(f[14:16]) * 60 + Int(f[17:19])
+end
+
+# Dónde se guarda el keys comprobado de un repositorio (al lado del Estado)
+func api2_keys_ruta(nombre: String) -> String
+    return _api2_cajon() + "Claves-" + nombre
+end
+
+# Lee un keys y, si vale, lo aplica al repositorio. Con firmas = nil no las mira (el guardado, ya comprobado). Devuelve
+# "" si vale, o por qué no.
+func api2_keys_aplicar(repo: RepoConf, texto: String, firmas: String) -> String
+    lineas = str_split(texto, "\n")
+    if lineas.length == 0 or str_trim(lineas[0]) != "PKG-KEYS 2"
+        return "no es un fichero keys"
+    end
+    if firmas != nil
+        buena = false
+        for l in str_split(firmas, "\n")
+            w = str_split(str_trim(l), " ")
+            if w.length == 3 and w[0] == "ed25519" and not buena
+                for r in api2_raices
+                    if not buena and api2_clave_id(r) == w[1]
+                        buena = api2_firma_de(r, "PKG-KEYS-2", texto, w[2])
+                    end
+                end
+            end
+        end
+        if not buena
+            return "el keys de " + repo.nombre + " no viene firmado por una raíz"
+        end
+    end
+    var claves: [String] = []
+    var anuladas: [String] = []
+    var raices: [String] = []
+    serie = -1
+    caduca = 0
+    for l in lineas
+        w = str_split(str_trim(l), " ")
+        if str_starts(l, "Repository:") and str_trim(l[11:]) != repo.nombre
+            return "el keys es de otro repositorio"
+        elif str_starts(l, "Serial:")
+            serie = Int(str_trim(l[7:]))
+        elif str_starts(l, "Expires:")
+            caduca = api2_segundos(str_trim(l[8:]))
+        elif str_starts(l, "Key:") and w.length == 4 and w[1] == "response" and api2_clave_id(w[3]) == w[2]
+            claves.push(repo.nombre + " " + w[2] + " " + w[3])
+        elif str_starts(l, "Revoked:") and w.length == 2
+            anuladas.push(repo.nombre + " " + w[1])
+        elif str_starts(l, "Root:") and w.length == 2 and w[1].length == 64
+            raices.push(w[1])
+        end
+    end
+    if serie < 0
+        return "el keys no tiene Serial"
+    end
+    if firmas != nil
+        if serie < _estado_leer("keys " + repo.nombre)
+            return "el keys de " + repo.nombre + " es más viejo que el último visto"
+        end
+        # sin reloj puesto (antes de 2026) no se mira la fecha
+        if time_unix() > 1767225600 and caduca > 0 and caduca < time_unix()
+            return "el keys de " + repo.nombre + " ha caducado"
+        end
+    end
+    # se cambia lo de este repositorio por lo nuevo
+    var otras: [String] = []
+    for c in api2_claves
+        if not str_starts(c, repo.nombre + " ")
+            otras.push(c)
+        end
+    end
+    for c in claves
+        otras.push(c)
+    end
+    api2_claves = otras
+    for a in anuladas
+        if not (a in api2_anuladas)
+            api2_anuladas.push(a)
+        end
+    end
+    for r in raices
+        if not (r in api2_raices)
+            api2_raices.push(r)
+        end
+    end
+    if not (repo.nombre in api2_con_keys)
+        api2_con_keys.push(repo.nombre)
+    end
+    api2_keys_caduca.push(repo.nombre + " " + str_from_int(caduca, 10))
+    if firmas != nil
+        _estado_poner("keys " + repo.nombre, serie)
+    end
+    return ""
+end
+
+# Los keys guardados de todos los repositorios (al empezar)
+func api2_keys_cargar()
+    for r in api2_repos
+        ruta = api2_keys_ruta(r.nombre)
+        if file_exists(ruta)
+            api2_keys_aplicar(r, file_read_text(ruta), nil)
+        end
+    end
+end
+
+# Pide el keys de un repositorio, lo comprueba, lo aplica y lo guarda. "" si fue bien.
+func api2_keys_traer(repo: RepoConf) -> String
+    if not (repo.nombre in api2_keys_mirado)
+        api2_keys_mirado.push(repo.nombre)
+    end
+    p = str_find(repo.url, "/pkg/v2/")
+    if p < 0
+        return "no sé dónde está el keys de " + repo.nombre
+    end
+    base = repo.url[:p] + "/repo/" + repo.nombre + "/keys"
+    r = http_get(base, API_ESPERA_MS)
+    e = api_error(r)
+    if e != ""
+        return e
+    end
+    texto = r.cuerpo
+    s = http_get(base + ".sig", API_ESPERA_MS)
+    e = api_error(s)
+    if e != ""
+        return e
+    end
+    e = api2_keys_aplicar(repo, texto, s.cuerpo)
+    if e != ""
+        return e
+    end
+    ruta = api2_keys_ruta(repo.nombre)
+    if file_write_text(ruta + ".new", texto)
+        file_delete(ruta)
+        file_rename(ruta + ".new", ruta)
+    end
+    return ""
+end
+
+# Si hay que pedir el keys de un repositorio antes de preguntarle: no lo tiene, o caducó (con el reloj puesto)
+func api2_keys_hace_falta(repo: RepoConf) -> Bool
+    if repo.nombre in api2_keys_mirado
+        return false
+    end
+    if not (repo.nombre in api2_con_keys)
+        return true
+    end
+    if time_unix() > 1767225600
+        for c in api2_keys_caduca
+            if str_starts(c, repo.nombre + " ")
+                n = Int(c[repo.nombre.length + 1:])
+                if n > 0 and n < time_unix()
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
+# Pide algo a un repositorio (GET, o POST si hay cuerpo) y lo comprueba todo
+func api2_pedir(repo: RepoConf, ruta: String, cuerpo: String) -> Respuesta2
+    sep = "?"
+    if str_find(ruta, "?") >= 0
+        sep = "&"
+    end
+    if api2_keys_hace_falta(repo)
+        # si no se puede, se sigue con lo que hay (la clave de fábrica o el keys guardado)
+        api2_keys_traer(repo)
+    end
+    nonce = api2_nonce()
+    url = repo.url + "/" + api2_arquitectura + "/" + ruta + sep + "nonce=" + nonce
+    var r: Respuesta = nil
+    if cuerpo == ""
+        r = http_get(url, API_ESPERA_MS)
+    else
+        c = http_empezar_post(url, cuerpo, "text/plain; charset=iso-8859-1", API_ESPERA_MS)
+        while not http_avanzar(c)
+            time_delay(1)
+        end
+        r = c.respuesta
+    end
+    e = api_error(r)
+    if e != ""
+        return _r2_error(e)
+    end
+    firma = r.cabeceras["x-pkg-signature"]
+    buena = api2_firma_buena(repo, firma, r.cuerpo)
+    if not buena and not (repo.nombre in api2_keys_mirado)
+        # una clave que no conoce: puede que haya cambiado; se mira el keys una vez
+        if api2_keys_traer(repo) == ""
+            buena = api2_firma_buena(repo, firma, r.cuerpo)
+        end
+    end
+    if not buena
+        return _r2_error("la respuesta de " + repo.nombre + " no viene firmada por su clave")
+    end
+    h = formato_cabecera(r.cuerpo)
+    query = _ruta_de_url(url)
+    if cuerpo != ""
+        query = query + " " + sha256_text(cuerpo)
+    end
+    if h.tipo != "PKG-RESPONSE 2" or h.repositorio != repo.nombre or h.arquitectura != api2_arquitectura
+        return _r2_error("la respuesta de " + repo.nombre + " es de otra cosa")
+    end
+    if h.nonce != nonce or h.query != query
+        return _r2_error("la respuesta de " + repo.nombre + " no es la de esta pregunta (repetida)")
+    end
+    clave = "serial " + repo.nombre + " " + api2_arquitectura
+    vista = _estado_leer(clave)
+    if h.serie < vista
+        return _r2_error("la respuesta de " + repo.nombre + " es más vieja que la última vista")
+    end
+    if h.serie > vista
+        _estado_poner(clave, h.serie)
+    end
+    t = http_texto(r)
+    r2 = Respuesta2("", h, formato_entradas(t))
+    r2.texto = t
+    return r2
+end
+
+# Las entradas de un paquete en un repositorio
+func api2_paquete(repo: RepoConf, nombre: String) -> Respuesta2
+    return api2_pedir(repo, "package?name=" + url_codificar(nombre), "")
+end
+
+# Las versiones anteriores de un paquete que aún se pueden bajar (para volver a una), de la más nueva a la más vieja
+func api2_versiones(repo: RepoConf, nombre: String) -> Respuesta2
+    return api2_pedir(repo, "versions?name=" + url_codificar(nombre), "")
+end
+
+# Las de los paquetes que traen algo ("reqtools.library")
+func api2_provee(repo: RepoConf, que: String) -> Respuesta2
+    return api2_pedir(repo, "provides?what=" + url_codificar(que), "")
+end
+
+func api2_buscar(repo: RepoConf, q: String) -> Respuesta2
+    return api2_pedir(repo, "search?q=" + url_codificar(q), "")
+end
+
+# Lo que es más nuevo que lo instalado ("nombre versión release" por línea)
+func api2_actualizaciones(repo: RepoConf, instalado: String) -> Respuesta2
+    return api2_pedir(repo, "updates", instalado)
+end
+
+# Qué programa del catálogo es cada fichero del disco (el inventario de inventario_texto, "fichero TAB tamaño TAB
+# nombre TAB versión" por línea), con la respuesta firmada identify (P6e): lo que se apunta como adoptado no lo puede
+# cambiar nadie por el camino. Tras la cabecera, una línea por fichero como en api_reconocer
+func api2_reconocer(inventario: String) -> Reconocidos
+    var rs: [Reconocido] = []
+    v = Reconocidos(rs, "")
+    if inventario == ""
+        return v
+    end
+    if api2_repos.length == 0
+        v.error = "no hay repositorios"
+        return v
+    end
+    r = api2_pedir(api2_repos[0], "identify", inventario)
+    if r.error != ""
+        v.error = r.error
+        return v
+    end
+    for l in str_split(r.texto, "\n")
+        p = str_split(l, "\t")
+        if p.length >= 6
+            id = 0
+            if p[2] != ""
+                id = Int(p[2])
+            end
+            rc = Reconocido(p[0], p[1], id, p[3], p[4], p[5])
+            if p.length >= 7
+                rc.ruta = p[6]
+            end
+            v.lista.push(rc)
+        end
+    end
+    return v
+end
+
+# Mete en la caché del resolutor lo de un paquete en todos los repositorios; da el primer error, si lo hay
+func api2_traer(nombre: String) -> String
+    error = ""
+    for repo in api2_repos
+        r = api2_paquete(repo, nombre)
+        if r.error != ""
+            if error == ""
+                error = r.error
+            end
+        else
+            for e in r.entradas
+                resolutor_meter(repo.nombre, e)
+            end
+        end
+    end
+    return error
+end

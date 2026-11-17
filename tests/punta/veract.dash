@@ -1,0 +1,28 @@
+# Para tests/cortes.py: cómo quedó uu tras un corte al actualizar (el fichero, la versión de la base y lo que hay en el cajón)
+func leer(r: String) -> String
+    t = file_read_text(r)
+    if t == nil
+        return "-"
+    end
+    return str_trim(str_replace(t, "\n", " "))
+end
+
+func version_base() -> String
+    t = file_read_text("PROGDIR:Base/uu.pkg")
+    if t == nil
+        t = file_read_text("SYS:Base/uu.pkg")
+    end
+    if t == nil
+        return "-"
+    end
+    for l in str_split(t, "\n")
+        if str_starts(l, "Version:")
+            return str_trim(l[8:])
+        end
+    end
+    return "?"
+end
+
+Main
+    Print "uu=" + leer("RAM:P/U/U") + " base=" + version_base() + " cajon=" + str_from_int(dir_read("RAM:P/U"), 10)
+end

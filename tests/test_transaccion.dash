@@ -1,0 +1,60 @@
+# Test: las transacciones (src/transaccion.dash). Una instalación que se corta a mitad (sin tr_cerrar) se deshace al
+# arrancar: lo pisado vuelve, lo nuevo se va, lo borrado vuelve y el recibo de antes también. Una que acaba bien se
+# puede deshacer después con "Deshacer la última".
+# expect-out: a mitad: A=nuevo B=si C=no recibo=2.0
+# expect-out: recuperada 0 fallos: A=viejo B=no C=si recibo=1.0 diario=no
+# expect-out: ultima: Instalar Prueba 2.0
+# expect-out: cerrada: A=nuevo diario=no
+# expect-out: deshecha 0 fallos: A=viejo B=no C=si recibo=1.0
+import "../src/transaccion.dash"
+
+func si_no(b: Bool) -> String
+    if b
+        return "si"
+    end
+    return "no"
+end
+
+func estado() -> String
+    return "A=" + file_read_text("RAM:Dest/A") + " B=" + si_no(file_exists("RAM:Dest/Sub/B")) + " C=" + si_no(file_exists("RAM:Dest/C")) + " recibo=" + recibo_de("Prueba").version
+end
+
+func preparar()
+    dir_create("RAM:Dest")
+    file_write_text("RAM:Dest/A", "viejo")
+    file_write_text("RAM:Dest/C", "se borra")
+    file_delete("RAM:Dest/Sub/B")
+    file_delete("RAM:Dest/Sub")
+    var fs: [String] = ["RAM:Dest/A", "RAM:Dest/C"]
+    recibo_guardar(recibo_nuevo(7, "Prueba", "1.0", "RAM:Dest/", fs))
+end
+
+func instalar()
+    tr_empezar("Instalar Prueba 2.0")
+    tr_poner("RAM:Nuevo/A", "RAM:Dest/A")
+    tr_poner("RAM:Nuevo/B", "RAM:Dest/Sub/B")
+    tr_borrar("RAM:Dest/C")
+    tr_recibo("Prueba")
+    var fs: [String] = ["RAM:Dest/A", "RAM:Dest/Sub/B"]
+    recibo_guardar(recibo_nuevo(7, "Prueba", "2.0", "RAM:Dest/", fs))
+end
+
+Main
+    recibos_cajon = "RAM:Base"
+    tr_cajon = "RAM:Base"
+    dir_create("RAM:Nuevo")
+    file_write_text("RAM:Nuevo/A", "nuevo")
+    file_write_text("RAM:Nuevo/B", "b")
+    preparar()
+    instalar()
+    Print "a mitad: " + estado()
+    # se corta aquí (sin tr_cerrar): al arrancar otra vez, se deshace
+    f = tr_recuperar()
+    Print "recuperada " + str_from_int(f, 10) + " fallos: " + estado() + " diario=" + si_no(tr_pendiente())
+    instalar()
+    tr_cerrar()
+    Print "ultima: " + tr_ultima()
+    Print "cerrada: A=" + file_read_text("RAM:Dest/A") + " diario=" + si_no(tr_pendiente())
+    f = tr_deshacer(tr_copias() + "/Diario")
+    Print "deshecha " + str_from_int(f, 10) + " fallos: " + estado()
+end

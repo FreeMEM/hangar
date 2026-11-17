@@ -1,0 +1,385 @@
+# Instalar con el formato 2 (docs/FORMATO_PAQUETES.md del servicio): la máquina de verdad, el plan del resolutor
+# con las respuestas firmadas (lo que falta se va pidiendo), las entradas como fichas para instalar_ficha y las
+# variantes por procesador (Variant) en el cajón descomprimido.
+
+import "api2.dash"
+import "resolutor.dash"
+import "recibos.dash"
+import "versiones.dash"
+
+# Este Amiga, para el resolutor (las librerías se miran de verdad: resolutor_libs_reales)
+func maquina_real() -> Maquina
+    var libs: [String] = []
+    c = chipset_model()
+    chip = ""
+    if c == "AGA"
+        chip = "aga"
+    elif c == "ECS"
+        chip = "ecs"
+    end
+    return Maquina(library_version("exec.library"), cpu_model(), fpu_model() != 0, false, rtg_available(), library_version("bsdsocket.library") >= 0, chip, (mem_chip_total() + mem_fast_total()) / 1024, mem_chip_total() / 1024, libs)
+end
+
+# El motivo de la base a partir del del plan
+func motivo_de(m: String) -> String
+    if m == "dependency" or m == "recommended"
+        return "dependencia"
+    end
+    return "pedido"
+end
+
+func _repo_de(nombre: String) -> RepoConf
+    for r in api2_repos
+        if r.nombre == nombre
+            return r
+        end
+    end
+    return nil
+end
+
+# La máquina, los repositorios y lo instalado (de la base). Lo instalado antes del formato 2 no dice de qué
+# repositorio vino: el que ya tenga ese nombre en la caché (el de más prioridad), o aminet.
+func _plan2_empezar()
+    resolutor_libs_reales = true
+    resolutor_empezar(maquina_real())
+    for r in api2_repos
+        resolutor_repo(r.nombre, r.prioridad, r.protegido)
+    end
+end
+
+func _plan2_instalados()
+    for rec in recibos_todos()
+        n = recibo_clave(rec.nombre)
+        repo = rec.repo
+        if repo == ""
+            repo = "aminet"
+            mejor = -1
+            for r in api2_repos
+                if resolutor_en_cache(r.nombre, n) > 0 and r.prioridad > mejor
+                    repo = r.nombre
+                    mejor = r.prioridad
+                end
+            end
+        end
+        resolutor_instalado(PkgInstalado(n, rec.epoch, version_instalada(rec), rec.lanzamiento, repo, motivo_razon(rec.motivo), rec.retenido))
+    end
+end
+
+func motivo_razon(m: String) -> String
+    if m == "dependencia"
+        return "dependency"
+    end
+    return "explicit"
+end
+
+var plan2_error: String = ""
+# lo que se pidió desde una ficha del catálogo: su número (el del catálogo, el mismo que dan buscar y la ficha) y su
+# nombre del formato 2; el recibo nuevo lleva ese número, no el de la entrada del índice
+var plan2_id_v1: Int = 0
+var plan2_nombre_v1: String = ""
+var plan2_titulo_v1: String = ""      # su nombre del catálogo, con sus mayúsculas ("Boot_Star", no "boot_star")
+
+# Pide lo que falta según el error del resolutor; false si no hay nada más que pedir
+func _plan2_pedir(e: String, pedidos: [String]) -> Bool
+    que = ""
+    if str_starts(e, "missing pkg ")
+        que = "pkg " + e[12:]
+    elif str_starts(e, "missing has ")
+        que = "has " + e[12:]
+    elif str_starts(e, "missing aminet ")
+        que = "pkg " + e[15:]
+    end
+    if que == ""
+        return false
+    end
+    for p in pedidos
+        if p == que
+            return false
+        end
+    end
+    pedidos.push(que)
+    if str_starts(que, "pkg ")
+        n = que[4:]
+        a = str_find(n, " ")
+        if a > 0
+            n = n[:a]
+        end
+        a = str_find(n, "@")
+        if a > 0
+            n = n[:a]
+        end
+        api2_traer(n)
+    else
+        lib = que[4:]
+        a = str_find(lib, " ")
+        if a > 0
+            lib = lib[:a]
+        end
+        for r in api2_repos
+            x = api2_provee(r, lib)
+            if x.error == ""
+                for en in x.entradas
+                    resolutor_meter(r.nombre, en)
+                end
+            end
+        end
+    end
+    return true
+end
+
+# El plan para instalar un paquete ("nombre" o "nombre@repositorio"): true si se puede; los pasos quedan en
+# resolutor_pasos y el error en plan2_error
+func plan2_instalar(pedido: String) -> Bool
+    plan2_error = ""
+    _plan2_empezar()
+    n = pedido
+    a = str_find(n, "@")
+    if a > 0
+        n = n[:a]
+    end
+    e = api2_traer(n)
+    # lo instalado que dice sustituir: su entrada, para comparar el autor (Replaces en Aminet)
+    for s in resolutor_sustituidos()
+        if recibo_de(s).id != 0
+            api2_traer(s)
+        end
+    end
+    # lo recomendado (de un nivel), si no está ya
+    for s in resolutor_recomendados()
+        if recibo_de(s).id == 0
+            api2_traer(s)
+        end
+    end
+    _plan2_instalados()
+    var pedidos: [String] = []
+    vueltas = 0
+    while vueltas < 16
+        if resolutor_instalar(pedido)
+            # lo adivinado (Declared: no) que no se cumple no bloquea, pero se busca quién lo trae (la librería que
+            # falta: el servidor sabe qué paquetes la llevan) y se vuelve a resolver; si nadie, queda el aviso
+            nuevo = false
+            for a in resolutor_avisos
+                dp = str_find(a, ": ")
+                if dp > 0
+                    for o in str_split(a[dp + 2:], " | ")
+                        if _plan2_pedir("missing " + str_trim(o), pedidos)
+                            nuevo = true
+                        end
+                    end
+                end
+            end
+            if not nuevo
+                return true
+            end
+        else
+            if not _plan2_pedir(resolutor_error, pedidos)
+                plan2_error = resolutor_error
+                if e != "" and str_starts(plan2_error, "missing pkg " + n)
+                    plan2_error = e
+                end
+                return false
+            end
+        end
+        vueltas = vueltas + 1
+    end
+    plan2_error = resolutor_error
+    return false
+end
+
+# El plan para ponerlo todo al día
+func plan2_actualizar() -> Bool
+    plan2_error = ""
+    _plan2_empezar()
+    # una pregunta por repositorio con todo lo instalado: lo que tiene versión más nueva
+    lista = ""
+    for rec in recibos_todos()
+        lista = lista + recibo_clave(rec.nombre) + " " + version_instalada(rec) + " " + str_from_int(rec.lanzamiento, 10) + "\n"
+    end
+    if lista == ""
+        return true
+    end
+    for r in api2_repos
+        x = api2_actualizaciones(r, lista)
+        if x.error != ""
+            plan2_error = x.error
+            return false
+        end
+        for en in x.entradas
+            resolutor_meter(r.nombre, en)
+        end
+    end
+    _plan2_instalados()
+    var pedidos: [String] = []
+    vueltas = 0
+    while vueltas < 16
+        if resolutor_actualizar()
+            return true
+        end
+        if not _plan2_pedir(resolutor_error, pedidos)
+            plan2_error = resolutor_error
+            return false
+        end
+        vueltas = vueltas + 1
+    end
+    plan2_error = resolutor_error
+    return false
+end
+
+# Un paso del plan en palabras, para enseñarlo antes de seguir
+func plan2_texto(p: PkgPaso) -> String
+    if p.tipo == "-"
+        return "quitar " + p.nombre + " (lo sustituye otro)"
+    elif p.tipo == "="
+        return "se queda " + p.nombre + ": " + p.motivo
+    elif p.tipo == "^"
+        return "actualizar " + p.nombre + " " + version_ver(p.vieja) + " -> " + version_ver(formato_version_texto(p.entrada.e))
+    end
+    por = ""
+    if p.motivo == "dependency"
+        por = " (lo necesita)"
+    elif p.motivo == "recommended"
+        por = " (recomendado)"
+    end
+    return "instalar " + p.nombre + " " + version_ver(formato_version_texto(p.entrada.e)) + por
+end
+
+# Una entrada del formato 2 como ficha, para instalar_ficha. El id es el del recibo si ya está instalado (así se
+# actualiza encima); si no, el de la entrada. El título, el de la base si lo tiene.
+func ficha_de_entrada(x: EntradaRepo) -> Ficha
+    e = x.e
+    var nec: [Necesidad] = []
+    rec = recibo_de(e.nombre)
+    id = e.id
+    titulo = e.nombre
+    if rec.id != 0
+        id = rec.id
+        titulo = rec.nombre
+    end
+    if rec.id == 0 and plan2_id_v1 != 0 and e.nombre == plan2_nombre_v1
+        id = plan2_id_v1
+        if plan2_titulo_v1 != "" and str_lower(plan2_titulo_v1) == str_lower(e.nombre)
+            titulo = plan2_titulo_v1
+        end
+    end
+    f = Ficha(id, x.repo, titulo, e.version, "", e.tamano, "", e.corto, e.autor, e.arquitectura, e.requires, "", e.url, 0, "", "", nec, e.install, e.run, e.nombre, e.release, e.provides, e.conflicts, e.replaces, e.assigns, _unir(e.startup), e.permissions, e.sha256, e.tamano)
+    f.firma = 1
+    f.config = e.config
+    f.variantes = e.variantes
+    f.epoch = e.epoch
+    f.repo = x.repo
+    return f
+end
+
+func _unir(l: [String]) -> String
+    t = ""
+    for x in l
+        if t != ""
+            t = t + "\n"
+        end
+        t = t + x
+    end
+    return t
+end
+
+# ---------------------------------------------------------------------------------------------------------------
+# Variantes por procesador (Variant: DESTINO = ORIGEN; requisitos), en el cajón descomprimido
+
+# Si este Amiga cumple los requisitos de máquina de una variante (lo que no se entiende no se cumple)
+func _variante_vale(reqs: String) -> Bool
+    m = maquina_real()
+    for a in formato_lista(reqs, false, false)
+        if not a.vale
+            return false
+        end
+        for o in a.opciones
+            t = o.tipo
+            if t == "cpu" and m.cpu < o.n
+                return false
+            elif t == "fpu" and not m.fpu
+                return false
+            elif t == "rtg" and not m.rtg
+                return false
+            elif t == "os" and m.os < o.n
+                return false
+            elif t == "chipset" and not (m.chipset == o.nombre or (o.nombre == "ecs" and m.chipset == "aga"))
+                return false
+            elif t == "mmu" or t == "has" or t == "pkg" or t == "aminet"
+                return false
+            end
+        end
+    end
+    return true
+end
+
+# Elige cada variante en el cajón cajon (con "/" al final): el origen elegido pasa a ser el destino y los demás
+# orígenes de ese destino se borran. Da el error, o "".
+func aplicar_variantes(cajon: String, variantes: [String]) -> String
+    var hechos: [String] = []
+    for v in variantes
+        p = str_find(v, "=")
+        if p > 0
+            d = str_trim(v[:p])
+            hecho = false
+            for h in hechos
+                if h == d
+                    hecho = true
+                end
+            end
+            if not hecho
+                hechos.push(d)
+                # las líneas de ese destino, en orden: gana la primera que vale
+                elegido = ""
+                var origenes: [String] = []
+                for w in variantes
+                    q = str_find(w, "=")
+                    if q > 0 and str_trim(w[:q]) == d
+                        resto = w[q + 1:]
+                        reqs = ""
+                        s = str_find(resto, ";")
+                        if s >= 0
+                            reqs = resto[s + 1:]
+                            resto = resto[:s]
+                        end
+                        o = str_trim(resto)
+                        origenes.push(o)
+                        if elegido == "" and _variante_vale(reqs)
+                            elegido = o
+                        end
+                    end
+                end
+                if elegido == ""
+                    return "ninguna variante de " + d + " vale para este Amiga"
+                end
+                if not file_exists(cajon + elegido)
+                    return "falta " + elegido + " en el paquete"
+                end
+                tmp = cajon + elegido + ".elegida"
+                file_rename(cajon + elegido, tmp)
+                for o in origenes
+                    file_delete(cajon + o)
+                end
+                file_delete(cajon + d)
+                file_rename(tmp, cajon + d)
+            end
+        end
+    end
+    return ""
+end
+
+# La entrada firmada (respuesta 2) de un paquete de un repositorio en una versión ("" = la que haya), como ficha para
+# instalar_ficha; nil si no está. Para reparar lo instalado sin el camino de la versión 1.
+func plan2_ficha(repo: String, nombre: String, version: String) -> Ficha
+    for r in api2_repos
+        if r.nombre == repo
+            x = api2_paquete(r, nombre)
+            if x.error == ""
+                for en in x.entradas
+                    if version == "" or en.version == version
+                        return ficha_de_entrada(EntradaRepo(repo, en))
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end

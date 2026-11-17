@@ -1,0 +1,18 @@
+# Para el banco de Coffin: una ventana MUI y una petición mui_request; dice qué botón se pulsó
+# (pregunta rexx: con un puerto ARexx abierto, como Hangar)
+Main
+    mui_app_begin("Pregunta", "PREGUNTA")
+    w = mui_window_begin("Pregunta", 7)
+        mui_vgroup_begin()
+            mui_text("Una ventana")
+        mui_group_end()
+    mui_window_end()
+
+    if arg(0) == "rexx"
+        rexx_port("PREGUNTA")
+    end
+    mui_window_open(w)
+    r = mui_request(w, "Pregunta", "¿Seguir?", "_Seguir|_Cancelar")
+    Print "botón " + str_from_int(r, 10)
+    mui_app_end()
+end

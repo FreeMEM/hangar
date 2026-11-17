@@ -1,0 +1,16 @@
+# Para el banco de Coffin: lanza un programa desde su cajón (dir_change + run_program), como Ejecutar de Hangar
+Main
+    p = arg(0)
+    i = p.length - 1
+    while i >= 0 and p[i] != "/" and p[i] != ":"
+        i = i - 1
+    end
+    antes = dir_current()
+    dir_change(p[:i + 1])
+    if run_program("\"" + p + "\"")
+        Print "lanzado " + p
+    else
+        Print "no se pudo " + p
+    end
+    dir_change(antes)
+end

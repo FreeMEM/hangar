@@ -1,0 +1,265 @@
+# Transacciones (docs/FORMATO_PAQUETES.md del servicio, sección 7): cada instalación, actualización o desinstalación
+# apunta en un diario lo que va haciendo y guarda antes lo que va a pisar o borrar. Si algo falla, o Hangar se corta
+# a mitad (un cuelgue, un reinicio), se deshace con el diario y no ha pasado nada. Al acabar bien, el diario queda en
+# el cajón Deshacer: "Deshacer la última" vuelve atrás la última transacción entera.
+#
+#   tr_empezar("Instalar Trasfondo 2.8.7")
+#   tr_poner("PROGDIR:Cache/Nuevo/Trasfondo/Trasfondo", "Work:Trasfondo/Trasfondo")   # copia, guardando lo que había
+#   tr_borrar("Work:Trasfondo/Viejo")                                                 # borra, guardándolo
+#   tr_recibo("trasfondo")                                                            # antes de tocar su recibo
+#   tr_cerrar()                     # o, si algo salió mal: tr_deshacer(tr_diario)
+#
+# El diario (texto, una línea por paso):
+#
+#   HANGAR-DIARIO 1
+#   T Instalar Trasfondo 2.8.7
+#   P 3 Work:Trasfondo/Trasfondo     (lo había: su copia es Deshacer/3)
+#   N Work:Trasfondo/Nuevo.info      (no lo había: deshacer es borrarlo)
+#   B 4 Work:Trasfondo/Viejo         (se borró: su copia es Deshacer/4)
+#   R 5 trasfondo                    (su recibo de antes es Deshacer/5; "R - x" si no tenía)
+#   D Work:Trasfondo                 (un cajón que no estaba: deshacer es borrarlo si queda vacío)
+#   FIN
+
+import "recibos.dash"
+
+var tr_cajon: String = "PROGDIR:Base"
+var tr_texto: String = ""
+var tr_cuenta: Int = 0
+var tr_abierta: Bool = false
+
+func tr_diario() -> String
+    return tr_cajon + "/Diario"
+end
+
+func tr_copias() -> String
+    return tr_cajon + "/Deshacer"
+end
+
+func _tr_escribir() -> Bool
+    return file_write_text(tr_diario(), tr_texto)
+end
+
+# Para la prueba de cortes (tests/cortes.py): morir en el paso N del diario (CORTE=N), o en el paso N al deshacer
+# (CORTE_DESHAZ=N), como un corte de luz: lo hecho se queda y el diario sin cerrar
+var tr_corte: Int = 0
+var tr_corte_deshacer: Int = 0
+var _tr_pasos: Int = 0
+
+func _tr_apuntar(linea: String)
+    tr_texto = tr_texto + linea + "\n"
+    _tr_escribir()
+    _tr_pasos = _tr_pasos + 1
+    if tr_corte > 0 and _tr_pasos == tr_corte
+        Print "CORTE en el paso " + str_from_int(_tr_pasos, 10)
+        program_exit(20)
+    end
+end
+
+# Borra lo de dentro de un cajón (no sus subcajones: Deshacer no tiene)
+func _tr_vaciar(cajon: String)
+    n = dir_read(cajon)
+    if n <= 0
+        return
+    end
+    var nombres: [String] = []
+    for i in (0..n - 1)
+        nombres.push(dir_entry_name(i))
+    end
+    for x in nombres
+        file_delete(cajon + "/" + x)
+    end
+end
+
+# Si hay una transacción a medias (un diario de una vez que se cortó)
+func tr_pendiente() -> Bool
+    return file_exists(tr_diario())
+end
+
+# Empieza una transacción; false si ya hay una a medias (primero tr_recuperar)
+func tr_empezar(que: String) -> Bool
+    if tr_pendiente()
+        return false
+    end
+    dir_create(tr_cajon)
+    dir_create(tr_copias())
+    _tr_vaciar(tr_copias())
+    recibos_copiar_base()
+    tr_cuenta = 0
+    tr_texto = "HANGAR-DIARIO 1\nT " + que + "\n"
+    tr_abierta = _tr_escribir()
+    return tr_abierta
+end
+
+func _tr_copia(ruta: String) -> String
+    tr_cuenta = tr_cuenta + 1
+    c = str_from_int(tr_cuenta, 10)
+    if not file_copy(ruta, tr_copias() + "/" + c)
+        return ""
+    end
+    return c
+end
+
+# Antes de escribir en ruta: si había algo, se guarda; si no, se apunta como nuevo. false si no se pudo guardar.
+func tr_guardar(ruta: String) -> Bool
+    if file_exists(ruta) and dir_read(ruta) < 0
+        c = _tr_copia(ruta)
+        if c == ""
+            return false
+        end
+        _tr_apuntar("P " + c + " " + ruta)
+    else
+        _tr_apuntar("N " + ruta)
+    end
+    return true
+end
+
+# Apunta un fichero que escribió otro (el Installer): deshacer es borrarlo
+func tr_apuntar_nuevo(ruta: String)
+    _tr_apuntar("N " + ruta)
+end
+
+# Crea los cajones de una ruta ("Work:A/B/fichero" crea Work:A y Work:A/B)
+func tr_cajones(ruta: String)
+    i = 0
+    while i < ruta.length
+        if ruta[i] == "/"
+            c = ruta[:i]
+            # un cajón nuevo se apunta antes de crearlo (deshacer lo borra si queda vacío)
+            if tr_abierta and not file_exists(c)
+                _tr_apuntar("D " + c)
+            end
+            dir_create(c)
+        end
+        i = i + 1
+    end
+end
+
+# Copia origen a destino guardando lo que hubiera en destino
+func tr_poner(origen: String, destino: String) -> Bool
+    # los cajones primero: en el diario, el cajón nuevo va antes que su fichero, y al deshacer (al revés) se borra
+    # el fichero y luego el cajón ya vacío
+    tr_cajones(destino)
+    if not tr_guardar(destino)
+        return false
+    end
+    return file_copy(origen, destino)
+end
+
+# Borra un fichero guardándolo antes
+func tr_borrar(ruta: String) -> Bool
+    if not file_exists(ruta)
+        return true
+    end
+    c = _tr_copia(ruta)
+    if c == ""
+        return false
+    end
+    _tr_apuntar("B " + c + " " + ruta)
+    return file_delete(ruta)
+end
+
+# Antes de cambiar o borrar el recibo de un paquete
+func tr_recibo(nombre: String) -> Bool
+    ruta = recibo_ruta(nombre)
+    if file_exists(ruta)
+        c = _tr_copia(ruta)
+        if c == ""
+            return false
+        end
+        _tr_apuntar("R " + c + " " + recibo_fichero(nombre))
+    else
+        _tr_apuntar("R - " + recibo_fichero(nombre))
+    end
+    return true
+end
+
+# Acaba bien: el diario pasa a Deshacer (para "Deshacer la última")
+func tr_cerrar() -> Bool
+    _tr_apuntar("FIN")
+    tr_abierta = false
+    file_delete(tr_copias() + "/Diario")
+    return file_rename(tr_diario(), tr_copias() + "/Diario")
+end
+
+# Deshace lo que dice un diario, del último paso al primero. Da cuántos pasos no se pudieron deshacer.
+func tr_deshacer(diario: String) -> Int
+    tr_abierta = false     # lo que se rehace al deshacer (cajones) no se apunta en el diario que se deshace
+    t = file_read_text(diario)
+    if t == nil or str_find(t, "HANGAR-DIARIO 1") != 0
+        return 0
+    end
+    lineas = str_split(t, "\n")
+    fallos = 0
+    i = lineas.length - 1
+    pasos = 0
+    while i >= 0
+        l = lineas[i]
+        if l != "" and not str_starts(l, "T ") and not str_starts(l, "HANGAR-DIARIO")
+            pasos = pasos + 1
+            if tr_corte_deshacer > 0 and pasos == tr_corte_deshacer
+                Print "CORTE al deshacer, en el paso " + str_from_int(pasos, 10)
+                program_exit(20)
+            end
+        end
+        if str_starts(l, "D ")
+            # un cajón que se creó: fuera si quedó vacío (si no, tiene algo que no es de esta transacción)
+            c = l[2:]
+            if file_exists(c) and dir_read(c) == 0
+                file_delete(c)
+            end
+        elif str_starts(l, "N ")
+            ruta = l[2:]
+            if file_exists(ruta) and not file_delete(ruta)
+                fallos = fallos + 1
+            end
+        elif str_starts(l, "P ") or str_starts(l, "B ")
+            resto = l[2:]
+            e = str_find(resto, " ")
+            if e > 0
+                copia = tr_copias() + "/" + resto[:e]
+                ruta = resto[e + 1:]
+                tr_cajones(ruta)
+                if not file_copy(copia, ruta)
+                    fallos = fallos + 1
+                end
+            end
+        elif str_starts(l, "R ")
+            resto = l[2:]
+            e = str_find(resto, " ")
+            if e > 0
+                ruta = recibos_cajon + "/" + resto[e + 1:]
+                if resto[:e] == "-"
+                    file_delete(ruta)
+                elif not file_copy(tr_copias() + "/" + resto[:e], ruta)
+                    fallos = fallos + 1
+                end
+            end
+        end
+        i = i - 1
+    end
+    tr_abierta = false
+    file_delete(diario)
+    return fallos
+end
+
+# Al arrancar: si quedó una transacción a medias, se deshace. Da -1 si no había ninguna, o los fallos al deshacer.
+func tr_recuperar() -> Int
+    if not tr_pendiente()
+        return -1
+    end
+    return tr_deshacer(tr_diario())
+end
+
+# Lo que hizo la última transacción que acabó bien ("" si no hay)
+func tr_ultima() -> String
+    t = file_read_text(tr_copias() + "/Diario")
+    if t == nil
+        return ""
+    end
+    for l in str_split(t, "\n")
+        if str_starts(l, "T ")
+            return l[2:]
+        end
+    end
+    return ""
+end

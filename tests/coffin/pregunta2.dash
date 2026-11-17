@@ -1,0 +1,49 @@
+# Para el banco de Coffin: como Hangar, el bucle con mui_wait_event_signals(rexx_signal()) y la petición desde la
+import "../../lib/tachyon/http.dash"
+# pulsación de un botón; dice qué se pulsó
+const ID_BOTON = 1
+
+Main
+    mui_app_begin("Pregunta2", "PREGUNTADOS")
+    w = mui_window_begin("Pregunta2", 8)
+        mui_vgroup_begin()
+            b = mui_button("_Preguntar")
+            if arg(0) == "editor" or arg(1) == "editor"
+                s = mui_string("", 80)
+                l = mui_list()
+                mui_list_add(l, "uno")
+                e = mui_text_editor(5)
+                mui_set_text(e, "Short: algo")
+            end
+        mui_group_end()
+    mui_window_end()
+    mui_on_press(b, ID_BOTON)
+    arexx = rexx_port("PREGUNTADOS")
+    abierta = mui_window_open(w)
+    vueltas = 0
+    ev = 0
+    while abierta and vueltas < 3
+        if arexx
+            ev = mui_wait_event_signals(rexx_signal())
+        else
+            ev = mui_wait_event()
+        end
+        if ev == ID_BOTON
+            if arg(0) == "lento" or arg(1) == "lento"
+                time_delay(500)
+            end
+            if arg(0) == "red"
+                h = http_get("http://hangar.freemem.space/salud", 15000)
+                if h != nil
+                    Print "red: " + str_from_int(h.estado, 10)
+                end
+            end
+            r = mui_request(w, "Pregunta2", "Instalar algo:\n  instalar algo 1.0\n  ojo: esto", "_Seguir|_Cancelar")
+            Print "botón " + str_from_int(r, 10)
+            vueltas = vueltas + 1
+        elif ev == -1
+            abierta = false
+        end
+    end
+    mui_app_end()
+end

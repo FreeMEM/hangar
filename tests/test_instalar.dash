@@ -1,0 +1,50 @@
+# Test: instalar como lo hace Hangar (ficha, bajar, descomprimir, recibo), leer el recibo, quitarlo (ficheros y
+# cajones vacíos fuera) y leer cadenas $VER.
+# emu-server: falso.py 47123
+# expect-out: bajado 200
+# expect-out: escritos 4
+# expect-out: recibo 4050 TuneFinder 1.5 RAM:Inst/ 4
+# expect-out: todos 1
+# expect-out: fallos 0
+# expect-out: queda Prueba no
+# expect-out: recibo tras quitar 0
+# expect-out: ver mui 20.5801
+# expect-out: ver AmigaAMP 3.30
+# expect-out: ver Prog 1.2
+# expect-out: ver sin numero []
+import "../src/api.dash"
+import "../src/lha.dash"
+import "../src/recibos.dash"
+import "../src/inventario.dash"
+
+Main
+    api_base = "http://127.0.0.1:47123/amiga/v1"
+    recibos_cajon = "RAM:Recibos"
+    f = api_ficha(4050)
+    r = http_a_fichero(api_url_descarga(f, f.descarga), "RAM:tf.lha", 20000)
+    Print "bajado " + str_from_int(r.estado, 10)
+    e = lha_extraer("RAM:tf.lha", "RAM:Inst/")
+    if e != ""
+        Print "error " + e
+    end
+    Print "escritos " + str_from_int(lha_escritos.length, 10)
+    recibo_guardar(recibo_nuevo(f.id, f.nombre, f.version, "RAM:Inst/", lha_escritos))
+    rec = recibo_leer(4050)
+    Print "recibo " + str_from_int(rec.id, 10) + " " + rec.nombre + " " + rec.version + " " + rec.destino + " " + str_from_int(rec.ficheros.length, 10)
+    Print "todos " + str_from_int(recibos_todos().length, 10)
+    Print "fallos " + str_from_int(recibo_desinstalar(rec), 10)
+    queda = "no"
+    if dir_read("RAM:Inst/Prueba") >= 0
+        queda = "si"
+    end
+    Print "queda Prueba " + queda
+    Print "recibo tras quitar " + str_from_int(recibo_leer(4050).id, 10)
+    for c in ["mui.library 20.5801 (29.10.2021)", "AmigaAMP 3.30 (1.1.2020) por Thomas", "Prog v1.2", "sin numero"]
+        v = inventario_leer_cadena(c, "x")
+        if v.nombre == ""
+            Print "ver sin numero []"
+        else
+            Print "ver " + v.nombre + " " + v.version
+        end
+    end
+end

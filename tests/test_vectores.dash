@@ -1,0 +1,376 @@
+# Test generado por tools/vectores.py (no editar): los vectores del formato de paquetes 2 (tests/vectores,
+# copiados del servicio): comparación de versiones con epoch y requisitos en forma canónica.
+# expect-out: versiones 28/28
+# expect-out: requisitos 15/15
+import "../src/formato.dash"
+
+func signo(k: Int) -> String
+    if k < 0
+        return "<"
+    elif k > 0
+        return ">"
+    end
+    return "="
+end
+
+func inverso(s: String) -> String
+    if s == "<"
+        return ">"
+    elif s == ">"
+        return "<"
+    end
+    return s
+end
+
+Main
+    bien = 0
+    s = signo(version_comparar_e("1.31", "1.4"))
+    s2 = signo(version_comparar_e("1.4", "1.31"))
+    if s == ">" and s2 == inverso(">")
+        bien = bien + 1
+    else
+        Print "MAL " + "1.31 > 1.4" + " sale " + s
+    end
+    s = signo(version_comparar_e("40.12", "40.9"))
+    s2 = signo(version_comparar_e("40.9", "40.12"))
+    if s == ">" and s2 == inverso(">")
+        bien = bien + 1
+    else
+        Print "MAL " + "40.12 > 40.9" + " sale " + s
+    end
+    s = signo(version_comparar_e("40.12", "40.12"))
+    s2 = signo(version_comparar_e("40.12", "40.12"))
+    if s == "=" and s2 == inverso("=")
+        bien = bien + 1
+    else
+        Print "MAL " + "40.12 = 40.12" + " sale " + s
+    end
+    s = signo(version_comparar_e("0.7.11", "0.7.9"))
+    s2 = signo(version_comparar_e("0.7.9", "0.7.11"))
+    if s == ">" and s2 == inverso(">")
+        bien = bien + 1
+    else
+        Print "MAL " + "0.7.11 > 0.7.9" + " sale " + s
+    end
+    s = signo(version_comparar_e("1.2", "1.2.1"))
+    s2 = signo(version_comparar_e("1.2.1", "1.2"))
+    if s == "<" and s2 == inverso("<")
+        bien = bien + 1
+    else
+        Print "MAL " + "1.2 < 1.2.1" + " sale " + s
+    end
+    s = signo(version_comparar_e("1.0", "1.0.0"))
+    s2 = signo(version_comparar_e("1.0.0", "1.0"))
+    if s == "=" and s2 == inverso("=")
+        bien = bien + 1
+    else
+        Print "MAL " + "1.0 = 1.0.0" + " sale " + s
+    end
+    s = signo(version_comparar_e("v1.2", "1.2"))
+    s2 = signo(version_comparar_e("1.2", "v1.2"))
+    if s == "=" and s2 == inverso("=")
+        bien = bien + 1
+    else
+        Print "MAL " + "v1.2 = 1.2" + " sale " + s
+    end
+    s = signo(version_comparar_e("V1.2", "1.2"))
+    s2 = signo(version_comparar_e("1.2", "V1.2"))
+    if s == "=" and s2 == inverso("=")
+        bien = bien + 1
+    else
+        Print "MAL " + "V1.2 = 1.2" + " sale " + s
+    end
+    s = signo(version_comparar_e("1.2 (12.3.95)", "1.3"))
+    s2 = signo(version_comparar_e("1.3", "1.2 (12.3.95)"))
+    if s == "<" and s2 == inverso("<")
+        bien = bien + 1
+    else
+        Print "MAL " + "1.2 (12.3.95) < 1.3" + " sale " + s
+    end
+    s = signo(version_comparar_e("2.3", "2.3a"))
+    s2 = signo(version_comparar_e("2.3a", "2.3"))
+    if s == "<" and s2 == inverso("<")
+        bien = bien + 1
+    else
+        Print "MAL " + "2.3 < 2.3a" + " sale " + s
+    end
+    s = signo(version_comparar_e("2.3a", "2.3b"))
+    s2 = signo(version_comparar_e("2.3b", "2.3a"))
+    if s == "<" and s2 == inverso("<")
+        bien = bien + 1
+    else
+        Print "MAL " + "2.3a < 2.3b" + " sale " + s
+    end
+    s = signo(version_comparar_e("1.0-dev", "1.0-alpha"))
+    s2 = signo(version_comparar_e("1.0-alpha", "1.0-dev"))
+    if s == "<" and s2 == inverso("<")
+        bien = bien + 1
+    else
+        Print "MAL " + "1.0-dev < 1.0-alpha" + " sale " + s
+    end
+    s = signo(version_comparar_e("1.0-alpha", "1.0-beta"))
+    s2 = signo(version_comparar_e("1.0-beta", "1.0-alpha"))
+    if s == "<" and s2 == inverso("<")
+        bien = bien + 1
+    else
+        Print "MAL " + "1.0-alpha < 1.0-beta" + " sale " + s
+    end
+    s = signo(version_comparar_e("1.0-alfa", "1.0-alpha"))
+    s2 = signo(version_comparar_e("1.0-alpha", "1.0-alfa"))
+    if s == "=" and s2 == inverso("=")
+        bien = bien + 1
+    else
+        Print "MAL " + "1.0-alfa = 1.0-alpha" + " sale " + s
+    end
+    s = signo(version_comparar_e("1.0-beta", "1.0-pre"))
+    s2 = signo(version_comparar_e("1.0-pre", "1.0-beta"))
+    if s == "<" and s2 == inverso("<")
+        bien = bien + 1
+    else
+        Print "MAL " + "1.0-beta < 1.0-pre" + " sale " + s
+    end
+    s = signo(version_comparar_e("1.0-pre", "1.0-rc1"))
+    s2 = signo(version_comparar_e("1.0-rc1", "1.0-pre"))
+    if s == "<" and s2 == inverso("<")
+        bien = bien + 1
+    else
+        Print "MAL " + "1.0-pre < 1.0-rc1" + " sale " + s
+    end
+    s = signo(version_comparar_e("1.0-rc1", "1.0-rc2"))
+    s2 = signo(version_comparar_e("1.0-rc2", "1.0-rc1"))
+    if s == "<" and s2 == inverso("<")
+        bien = bien + 1
+    else
+        Print "MAL " + "1.0-rc1 < 1.0-rc2" + " sale " + s
+    end
+    s = signo(version_comparar_e("1.0-rc2", "1.0"))
+    s2 = signo(version_comparar_e("1.0", "1.0-rc2"))
+    if s == "<" and s2 == inverso("<")
+        bien = bien + 1
+    else
+        Print "MAL " + "1.0-rc2 < 1.0" + " sale " + s
+    end
+    s = signo(version_comparar_e("1.0-beta2", "1.0-beta1"))
+    s2 = signo(version_comparar_e("1.0-beta1", "1.0-beta2"))
+    if s == ">" and s2 == inverso(">")
+        bien = bien + 1
+    else
+        Print "MAL " + "1.0-beta2 > 1.0-beta1" + " sale " + s
+    end
+    s = signo(version_comparar_e("0.9.3-alfa", "0.9.2"))
+    s2 = signo(version_comparar_e("0.9.2", "0.9.3-alfa"))
+    if s == ">" and s2 == inverso(">")
+        bien = bien + 1
+    else
+        Print "MAL " + "0.9.3-alfa > 0.9.2" + " sale " + s
+    end
+    s = signo(version_comparar_e("1.0beta", "1.0"))
+    s2 = signo(version_comparar_e("1.0", "1.0beta"))
+    if s == "<" and s2 == inverso("<")
+        bien = bien + 1
+    else
+        Print "MAL " + "1.0beta < 1.0" + " sale " + s
+    end
+    s = signo(version_comparar_e("1.0_rc1", "1.0"))
+    s2 = signo(version_comparar_e("1.0", "1.0_rc1"))
+    if s == "<" and s2 == inverso("<")
+        bien = bien + 1
+    else
+        Print "MAL " + "1.0_rc1 < 1.0" + " sale " + s
+    end
+    s = signo(version_comparar_e("1:1.0", "9.9"))
+    s2 = signo(version_comparar_e("9.9", "1:1.0"))
+    if s == ">" and s2 == inverso(">")
+        bien = bien + 1
+    else
+        Print "MAL " + "1:1.0 > 9.9" + " sale " + s
+    end
+    s = signo(version_comparar_e("0:2.0", "2.0"))
+    s2 = signo(version_comparar_e("2.0", "0:2.0"))
+    if s == "=" and s2 == inverso("=")
+        bien = bien + 1
+    else
+        Print "MAL " + "0:2.0 = 2.0" + " sale " + s
+    end
+    s = signo(version_comparar_e("1:1.0", "2:0.1"))
+    s2 = signo(version_comparar_e("2:0.1", "1:1.0"))
+    if s == "<" and s2 == inverso("<")
+        bien = bien + 1
+    else
+        Print "MAL " + "1:1.0 < 2:0.1" + " sale " + s
+    end
+    s = signo(version_comparar_e("1:2.0", "1:2.0.0"))
+    s2 = signo(version_comparar_e("1:2.0.0", "1:2.0"))
+    if s == "=" and s2 == inverso("=")
+        bien = bien + 1
+    else
+        Print "MAL " + "1:2.0 = 1:2.0.0" + " sale " + s
+    end
+    s = signo(version_comparar_e("1.99999999999999999999", "1.9"))
+    s2 = signo(version_comparar_e("1.9", "1.99999999999999999999"))
+    if s == ">" and s2 == inverso(">")
+        bien = bien + 1
+    else
+        Print "MAL " + "1.99999999999999999999 > 1.9" + " sale " + s
+    end
+    s = signo(version_comparar_e("1.007", "1.7"))
+    s2 = signo(version_comparar_e("1.7", "1.007"))
+    if s == "=" and s2 == inverso("=")
+        bien = bien + 1
+    else
+        Print "MAL " + "1.007 = 1.7" + " sale " + s
+    end
+    Print "versiones " + str_from_int(bien, 10) + "/28"
+    bien = 0
+    sale = ""
+    for a in formato_lista("OS 3.1, 68020, MUI 3.8", true, false)
+        sale = sale + formato_canonica_alt(a) + "\n"
+    end
+    if sale == "os 40\ncpu 68020\nhas muimaster.library 19\n"
+        bien = bien + 1
+    else
+        Print "MAL > " + "OS 3.1, 68020, MUI 3.8"
+        Print sale
+    end
+    sale = ""
+    for a in formato_lista("V39, 68030, FPU, MMU, AGA, RTG, TCP/IP", true, false)
+        sale = sale + formato_canonica_alt(a) + "\n"
+    end
+    if sale == "os 39\ncpu 68030\nfpu\nmmu\nchipset aga\nrtg\ntcpip\n"
+        bien = bien + 1
+    else
+        Print "MAL > " + "V39, 68030, FPU, MMU, AGA, RTG, TCP/IP"
+        Print sale
+    end
+    sale = ""
+    for a in formato_lista("OS 3.2, ECS, 2MB, 1MB chip, 512KB", true, false)
+        sale = sale + formato_canonica_alt(a) + "\n"
+    end
+    if sale == "os 47\nchipset ecs\nmem 2048\nchip 1024\nmem 512\n"
+        bien = bien + 1
+    else
+        Print "MAL > " + "OS 3.2, ECS, 2MB, 1MB chip, 512KB"
+        Print sale
+    end
+    sale = ""
+    for a in formato_lista("hypervisor, 4GB", true, false)
+        sale = sale + formato_canonica_alt(a) + "\n"
+    end
+    if sale == "hypervisor\nmem 4194304\n"
+        bien = bien + 1
+    else
+        Print "MAL > " + "hypervisor, 4GB"
+        Print sale
+    end
+    sale = ""
+    for a in formato_lista("reqtools.library 38, NList.mcc 20.1, ahi.device, Fonts:topaz 11", true, false)
+        sale = sale + formato_canonica_alt(a) + "\n"
+    end
+    if sale == "has reqtools.library 38\nhas nlist.mcc 20.1\nhas ahi.device\nhas fonts:topaz 11\n"
+        bien = bien + 1
+    else
+        Print "MAL > " + "reqtools.library 38, NList.mcc 20.1, ahi.device, Fonts:topaz 11"
+        Print sale
+    end
+    sale = ""
+    for a in formato_lista("pkg:codesets >= 6.20, pkg:mui = 5.0, pkg:x < 2, pkg:y, pkg:z >= 1:2.0", true, false)
+        sale = sale + formato_canonica_alt(a) + "\n"
+    end
+    if sale == "pkg codesets >= 6.20\npkg mui = 5.0\npkg x < 2\npkg y\npkg z >= 1:2.0\n"
+        bien = bien + 1
+    else
+        Print "MAL > " + "pkg:codesets >= 6.20, pkg:mui = 5.0, pkg:x < 2, pkg:y, pkg:z >= 1:2.0"
+        Print sale
+    end
+    sale = ""
+    for a in formato_lista("util/libs/ReqToolsUsr.lha", true, false)
+        sale = sale + formato_canonica_alt(a) + "\n"
+    end
+    if sale == "aminet util/libs/reqtoolsusr.lha\n"
+        bien = bien + 1
+    else
+        Print "MAL > " + "util/libs/ReqToolsUsr.lha"
+        Print sale
+    end
+    sale = ""
+    for a in formato_lista("MUI 3.8 | pkg:mui >= 5, 68020 | 68000", true, false)
+        sale = sale + formato_canonica_alt(a) + "\n"
+    end
+    if sale == "has muimaster.library 19 | pkg mui >= 5\ncpu 68020 | cpu 68000\n"
+        bien = bien + 1
+    else
+        Print "MAL > " + "MUI 3.8 | pkg:mui >= 5, 68020 | 68000"
+        Print sale
+    end
+    sale = ""
+    for a in formato_lista("MUI 5, MUI 4", true, false)
+        sale = sale + formato_canonica_alt(a) + "\n"
+    end
+    if sale == "has muimaster.library 21\nhas muimaster.library 20\n"
+        bien = bien + 1
+    else
+        Print "MAL > " + "MUI 5, MUI 4"
+        Print sale
+    end
+    sale = ""
+    for a in formato_lista("OS 3.1,, 68020 ,", true, false)
+        sale = sale + formato_canonica_alt(a) + "\n"
+    end
+    if sale == "os 40\ncpu 68020\n"
+        bien = bien + 1
+    else
+        Print "MAL > " + "OS 3.1,, 68020 ,"
+        Print sale
+    end
+    sale = ""
+    for a in formato_lista("OS 3.1, un 68020 bonito, Picasso", true, false)
+        sale = sale + formato_canonica_alt(a) + "\n"
+    end
+    if sale == "os 40\n! un 68020 bonito\n! Picasso\n"
+        bien = bien + 1
+    else
+        Print "MAL > " + "OS 3.1, un 68020 bonito, Picasso"
+        Print sale
+    end
+    sale = ""
+    for a in formato_lista("pkg:Mayus >= 1.0", true, false)
+        sale = sale + formato_canonica_alt(a) + "\n"
+    end
+    if sale == "pkg mayus >= 1.0\n"
+        bien = bien + 1
+    else
+        Print "MAL > " + "pkg:Mayus >= 1.0"
+        Print sale
+    end
+    sale = ""
+    for a in formato_lista("pkg:mal nombre", true, false)
+        sale = sale + formato_canonica_alt(a) + "\n"
+    end
+    if sale == "! pkg:mal nombre\n"
+        bien = bien + 1
+    else
+        Print "MAL > " + "pkg:mal nombre"
+        Print sale
+    end
+    sale = ""
+    for a in formato_lista("68080, MUI 3.8 | | pkg:mui", true, false)
+        sale = sale + formato_canonica_alt(a) + "\n"
+    end
+    if sale == "cpu 68080\n! MUI 3.8 | | pkg:mui\n"
+        bien = bien + 1
+    else
+        Print "MAL > " + "68080, MUI 3.8 | | pkg:mui"
+        Print sale
+    end
+    sale = ""
+    for a in formato_lista("pkg:x |", true, false)
+        sale = sale + formato_canonica_alt(a) + "\n"
+    end
+    if sale == "! pkg:x |\n"
+        bien = bien + 1
+    else
+        Print "MAL > " + "pkg:x |"
+        Print sale
+    end
+    Print "requisitos " + str_from_int(bien, 10) + "/15"
+end

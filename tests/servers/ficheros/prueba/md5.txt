@@ -1,0 +1,4 @@
+860dc48b642bf6b41650271002caa3ea  Prueba/LEEME
+9713a590202335983ac17cd5ee994b95  Prueba/Docs/texto.txt
+95a5e26eb7b8fa8930f289678cc32b9f  Prueba/datos.bin
+d41d8cd98f00b204e9800998ecf8427e  Prueba/vacio

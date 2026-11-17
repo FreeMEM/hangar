@@ -1,0 +1,61 @@
+# Test: la API de Hangar contra un servidor falso en el PC (tests/servers/falso.py): buscar, ficha, categorías y
+# versiones, leídas en el Amiga.
+# emu-server: falso.py 47121
+# expect-out: total 2 pagina 0 por 50
+# expect-out: 4050 TuneFinder 1.5 comm/misc 88064 2026-11-02 Search and play online radio stations
+# expect-out: 61412 modplayer  mus/play 75776  MOD Player 2.2
+# expect-out: ficha TuneFinder 1.5 m68k-amigaos >= 3.0
+# expect-out: descarga http://127.0.0.1:47121/comm/misc/TuneFinder.lha
+# expect-out: readme [Short:        Search and play online radio stations]
+# expect-out: readme acaba Fin.
+# expect-out: categorias 2 comm/misc	1
+# expect-out: TuneFinder 1.4 nueva 4050 [1.5]
+# expect-out: nada 1 desconocido 0 []
+# expect-out: TuneFinder nueva 4050 TuneFinder 1.4 -> 1.5
+# expect-out: Otro desconocido 0
+# expect-out: error no existe
+# expect-out: firmas 1 -1 0
+# expect-out: sha256 66ada4d485d7c413b152eddb68cecb5277a41544433311333995dc006d5eff33
+# expect-out: historial 2 firma 1: 1.5 r1 88064 aa11 | 1.4 r2 80000 bb22 2026-10-01
+import "../src/api.dash"
+
+Main
+    api_base = "http://127.0.0.1:47121/amiga/v1"
+    l = api_buscar("player ñ", 0)
+    if l.error != ""
+        Print "error " + l.error
+    end
+    Print "total " + str_from_int(l.total, 10) + " pagina " + str_from_int(l.pagina, 10) + " por " + str_from_int(l.por_pagina, 10)
+    for p in l.paquetes
+        Print str_from_int(p.id, 10) + " " + p.nombre + " " + p.version + " " + p.cajon + " " + str_from_int(p.tamano, 10) + " " + p.fecha + " " + p.corto
+    end
+    f = api_ficha(4050)
+    Print "ficha " + f.nombre + " " + f.version + " " + f.arquitectura
+    Print "descarga " + f.descarga
+    Print "readme [" + str_split(f.readme, "\n")[0] + "]"
+    Print "readme acaba " + str_trim(f.readme[f.readme.length - 6:])
+    cs = api_categorias()
+    Print "categorias " + str_from_int(cs.length, 10) + " " + cs[0]
+    v = api_versiones("TuneFinder\t1.4\nnada\t1\n")
+    for c in v.lista
+        Print c.nombre + " " + c.local + " " + c.estado + " " + str_from_int(c.id, 10) + " [" + c.version + "]"
+    end
+    for r in api_reconocer("TuneFinder\t100\t\t\nOtro\t5\tOtro\t1\n").lista
+        if r.estado == "desconocido"
+            Print r.fichero + " " + r.estado + " " + str_from_int(r.id, 10)
+        else
+            Print r.fichero + " " + r.estado + " " + str_from_int(r.id, 10) + " " + r.nombre + " " + r.local + " -> " + r.version
+        end
+    end
+    f = api_ficha(1)
+    Print "error " + f.error
+    clave_hangar = "ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d1"
+    clave_hangar_id = "prueba0000000000"
+    Print "firmas " + str_from_int(api_ficha_firmada(4060).firma, 10) + " " + str_from_int(api_ficha_firmada(4061).firma, 10) + " " + str_from_int(api_ficha_firmada(4062).firma, 10)
+    file_write_text("RAM:sha", "Hangar")
+    Print "sha256 " + api_sha256_fichero("RAM:sha")
+    h = api_historial(4050)
+    v0 = h.lista[0]
+    v1 = h.lista[1]
+    Print "historial " + str_from_int(h.lista.length, 10) + " firma " + str_from_int(h.firma, 10) + ": " + v0.version + " r" + str_from_int(v0.release, 10) + " " + str_from_int(v0.tamano, 10) + " " + v0.sha256 + " | " + v1.version + " r" + str_from_int(v1.release, 10) + " " + str_from_int(v1.tamano, 10) + " " + v1.sha256 + " " + v1.fecha
+end

@@ -1,0 +1,16 @@
+Format:       2
+Name:         hangar
+Short:        Busca, instala y pone al día programas
+Author:       FreeMEM
+Type:         util/misc
+Version:      0.14.6
+Architecture: m68k-amigaos >= 3.0
+Requires:     68020, MUI 3.8, TCP/IP
+Install:      drawer Hangar
+Run:          Hangar/Hangar
+License:      GPL-3.0-or-later
+URL:          https://hangar.freemem.space
+
+Busca, instala y pone al día el software del Amiga: el de Aminet y el que publican sus
+autores. Resuelve lo que necesita cada programa, comprueba las firmas y lo deshace todo
+si algo falla.

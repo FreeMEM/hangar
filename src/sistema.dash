@@ -1,0 +1,150 @@
+# Cambios en el sistema sin romper nada (docs/PAQUETES_LOOP.md del servicio, K10): las asignaciones (Assigns) y lo
+# que arranca con el sistema (Startup) de un paquete van a un bloque marcado de S:User-Startup, que se pone y se quita
+# entero (y se guarda antes, en la transacción):
+#
+#   ;BEGIN pkg trasfondo
+#   Assign TRASFONDO: "Work:Trasfondo"
+#   Run >NIL: "Work:Trasfondo/Trasfondo"
+#   ;END pkg trasfondo
+#
+# y los ficheros de configuración (Config) que el usuario cambió no se pisan al actualizar: la versión nueva queda al
+# lado como fichero.nuevo (como .pacnew de pacman).
+
+import "transaccion.dash"
+
+var arranque_ruta: String = "S:User-Startup"
+
+func _ruta_con(destino: String, rel: String) -> String
+    if str_ends(destino, ":") or str_ends(destino, "/")
+        return destino + rel
+    end
+    return destino + "/" + rel
+end
+
+# Una ruta relativa al cajón instalado que se puede usar: sin volumen ni "..", ni "//" (que sube un cajón)
+func ruta_segura(rel: String) -> Bool
+    r = str_trim(rel)
+    return r != "" and str_find(r, ":") < 0 and str_find(r, "..") < 0 and str_find(r, "//") < 0 and not str_starts(r, "/")
+end
+
+# Las líneas del bloque de un paquete: sus asignaciones ("NOMBRE: cajón, OTRO: x") y su arranque (líneas separadas
+# por ";"; en "Run ... ruta", una ruta relativa se completa con el destino). "" si no hay nada.
+func bloque_lineas(destino: String, asigna: String, arranque: String) -> String
+    t = ""
+    for it in str_split(asigna, ",")
+        x = str_trim(it)
+        e = str_find(x, ":")
+        if e > 0
+            nombre = str_trim(x[:e])
+            rel = str_trim(x[e + 1:])
+            if nombre != "" and str_find(nombre, " ") < 0 and ruta_segura(rel)
+                t = t + "Assign " + nombre + ": \"" + _ruta_con(destino, rel) + "\"\n"
+            end
+        end
+    end
+    for it in str_split(arranque, ";")
+        x = str_trim(it)
+        if x != ""
+            partes = str_split(x, " ")
+            ultima = partes[partes.length - 1]
+            if str_starts(str_lower(x), "run ") and ruta_segura(ultima)
+                x = x[:x.length - ultima.length] + "\"" + _ruta_con(destino, ultima) + "\""
+            end
+            t = t + x + "\n"
+        end
+    end
+    return t
+end
+
+# El texto sin el bloque de un paquete
+func _sin_bloque(t: String, nombre: String) -> String
+    # el del formato 2 y el de la versión 1 (";BEGIN Hangar x"), que se cambia al tocarlo
+    ini = ";BEGIN pkg " + recibo_clave(nombre)
+    fin = ";END pkg " + recibo_clave(nombre)
+    ini1 = ";BEGIN Hangar " + recibo_clave(nombre)
+    fin1 = ";END Hangar " + recibo_clave(nombre)
+    r = ""
+    dentro = false
+    for linea in str_split(t, "\n")
+        if str_trim(linea) == ini or str_trim(linea) == ini1
+            dentro = true
+        elif dentro and (str_trim(linea) == fin or str_trim(linea) == fin1)
+            dentro = false
+        elif not dentro
+            r = r + linea + "\n"
+        end
+    end
+    # str_split deja una línea vacía al final si el texto acababa en salto
+    while str_ends(r, "\n\n")
+        r = r[:r.length - 1]
+    end
+    if r == "\n"
+        r = ""
+    end
+    return r
+end
+
+# Pone (o cambia) el bloque de un paquete en S:User-Startup, guardando antes el fichero en la transacción
+func bloque_poner(nombre: String, lineas: String) -> Bool
+    t = file_read_text(arranque_ruta)
+    if t == nil
+        t = ""
+    end
+    nuevo = _sin_bloque(t, nombre)
+    if nuevo != "" and not str_ends(nuevo, "\n")
+        nuevo = nuevo + "\n"
+    end
+    nuevo = nuevo + ";BEGIN pkg " + recibo_clave(nombre) + "\n" + lineas + ";END pkg " + recibo_clave(nombre) + "\n"
+    if not tr_guardar(arranque_ruta)
+        return false
+    end
+    return file_write_text(arranque_ruta, nuevo)
+end
+
+# Quita el bloque de un paquete (si lo tiene)
+func bloque_quitar(nombre: String) -> Bool
+    t = file_read_text(arranque_ruta)
+    if t == nil or (str_find(t, ";BEGIN pkg " + recibo_clave(nombre)) < 0 and str_find(t, ";BEGIN Hangar " + recibo_clave(nombre)) < 0)
+        return true
+    end
+    if not tr_guardar(arranque_ruta)
+        return false
+    end
+    return file_write_text(arranque_ruta, _sin_bloque(t, nombre))
+end
+
+# Si rel (una ruta del paquete) es uno de sus ficheros de configuración ("a/b.prefs, c")
+func es_config(config: String, rel: String) -> Bool
+    for it in str_split(config, ",")
+        if str_lower(str_trim(it)) == str_lower(rel) and str_trim(it) != ""
+            return true
+        end
+    end
+    return false
+end
+
+# Un paquete movido a mano: en su bloque de S:User-Startup, la ruta de antes por la nueva (sus Assign y Run)
+func bloque_mover(nombre: String, viejo: String, nuevo: String) -> Bool
+    t = file_read_text(arranque_ruta)
+    ini = ";BEGIN pkg " + recibo_clave(nombre)
+    if t == nil or str_find(t, ini) < 0
+        return true
+    end
+    r = ""
+    dentro = false
+    for linea in str_split(t, "\n")
+        if str_trim(linea) == ini
+            dentro = true
+        elif str_trim(linea) == ";END pkg " + recibo_clave(nombre)
+            dentro = false
+        end
+        if dentro
+            linea = str_replace(linea, "\"" + viejo, "\"" + nuevo)
+        end
+        r = r + linea + "\n"
+    end
+    while str_ends(r, "\n\n")
+        r = r[:r.length - 1]
+    end
+    return file_write_text(arranque_ruta, r)
+end

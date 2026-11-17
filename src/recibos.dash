@@ -1,0 +1,600 @@
+# La base local: qué hay instalado, en qué versión y con qué ficheros (docs/FORMATO_PAQUETES.md del servicio,
+# sección 6). Un fichero de texto por paquete en recibos_cajon, "<name>.pkg":
+#
+#   PKG-DB 2
+#   Name: trasfondo
+#   Title: Trasfondo
+#   Version: 2.8.7
+#   Release: 1
+#   Repository: main
+#   Id: 617601
+#   Reason: explicit            (dependency: lo trajo otro; adopted: estaba instalado a mano)
+#   Hold: no
+#   Date: 10-11-2026 12:00
+#   Target: Work:
+#   Requires: OS 3.1, MUI 3.8
+#   Provides: trasfondo.library 2
+#   F 1a2b3c4d 123456 Work:Trasfondo/Trasfondo       (CRC-32 en hexadecimal, tamaño y ruta)
+#   A LIBS:trasfondo.library                         (un fichero del sistema pisado: su copia es ruta.old)
+#
+# La base de antes (HANGAR-BASE 1, campos en castellano, sin extensión) se lee igual y recibos_a_v2() la reescribe.
+# Los recibos de antes de esa (PROGDIR:Recibos/<id>.txt) se pasan con recibos_migrar().
+
+var recibos_cajon: String = "PROGDIR:Base"
+var recibos_viejos: String = "PROGDIR:Recibos"
+
+struct Recibo
+    id: Int
+    nombre: String
+    version: String
+    destino: String
+    ficheros: [String]
+    crcs: [Int]
+    tamanos: [Int]
+    lanzamiento: Int
+    motivo: String
+    retenido: Bool
+    fecha: String
+    requiere: String
+    provee: String
+    antes: [String]
+    bloque: Bool = false          # tiene un bloque en S:User-Startup
+    config: [String] = nil        # sus ficheros de configuración (rutas)
+    epoch: Int = 0
+    repo: String = ""             # de qué repositorio vino (formato 2)
+    en_duda: Bool = false         # su línea Sum no cuadra: el .pkg se cambió o se cortó a medias
+end
+
+# El nombre del fichero de un paquete en la base: su nombre en minúsculas, sin lo que no vale en un nombre
+func recibo_clave(nombre: String) -> String
+    c = str_lower(str_trim(nombre))
+    c = str_replace(c, "/", "_")
+    c = str_replace(c, ":", "_")
+    c = str_replace(c, " ", "_")
+    return c
+end
+
+func _recibo_ruta(nombre: String) -> String
+    return recibos_cajon + "/" + recibo_fichero(nombre)
+end
+
+# El fichero de un paquete dentro de la base ("trasfondo.pkg") y su ruta entera
+func recibo_fichero(nombre: String) -> String
+    return recibo_clave(nombre) + ".pkg"
+end
+
+func recibo_ruta(nombre: String) -> String
+    return _recibo_ruta(nombre)
+end
+
+# La copia de lo que había en el sistema antes de pisarlo: ruta.old (o ruta.antes, de la versión 1); "" si no hay
+func recibo_copia(ruta: String) -> String
+    if file_exists(ruta + ".old")
+        return ruta + ".old"
+    elif file_exists(ruta + ".antes")
+        return ruta + ".antes"
+    end
+    return ""
+end
+
+func _razon(motivo: String) -> String
+    if motivo == "dependencia"
+        return "dependency"
+    elif motivo == "adoptado"
+        return "adopted"
+    end
+    return "explicit"
+end
+
+func _motivo(razon: String) -> String
+    if razon == "dependency"
+        return "dependencia"
+    elif razon == "adopted"
+        return "adoptado"
+    end
+    return "pedido"
+end
+
+# El CRC-32 de un fichero (0 si no se puede leer), a trozos de 32 KB
+func recibo_crc(ruta: String) -> Int
+    f = file_open(ruta, 1005)
+    if f == 0
+        return 0
+    end
+    b = buffer_alloc(32768)
+    crc = 0
+    n = file_read(f, b, 32768)
+    while n > 0
+        crc = crc32(b, n, crc)
+        n = file_read(f, b, 32768)
+    end
+    buffer_free(b)
+    file_close(f)
+    return crc
+end
+
+# Un recibo nuevo para lo que se acaba de instalar: con el CRC-32 y el tamaño de cada fichero
+func recibo_nuevo(id: Int, nombre: String, version: String, destino: String, ficheros: [String]) -> Recibo
+    var crcs: [Int] = []
+    var tams: [Int] = []
+    var antes: [String] = []
+    var fs: [String] = []
+    for f in ficheros
+        fs.push(f)
+        crcs.push(recibo_crc(f))
+        tams.push(file_size(f))
+    end
+    return Recibo(id, nombre, version, destino, fs, crcs, tams, 1, "pedido", false, date_text("%d-%m-%Y %H:%M"), "", "", antes)
+end
+
+func recibo_hex(n: Int) -> String
+    d = "0123456789abcdef"
+    t = ""
+    for i in (0..7)
+        k = n & 15
+        t = d[k:k + 1] + t
+        n = n >> 4
+    end
+    return t
+end
+
+func _de_hex(t: String) -> Int
+    n = 0
+    i = 0
+    while i < t.length
+        c = str_code(t, i)
+        v = 0
+        if c >= 48 and c <= 57
+            v = c - 48
+        elif c >= 97 and c <= 102
+            v = c - 87
+        elif c >= 65 and c <= 70
+            v = c - 55
+        end
+        n = (n << 4) | v
+        i = i + 1
+    end
+    return n
+end
+
+func recibo_si_no(b: Bool) -> String
+    if b
+        return "si"
+    end
+    return "no"
+end
+
+func recibo_texto(r: Recibo) -> String
+    t = "PKG-DB 2\nName: " + recibo_clave(r.nombre) + "\nTitle: " + r.nombre + "\nVersion: " + r.version + "\n"
+    if r.epoch > 0
+        t = t + "Epoch: " + str_from_int(r.epoch, 10) + "\n"
+    end
+    t = t + "Release: " + str_from_int(r.lanzamiento, 10) + "\n"
+    if r.repo != ""
+        t = t + "Repository: " + r.repo + "\n"
+    end
+    hold = "no"
+    if r.retenido
+        hold = "yes"
+    end
+    t = t + "Id: " + str_from_int(r.id, 10) + "\nReason: " + _razon(r.motivo)
+    t = t + "\nHold: " + hold + "\nDate: " + r.fecha + "\nTarget: " + r.destino + "\n"
+    if r.requiere != ""
+        t = t + "Requires: " + r.requiere + "\n"
+    end
+    if r.provee != ""
+        t = t + "Provides: " + r.provee + "\n"
+    end
+    i = 0
+    while i < r.ficheros.length
+        crc = 0
+        tam = 0
+        if i < r.crcs.length
+            crc = r.crcs[i]
+        end
+        if i < r.tamanos.length
+            tam = r.tamanos[i]
+        end
+        t = t + "F " + recibo_hex(crc) + " " + str_from_int(tam, 10) + " " + r.ficheros[i] + "\n"
+        i = i + 1
+    end
+    for a in r.antes
+        t = t + "A " + a + "\n"
+    end
+    if r.config != nil
+        for c in r.config
+            t = t + "C " + c + "\n"
+        end
+    end
+    if r.bloque
+        t = t + "S " + recibo_clave(r.nombre) + "\n"
+    end
+    return t
+end
+
+# Guarda el recibo: primero a un fichero nuevo y luego se cambia por el viejo (un corte a mitad no deja uno roto)
+func recibo_guardar(r: Recibo) -> Bool
+    dir_create(recibos_cajon)
+    ruta = _recibo_ruta(r.nombre)
+    if not file_write_text(ruta + ".new", recibo_con_suma(recibo_texto(r)))
+        return false
+    end
+    file_delete(ruta)
+    return file_rename(ruta + ".new", ruta)
+end
+
+# El texto de un recibo con su última línea, "Sum: " y los 16 primeros del SHA-256 de todo lo de antes: un .pkg
+# cambiado o cortado se nota al leerlo
+func recibo_con_suma(t: String) -> String
+    return t + "Sum: " + sha256_text(t)[:16] + "\n"
+end
+
+# Una copia de la base entera (son textos pequeños) antes de cada transacción, en <base>-copia: si un .pkg se rompe,
+# se rehace desde ella
+func recibos_copiar_base()
+    copia = recibos_cajon + "-copia"
+    dir_create(copia)
+    var viejos: [String] = []
+    n = dir_read(copia)
+    if n > 0
+        for i in (0..n - 1)
+            viejos.push(dir_entry_name(i))
+        end
+    end
+    for v in viejos
+        file_delete(copia + "/" + v)
+    end
+    var nombres: [String] = []
+    n = dir_read(recibos_cajon)
+    if n > 0
+        for i in (0..n - 1)
+            if not dir_entry_is_dir(i)
+                nombres.push(dir_entry_name(i))
+            end
+        end
+    end
+    for x in nombres
+        file_copy(recibos_cajon + "/" + x, copia + "/" + x)
+    end
+end
+
+# El recibo de la copia de la base, si está entero; si no, uno vacío (id 0)
+func recibo_de_copia(nombre: String) -> Recibo
+    r = recibo_leer_texto(file_read_text(recibos_cajon + "-copia/" + recibo_fichero(nombre)))
+    if r.en_duda
+        return _recibo_vacio()
+    end
+    return r
+end
+
+func _recibo_vacio() -> Recibo
+    var fs: [String] = []
+    var cs: [Int] = []
+    var ts: [Int] = []
+    var an: [String] = []
+    return Recibo(0, "", "", "", fs, cs, ts, 1, "pedido", false, "", "", "", an)
+end
+
+# Lee un recibo, del formato de ahora o del viejo (HANGAR-RECIBO 1, sin CRC)
+func recibo_leer_texto(t: String) -> Recibo
+    r = _recibo_vacio()
+    if t == nil
+        return r
+    end
+    if str_find(t, "HANGAR-RECIBO 1") == 0
+        for linea in str_split(t, "\n")
+            p = str_find(linea, "\t")
+            if p > 0
+                k = linea[:p]
+                v = linea[p + 1:]
+                if k == "id"
+                    r.id = Int(v)
+                elif k == "nombre"
+                    r.nombre = v
+                elif k == "version"
+                    r.version = v
+                elif k == "destino"
+                    r.destino = v
+                elif k == "f"
+                    r.ficheros.push(v)
+                    r.crcs.push(0)
+                    r.tamanos.push(0)
+                end
+            end
+        end
+        return r
+    end
+    v2 = str_find(t, "PKG-DB 2") == 0
+    if str_find(t, "HANGAR-BASE 1") != 0 and not v2
+        return r
+    end
+    # la suma del final (los de antes no la llevan: valen igual)
+    ps = str_find(t, "\nSum: ")
+    if v2 and ps > 0
+        if str_trim(t[ps + 6:]) != sha256_text(t[:ps + 1])[:16]
+            r.en_duda = true
+        end
+    end
+    for linea in str_split(t, "\n")
+        if str_starts(linea, "F ")
+            # "F crc tamaño ruta" (la ruta puede llevar espacios)
+            resto = linea[2:]
+            e1 = str_find(resto, " ")
+            if e1 > 0
+                crc = _de_hex(resto[:e1])
+                resto = resto[e1 + 1:]
+                e2 = str_find(resto, " ")
+                if e2 > 0
+                    r.crcs.push(crc)
+                    r.tamanos.push(Int(resto[:e2]))
+                    r.ficheros.push(resto[e2 + 1:])
+                end
+            end
+        elif str_starts(linea, "A ")
+            r.antes.push(linea[2:])
+        elif str_starts(linea, "C ")
+            if r.config == nil
+                var cs: [String] = []
+                r.config = cs
+            end
+            r.config.push(linea[2:])
+        elif str_starts(linea, "S ")
+            r.bloque = true
+        else
+            p = str_find(linea, ": ")
+            if p > 0
+                k = linea[:p]
+                v = linea[p + 2:]
+                if k == "Nombre" or k == "Title"
+                    r.nombre = v
+                elif k == "Repository"
+                    r.repo = v
+                elif k == "Epoch"
+                    r.epoch = Int(v)
+                elif k == "Reason"
+                    r.motivo = _motivo(v)
+                elif k == "Hold"
+                    r.retenido = v == "yes"
+                elif k == "Date"
+                    r.fecha = v
+                elif k == "Target"
+                    r.destino = v
+                elif k == "Version"
+                    r.version = v
+                elif k == "Release"
+                    r.lanzamiento = Int(v)
+                elif k == "Id"
+                    r.id = Int(v)
+                elif k == "Motivo"
+                    r.motivo = v
+                elif k == "Retenido"
+                    r.retenido = v == "si"
+                elif k == "Fecha"
+                    r.fecha = v
+                elif k == "Destino"
+                    r.destino = v
+                elif k == "Requires"
+                    r.requiere = v
+                elif k == "Provides"
+                    r.provee = v
+                end
+            end
+        end
+    end
+    return r
+end
+
+func recibos_todos() -> [Recibo]
+    var r: [Recibo] = []
+    n = dir_read(recibos_cajon)
+    if n <= 0
+        return r
+    end
+    var nombres: [String] = []
+    for i in (0..n - 1)
+        nombres.push(dir_entry_name(i))
+    end
+    for nombre in nombres
+        if not str_ends(nombre, ".nuevo") and not str_ends(nombre, ".new")
+            rec = recibo_leer_texto(file_read_text(recibos_cajon + "/" + nombre))
+            if rec.id != 0
+                r.push(rec)
+            end
+        end
+    end
+    return r
+end
+
+# El recibo de un paquete, por su número del catálogo; id 0 si no está instalado
+func recibo_leer(id: Int) -> Recibo
+    for r in recibos_todos()
+        if r.id == id
+            return r
+        end
+    end
+    return _recibo_vacio()
+end
+
+# El recibo de un paquete por su nombre; id 0 si no está
+func recibo_de(nombre: String) -> Recibo
+    ruta = _recibo_ruta(nombre)
+    if not file_exists(ruta)
+        ruta = recibos_cajon + "/" + recibo_clave(nombre)      # de la versión 1, sin pasar todavía
+    end
+    return recibo_leer_texto(file_read_text(ruta))
+end
+
+# Reescribe en el formato 2 la base de la versión 1 (los ficheros sin ".pkg"); da cuántos
+func recibos_a_v2() -> Int
+    n = dir_read(recibos_cajon)
+    if n <= 0
+        return 0
+    end
+    var nombres: [String] = []
+    for i in (0..n - 1)
+        nombres.push(dir_entry_name(i))
+    end
+    hechos = 0
+    for nombre in nombres
+        if not str_ends(nombre, ".pkg") and not str_ends(nombre, ".new") and not str_ends(nombre, ".nuevo") and nombre != "Estado" and nombre != "Diario" and nombre != "Deshacer" and nombre != "Repos"
+            ruta = recibos_cajon + "/" + nombre
+            t = file_read_text(ruta)
+            if t != nil and str_find(t, "HANGAR-BASE 1") == 0
+                r = recibo_leer_texto(t)
+                if r.id != 0 and recibo_guardar(r)
+                    file_delete(ruta)
+                    hechos = hechos + 1
+                end
+            end
+        end
+    end
+    return hechos
+end
+
+# De quién es un fichero instalado ("" si de nadie)
+func recibo_dueno(ruta: String) -> String
+    bajo = str_lower(ruta)
+    for r in recibos_todos()
+        for f in r.ficheros
+            if str_lower(f) == bajo
+                return r.nombre
+            end
+        end
+    end
+    return ""
+end
+
+# Lo que ya no está como se instaló: "falta RUTA" o "cambiado RUTA" (otro tamaño u otro CRC-32). Vacío si todo
+# está bien. Los que no tienen CRC apuntado (0 y 0) no se miran.
+func recibo_verificar(r: Recibo) -> [String]
+    var mal: [String] = []
+    i = 0
+    while i < r.ficheros.length
+        f = r.ficheros[i]
+        crc = 0
+        tam = 0
+        if i < r.crcs.length
+            crc = r.crcs[i]
+        end
+        if i < r.tamanos.length
+            tam = r.tamanos[i]
+        end
+        # un fichero de configuración cambiado son los ajustes del usuario: no está roto
+        es_config = false
+        if r.config != nil
+            for c in r.config
+                if str_lower(c) == str_lower(f)
+                    es_config = true
+                end
+            end
+        end
+        # un icono cambiado tampoco: el Workbench lo reescribe al moverlo o al cambiar sus tooltypes o su sitio
+        if str_ends(str_lower(f), ".info")
+            es_config = true
+        end
+        if not file_exists(f)
+            mal.push("falta " + f)
+        elif (crc != 0 or tam != 0) and not es_config
+            if file_size(f) != tam or recibo_crc(f) != crc
+                mal.push("cambiado " + f)
+            end
+        end
+        i = i + 1
+    end
+    return mal
+end
+
+# Pasa los recibos viejos (PROGDIR:Recibos/<id>.txt) a la base, con el CRC-32 de lo que haya ahora. Da cuántos.
+func recibos_migrar() -> Int
+    n = dir_read(recibos_viejos)
+    if n <= 0
+        return 0
+    end
+    var nombres: [String] = []
+    for i in (0..n - 1)
+        nombres.push(dir_entry_name(i))
+    end
+    hechos = 0
+    for nombre in nombres
+        ruta = recibos_viejos + "/" + nombre
+        viejo = recibo_leer_texto(file_read_text(ruta))
+        if viejo.id != 0 and viejo.nombre != ""
+            r = recibo_nuevo(viejo.id, viejo.nombre, viejo.version, viejo.destino, viejo.ficheros)
+            for f in viejo.ficheros
+                if recibo_copia(f) != ""
+                    r.antes.push(f)
+                end
+            end
+            if recibo_guardar(r)
+                file_delete(ruta)
+                hechos = hechos + 1
+            end
+        end
+    end
+    if dir_read(recibos_viejos) == 0
+        file_delete(recibos_viejos)
+    end
+    return hechos
+end
+
+# Borra lo que escribió la instalación y después los cajones que queden vacíos (de dentro afuera). Da cuántos
+# ficheros no se pudieron borrar.
+func recibo_desinstalar(r: Recibo) -> Int
+    fallos = 0
+    var cajones: [String] = []
+    for f in r.ficheros
+        if file_exists(f)
+            if not file_delete(f)
+                fallos = fallos + 1
+            end
+        end
+        # lo que había antes en el sistema (Install: system) vuelve a su sitio
+        if fallos == 0 and recibo_copia(f) != ""
+            file_rename(recibo_copia(f), f)
+        end
+        # los cajones de la ruta, por debajo del destino
+        c = f
+        while c.length > r.destino.length
+            barra = -1
+            for i in (0..c.length - 1)
+                if c[i] == "/"
+                    barra = i
+                end
+            end
+            if barra <= r.destino.length - 1
+                break
+            end
+            c = c[:barra]
+            if c.length > r.destino.length
+                cajones.push(c)
+            end
+        end
+    end
+    # los más largos primero: dentro antes que fuera
+    hecho = cajones.length > 0
+    while hecho
+        hecho = false
+        mejor = -1
+        for i in (0..cajones.length - 1)
+            if cajones[i] != "" and (mejor < 0 or cajones[i].length > cajones[mejor].length)
+                mejor = i
+            end
+        end
+        if mejor >= 0
+            c = cajones[mejor]
+            for i in (0..cajones.length - 1)
+                if cajones[i] == c
+                    cajones[i] = ""
+                end
+            end
+            if dir_read(c) == 0
+                file_delete(c)
+            end
+            hecho = true
+        end
+    end
+    if fallos == 0
+        file_delete(_recibo_ruta(r.nombre))
+    end
+    return fallos
+end

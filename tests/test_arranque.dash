@@ -1,0 +1,43 @@
+# Test: lo que un guion de Installer añade a S:User-Startup (src/instalador.dash, arranque_separar): las líneas
+# nuevas salen del fichero (van al bloque del paquete, que se quita al desinstalarlo) y lo de antes queda igual,
+# también con líneas repetidas o en blanco.
+# expect-out: nuevas [;BEGIN MiProg|Assign MIPROG: Work:MiProg|;END MiProg|]
+# expect-out: resto [; mio|Echo hola|]
+# expect-out: igual [] [; mio|Echo hola|]
+# expect-out: repetida [Echo hola|] [Echo hola|Path C:|]
+# expect-out: guion [Prog/Install] sin guion []
+# expect-out: sitio [Work:] [Programs:Juegos/] [Work:] []
+import "../src/instalador.dash"
+
+func barras(t: String) -> String
+    return str_replace(t, "\n", "|")
+end
+
+Main
+    antes = "; mio\nEcho hola\n"
+    despues = "; mio\nEcho hola\n;BEGIN MiProg\nAssign MIPROG: Work:MiProg\n;END MiProg\n"
+    p = arranque_separar(antes, despues)
+    Print "nuevas [" + barras(p[0]) + "]"
+    Print "resto [" + barras(p[1]) + "]"
+    q = arranque_separar(antes, antes)
+    Print "igual [" + barras(q[0]) + "] [" + barras(q[1]) + "]"
+    r = arranque_separar("Echo hola\nPath C:\n", "Echo hola\nPath C:\nEcho hola\n")
+    Print "repetida [" + barras(r[0]) + "] [" + barras(r[1]) + "]"
+    # el guion de un .lha de Aminet: "Install" con órdenes del Installer, antes que el de otro idioma; un "Install"
+    # que no es un guion (un texto cualquiera) no cuenta
+    dir_create("RAM:n")
+    dir_create("RAM:n/Prog")
+    file_write_text("RAM:n/Prog/Install", "; instala Prog\n(welcome)\n(copyfiles (source \"Prog\") (dest @default-dest))\n")
+    file_write_text("RAM:n/Prog/Install.info", "x")
+    file_write_text("RAM:n/Prog/Install-Deutsch", "(set @default-dest \"Work:\")\n")
+    file_write_text("RAM:n/Prog/Installation.txt", "Lee esto antes de instalar\n")
+    file_write_text("RAM:n/Prog/Prog", "programa")
+    var fs: [String] = ["RAM:n/Prog/Prog", "RAM:n/Prog/Install-Deutsch", "RAM:n/Prog/Installation.txt", "RAM:n/Prog/Install", "RAM:n/Prog/Install.info"]
+    var otros: [String] = ["RAM:n/Prog/Prog", "RAM:n/Prog/Installation.txt"]
+    Print "guion [" + guion_del_paquete("RAM:n/", fs) + "] sin guion [" + guion_del_paquete("RAM:n/", otros) + "]"
+    var a1: [String] = ["Work:Prog/Prog", "Work:Prog/Prog.info", "LIBS:prog.library", "Work:Prog/Docs/Leeme"]
+    var a2: [String] = ["Programs:Juegos/Pac/Pac", "ENVARC:Pac.prefs", "Programs:Juegos/Pac.info"]
+    var a3: [String] = ["Work:Prog", "C:prog"]
+    var a4: [String] = ["LIBS:x.library", "SYS:WBStartup/X"]
+    Print "sitio [" + sitio_de_lo_escrito(a1) + "] [" + sitio_de_lo_escrito(a2) + "] [" + sitio_de_lo_escrito(a3) + "] [" + sitio_de_lo_escrito(a4) + "]"
+end
