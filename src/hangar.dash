@@ -1,6 +1,6 @@
 # Hangar: busca, instala y pone al día el software del Amiga. Busca en el catálogo de hangar.freemem.space, enseña la ficha, instala
 # (baja el .lha y lo descomprime, sin C:lha), actualiza, desinstala y ejecuta.
-@version "Hangar 0.14.6"
+@version "Hangar 0.15.0"
 import "api.dash"
 import "lha.dash"
 import "recibos.dash"
@@ -13,7 +13,7 @@ import "sistema.dash"
 import "plan2.dash"
 import "instalador.dash"
 
-const VERSION = "0.14.6"
+const VERSION = "0.15.0"
 
 const ID_BUSCAR = 1
 const ID_NOVEDADES = 2
@@ -38,10 +38,15 @@ const ID_DESTINO = 23
 const ID_MIRAR = 24
 const ID_ELEGIR = 25
 const ID_CONTAR = 26          # tras una acción: el número de Actualizar (N), otra vez
+const ID_HANGAR = 27          # menú: Actualizar Hangar
 
 # Lo que se baja: aquí se queda cada versión (para volver a ella) y aquí se descomprime antes de ponerla en su sitio
 const CACHE = "PROGDIR:Cache"
 const NUEVO = "PROGDIR:Cache/Nuevo/"
+# Dónde se baja y se descomprime en esta instalación: la caché de Hangar o, si en su volumen no cabe (Coffin: System:
+# con 12 MB libres y Amelinium pide 82 MB), una carpeta en el volumen de destino que se borra al acabar
+var bajadas: String = CACHE
+var nuevo_dir: String = NUEVO
 
 # Lo que se enseña en la lista
 var actuales: [Paquete] = []
@@ -164,7 +169,12 @@ end
 var cli_destino: String = ""
 
 # Dónde se instala: lo del campo "En:" de la ventana, o desde el Shell DESTINO=... (o el de siempre)
+var destino_forzado: String = ""   # (Hangar actualizándose: su propio cajón, no el de "En:")
+
 func destino_elegido() -> String
+    if destino_forzado != ""
+        return destino_forzado
+    end
     if cli
         if cli_destino != ""
             return cli_destino
@@ -436,6 +446,14 @@ end
 
 func instalar_pkg(pedido: String)
     instalado_bien = false
+    # un volumen que no existe (DESTINO=Work: en un Amiga sin Work:): el sistema pediría el disco y Hangar se quedaría
+    # esperando; path_free_kb no lo pide. RAM: siempre vale
+    v = volumen_de(destino_elegido())
+    if v != "" and str_upper(v) != "RAM:" and prueba_libre_kb < 0 and path_free_kb(v) < 0
+        estado_texto = "El volumen " + v + " no está: no se puede instalar en " + destino_elegido()
+        estado(estado_texto)
+        return
+    end
     estado("Mirando lo que necesita " + pedido + " (comprobando firmas)...")
     if not plan2_instalar(pedido)
         estado_texto = "No se puede instalar " + pedido + ": " + plan2_error
@@ -515,6 +533,25 @@ func plan2_falta_espacio() -> String
         i = i + 1
     end
     if libre_cache >= 0 and cache_kb > libre_cache
+        # en el volumen de destino, si allí cabe también esto (además de lo que se instala en él)
+        vd = volumen_de(destino_elegido())
+        libre_d = -1
+        if vd != "" and str_upper(vd) != "RAM:"
+            libre_d = _libre_kb(vd)
+        end
+        hace_d = cache_kb
+        i = 0
+        while i < vols.length
+            if vols[i] == vd
+                hace_d = hace_d + kb[i]
+            end
+            i = i + 1
+        end
+        if libre_d >= 0 and hace_d <= libre_d
+            bajadas = vd + "Hangar-temporal"
+            nuevo_dir = bajadas + "/Nuevo/"
+            return ""
+        end
         return "No cabe en la caché de Hangar: hacen falta " + str_from_int(cache_kb, 10) + " KB y quedan " + str_from_int(libre_cache, 10) + " KB"
     end
     return ""
@@ -606,6 +643,8 @@ func hacer_plan2(titulo: String)
         end
     end
     # el espacio: si no cabe, no se empieza (docs/FORMATO_PAQUETES.md, Installed-Size)
+    bajadas = CACHE
+    nuevo_dir = NUEVO
     falta = plan2_falta_espacio()
     if falta != ""
         estado_texto = falta
@@ -666,6 +705,12 @@ func hacer_plan2(titulo: String)
         else
             estado("No se hizo y " + cuantos(fallos, "fichero no volvió", "ficheros no volvieron") + " a su sitio")
         end
+    end
+    # la carpeta temporal del volumen de destino (si no cabía en la caché): fuera, con lo bajado
+    if bajadas != CACHE
+        borrar_arbol(bajadas)
+        bajadas = CACHE
+        nuevo_dir = NUEVO
     end
     progreso(0)
     refrescar()
@@ -752,8 +797,8 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
         estado(estado_texto)
         return false
     end
-    dir_create(CACHE)
-    temporal = CACHE + "/" + recibo_clave(f.nombre) + "-" + recibo_clave(f.version) + ".lha"
+    dir_create(bajadas)
+    temporal = bajadas + "/" + recibo_clave(f.nombre) + "-" + recibo_clave(f.version) + ".lha"
     # ya en la caché (una reinstalación, o volver a esta versión) y con su SHA-256: sin bajarlo otra vez
     en_cache = f.sha256 != "" and file_exists(temporal) and api_sha256_fichero(temporal) == f.sha256
     if not en_cache
@@ -798,8 +843,8 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
     # su nota en la caché: el SHA-256 comprobado, el release y el epoch (para volver a esta versión sin red)
     file_write_text(temporal[:temporal.length - 4] + ".sha", f.sha256 + "\n" + str_from_int(f.release, 10) + "\n" + str_from_int(f.epoch, 10) + "\n" + f.version + "\n")
     estado("Descomprimiendo...")
-    borrar_arbol(NUEVO[:NUEVO.length - 1])
-    e = lha_extraer(temporal, NUEVO)
+    borrar_arbol(nuevo_dir[:nuevo_dir.length - 1])
+    e = lha_extraer(temporal, nuevo_dir)
     if e != ""
         estado_texto = "Error al descomprimir: " + e
         return false
@@ -807,7 +852,7 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
     var puestos: [String] = []
     if f.variantes != nil and f.variantes.length > 0
         # Variant: el fichero que vale para este Amiga pasa a ser el de su nombre; los demás no se instalan
-        ev = aplicar_variantes(NUEVO, f.variantes)
+        ev = aplicar_variantes(nuevo_dir, f.variantes)
         if ev != ""
             estado_texto = ev
             return false
@@ -820,7 +865,7 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
         for v in f.variantes
             p = str_find(v, "=")
             if p > 0
-                d = NUEVO + str_trim(v[:p])
+                d = nuevo_dir + str_trim(v[:p])
                 ya = false
                 for x in puestos
                     if x == d
@@ -853,7 +898,7 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
         # lo de Aminet no dice cómo se instala (o solo lo que Hangar dedujo de sus librerías: Install: system): si trae
         # su guion de Installer, se ofrece (como lo haría el usuario; el guion sabe renombrar una librería por CPU) y
         # Hangar apunta todo lo que copie, para quitarlo entero y saber dónde está
-        g = guion_del_paquete(NUEVO, puestos)
+        g = guion_del_paquete(nuevo_dir, puestos)
         if g != ""
             if preguntar(f.nombre + " trae su propio instalador (" + g + ").\n¿Lo uso? Hangar apunta todo lo que copie,\npara poder actualizarlo y quitarlo entero.", "_Usar su instalador|_Copiarlo sin él") == 1
                 con_guion = true
@@ -868,7 +913,7 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
         var cimas: [String] = []
         sueltos = false
         for x in puestos
-            rel = x[NUEVO.length:]
+            rel = x[nuevo_dir.length:]
             b = str_find(rel, "/")
             if b > 0
                 if not (rel[:b] in cimas)
@@ -896,7 +941,7 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
             end
         end
         for x in puestos
-            d = destino + prefijo + x[NUEVO.length:]
+            d = destino + prefijo + x[nuevo_dir.length:]
             bajo = str_lower(d)
             i = 0
             while i < duenos_f.length
@@ -912,7 +957,7 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
         # con su guion de Installer: lo que escriba, apuntado por la foto de antes y después
         estado("Instalando " + f.nombre + " con su Installer...")
         instalador_otros = sitios_de_guion(destino)
-        for x in instalar_con_guion(NUEVO, guion, f.nombre, destino)
+        for x in instalar_con_guion(nuevo_dir, guion, f.nombre, destino)
             escritos.push(x)
         end
         if instalador_error != ""
@@ -928,7 +973,7 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
         puestos = nada
     end
     for x in puestos
-        rel = x[NUEVO.length:]
+        rel = x[nuevo_dir.length:]
         d = destino + prefijo + rel
         poner_en = d
         if f.config != "" and es_config(f.config, rel)
@@ -961,7 +1006,7 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
             escritos.push(d)       # el del usuario queda en el recibo (es de este paquete)
         end
     end
-    borrar_arbol(NUEVO[:NUEVO.length - 1])
+    borrar_arbol(nuevo_dir[:nuevo_dir.length - 1])
     # lo de la versión anterior que ya no viene (solo lo que trajo el paquete: sus ajustes se quedan)
     if anterior.id != 0
         for viejo in anterior.ficheros
@@ -1036,7 +1081,12 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
         estado_texto = str_from_int(nuevos_config, 10) + " ajustes tuyos se quedan; los nuevos están al lado (.new)"
         estado(f.nombre + " " + f.version + " instalado. " + estado_texto)
     else
-        estado(f.nombre + " " + version_ver(f.version) + " instalado en " + destino + " (" + cuantos(puestos.length, "fichero", "ficheros") + ")")
+        # con su Installer, Hangar no copia nada él: cuentan los que apuntó del guion
+        nf = puestos.length
+        if nf == 0
+            nf = escritos.length
+        end
+        estado(f.nombre + " " + version_ver(f.version) + " instalado en " + destino + " (" + cuantos(nf, "fichero", "ficheros") + ")")
     end
     return true
 end
@@ -1166,19 +1216,22 @@ end
 
 # Pone al día todo lo instalado con Hangar que tenga versión nueva (menos lo retenido), con sus dependencias, en una
 # sola transacción (como pacman -Syu): si una falla, todo vuelve a como estaba
-func actualizar_todo()
+# true si quedó todo al día (o ya lo estaba)
+func actualizar_todo() -> Bool
     mv = movidos_al_dia()
     # el formato 2: una pregunta firmada por repositorio y el plan del resolutor
     estado("Mirando versiones (comprobando firmas)...")
     if not plan2_actualizar()
         estado("No se puede actualizar: " + plan2_error)
-        return
+        return false
     end
     if resolutor_pasos.length > 0
+        instalado_bien = false
         hacer_plan2("Actualizar todo")
-        return
+        return instalado_bien
     end
     estado("Todo está al día")
+    return true
 end
 
 func retener()
@@ -1530,6 +1583,77 @@ func recibo_completar_repo(r: Recibo) -> Bool
         r.nombre = f.pkg2
     end
     return true
+end
+
+# Hangar al día por sí mismo (el usuario, 2026-11-18: "como Tachyon, por la release del proyecto"): cada release
+# de FreeMEM/hangar entra en el catálogo firmado (repositorio main, paquete hangar). La versión de Hangar más nueva
+# que la que corre, o "" (sin red, o ya al día)
+func hangar_nuevo() -> String
+    for rp in api2_repos
+        if rp.nombre == "main"
+            r = api2_paquete(rp, "hangar")
+            if r.error == ""
+                for e in r.entradas
+                    if e.nombre == "hangar" and version_mayor(e.version, VERSION)
+                        return e.version
+                    end
+                end
+            end
+        end
+    end
+    return ""
+end
+
+# Instala la versión nueva de Hangar en su propio cajón (el de arriba de PROGDIR:, aunque se descomprimiera a mano)
+func actualizar_hangar(v: String)
+    real = file_real_path("PROGDIR:")
+    if real == ""
+        estado("No sé en qué cajón está Hangar")
+        return
+    end
+    if not str_ends(real, "/") and not str_ends(real, ":")
+        real = real + "/"
+    end
+    # el cajón de arriba ("System:Utilities/Hangar/" -> "System:Utilities/"): el paquete pone su cajón Hangar
+    arriba = real
+    sin = real[:real.length - 1]
+    k = sin.length - 1
+    while k >= 0 and sin[k:k + 1] != "/" and sin[k:k + 1] != ":"
+        k = k - 1
+    end
+    if k >= 0
+        arriba = sin[:k + 1]
+    end
+    destino_forzado = arriba
+    instalar_pkg("hangar@main")
+    destino_forzado = ""
+    if instalado_bien
+        resultado = "Hangar " + v + " instalado: ciérralo y vuelve a abrirlo"
+        estado(resultado)
+        if not cli and preguntar("Hangar " + v + " ya está instalado.\nCiérralo y vuelve a abrirlo para usar la versión nueva.", "_Cerrar Hangar|_Seguir") == 1
+            cerrar_pedido = true
+        end
+    end
+end
+
+var cerrar_pedido: Bool = false
+
+# Al arrancar (y desde el menú): si hay un Hangar más nuevo, se dice; al arrancar, una vez por versión
+func mirar_hangar(desde_menu: Bool)
+    v = hangar_nuevo()
+    if v == ""
+        if desde_menu
+            preguntar("Hangar " + VERSION + " es la última versión.", "_Vale")
+        end
+        return
+    end
+    if not desde_menu and env_get("Hangar/aviso_version") == v
+        return
+    end
+    env_set("Hangar/aviso_version", v, true)
+    if preguntar("Hay una versión nueva de Hangar: " + v + " (tienes la " + VERSION + ").\n¿La instalo ahora?", "_Actualizar|_Más tarde") == 1
+        actualizar_hangar(v)
+    end
 end
 
 # El botón "Actualizar (N)"
@@ -2291,6 +2415,10 @@ func orden(palabras: [String]) -> Int
             Print "Error: " + l.error
             return 10
         end
+        if l.paquetes.length == 0
+            Print "No hay nada con \"" + resto + "\""
+            return 5
+        end
         for p in l.paquetes
             Print str_from_int(p.id, 10) + "  " + p.nombre + " " + p.version + "  -  " + p.corto
         end
@@ -2324,8 +2452,10 @@ func orden(palabras: [String]) -> Int
         end
         return 5
     elif que == "ACTUALIZA" or que == "UPGRADE"
-        actualizar_todo()
-        return 0
+        if actualizar_todo()
+            return 0
+        end
+        return 5
     elif que == "LISTA" or que == "LIST"
         instalados()
         return 0
@@ -2479,6 +2609,7 @@ Main
             mui_menu_item("Deshacer la última...", "Z", ID_DESHACER)
             mui_menu_separator()
             mui_menu_item("Actualizar todo...", "U", ID_ACTUALIZAR_TODO)
+            mui_menu_item("Actualizar Hangar...", "", ID_HANGAR)
             mui_menu_item("Verificar lo instalado...", "K", ID_VERIFICAR)
             mui_menu_item("Limpiar la caché", "L", ID_LIMPIAR)
             mui_menu_separator()
@@ -2658,6 +2789,12 @@ Main
         elif ev == ID_MIRAR
             contar_versiones(mirar_callado)
             mirar_callado = false
+            # el propio Hangar: si se instaló con Hangar ya sale en Actualizar (N); si no, se pregunta aquí
+            if recibo_de("hangar").id == 0
+                mirar_hangar(false)
+            end
+        elif ev == ID_HANGAR
+            mirar_hangar(true)
         elif ev == ID_CONTAR
             contar_versiones(true)
         elif ev == ID_WEB
@@ -2678,6 +2815,9 @@ Main
             verificar()
         elif ev == ID_ACERCA
             preguntar("\33cHangar " + VERSION + "\nBusca, instala y pone al día\nel software del Amiga\n\nhttps://hangar.freemem.space", "_Vale")
+        end
+        if cerrar_pedido
+            abierta = false
         end
     end
     mui_app_end()

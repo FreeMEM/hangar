@@ -349,14 +349,24 @@ func instalar_con_guion(staged: String, guion: String, nombre: String, destino: 
             instalador_arranque = partes[0]
         end
     end
-    # al recibo solo lo nuevo: lo que ya estaba y cambió (una librería, S:User-Startup) no se borra al quitarlo
+    # al recibo solo lo nuevo: lo que ya estaba y cambió (una librería, S:User-Startup) no se borra al quitarlo. Cada
+    # fichero una vez, por su ruta real: el mismo se ve por el destino y por una asignación (Work: que apunta a
+    # Programs:Network, en Coffin) y salía dos o tres veces en el recibo
+    var reales: [String] = []
     for d in foto_diferencia(antes, foto_sistema(destino))
         ruta = d[2:]
-        if str_starts(d, "N ")
-            tr_apuntar_nuevo(ruta)
-            escritos.push(ruta)
-        else
-            instalador_cambiados = instalador_cambiados + 1
+        real = str_lower(file_real_path(ruta))
+        if real == ""
+            real = str_lower(ruta)
+        end
+        if not (real in reales)
+            reales.push(real)
+            if str_starts(d, "N ")
+                tr_apuntar_nuevo(ruta)
+                escritos.push(ruta)
+            else
+                instalador_cambiados = instalador_cambiados + 1
+            end
         end
     end
     return escritos
