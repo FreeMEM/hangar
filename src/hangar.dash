@@ -1,6 +1,6 @@
 # Hangar: busca, instala y pone al día el software del Amiga. Busca en el catálogo de hangar.freemem.space, enseña la ficha, instala
 # (baja el .lha y lo descomprime, sin C:lha), actualiza, desinstala y ejecuta.
-@version "Hangar 0.15.0"
+@version "Hangar 0.15.1"
 import "api.dash"
 import "lha.dash"
 import "recibos.dash"
@@ -13,7 +13,7 @@ import "sistema.dash"
 import "plan2.dash"
 import "instalador.dash"
 
-const VERSION = "0.15.0"
+const VERSION = "0.15.1"
 
 const ID_BUSCAR = 1
 const ID_NOVEDADES = 2
@@ -882,6 +882,15 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
             puestos.push(x)
         end
     end
+    # el manifiesto del formato 2 (Nombre.readme en la raíz, "Format: 2") es para el repositorio y Aminet, no para el
+    # disco: si no, quedaba suelto al lado del cajón del programa (Hangar al actualizarse, Trasfondo, Forja...)
+    var sin_manifiesto: [String] = []
+    for x in puestos
+        if not es_manifiesto(x[nuevo_dir.length:], x)
+            sin_manifiesto.push(x)
+        end
+    end
+    puestos = sin_manifiesto
     estado("Instalando " + f.nombre + "...")
     var escritos: [String] = []
     var configs: [String] = []
@@ -1602,6 +1611,16 @@ func hangar_nuevo() -> String
         end
     end
     return ""
+end
+
+# Si un fichero del paquete (rel: su ruta dentro del .lha) es su manifiesto del formato 2: un .readme en la raíz que
+# empieza por "Format:". Los .readme de siempre de Aminet (empiezan por "Short:") sí se instalan
+func es_manifiesto(rel: String, ruta: String) -> Bool
+    if str_find(rel, "/") >= 0 or not str_ends(str_lower(rel), ".readme")
+        return false
+    end
+    t = file_read_text(ruta)
+    return t != nil and str_starts(t, "Format:")
 end
 
 # Instala la versión nueva de Hangar en su propio cajón (el de arriba de PROGDIR:, aunque se descomprimiera a mano)

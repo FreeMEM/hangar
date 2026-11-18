@@ -485,6 +485,31 @@ func _lha_cajones(destino: String, ruta: String)
 end
 
 # Extrae el archivo entero en el cajón "destino" ("Work:Prog/" o "RAM:"; se añade "/" si hace falta)
+# El archivo entero en _l_ent, leído en trozos de 32 KB como el SHA-256 (api_sha256_fichero): una sola lectura
+# de varios MB salía mal en algún Amiga (Emu68 en una Pi 3: "cabecera de nivel 51" con un .lha bueno; lo contó
+# Ingloriond)
+func _lha_cargar(archivo: String, total: Int) -> Bool
+    fd = file_open(archivo, 1005)
+    if fd == 0
+        return false
+    end
+    trozo = buffer_alloc(32768)
+    if trozo == nil
+        file_close(fd)
+        return false
+    end
+    hecho = 0
+    n = file_read(fd, trozo, 32768)
+    while n > 0 and hecho + n <= total
+        buffer_copy(_l_ent, hecho, trozo, 0, n)
+        hecho = hecho + n
+        n = file_read(fd, trozo, 32768)
+    end
+    buffer_free(trozo)
+    file_close(fd)
+    return hecho == total
+end
+
 func lha_extraer(archivo: String, destino: String) -> String
     _lha_preparar()
     var nuevos: [String] = []
@@ -503,7 +528,7 @@ func lha_extraer(archivo: String, destino: String) -> String
     if _l_ent == nil
         return "no hay memoria para " + archivo
     end
-    if file_load(archivo, _l_ent, total) != total
+    if not _lha_cargar(archivo, total)
         buffer_free(_l_ent)
         return "no se puede leer " + archivo
     end
