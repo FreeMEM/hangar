@@ -1,0 +1,11 @@
+# Para tests/punta3.py: qué quedó en LIBS:
+func si_no(b: Bool) -> String
+    if b
+        return "si"
+    end
+    return "no"
+end
+
+Main
+    Print "lib=" + si_no(file_exists("LIBS:hangarprueba.library")) + " lib3=" + si_no(file_exists("LIBS:hangarprueba3.library")) + " cl1=" + si_no(file_exists("RAM:S/CL1/CL1"))
+end

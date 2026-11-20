@@ -140,6 +140,13 @@ _punta2("8014", "main", "adiv", "1.0", [("ADIV/A", b"adiv")], "Declared: no\nReq
 _punta2("8010", "main", "zz", "1.0", [("U/U", b"zz pisa a uu")])
 # Url repetible (P6a): el primer sitio no lo tiene (404), el segundo da otra cosa (SHA-256 distinto), el tercero vale
 _punta2("8015", "main", "espejo", "1.0", [("ESP/E", b"espejo")], antes=f"Url: {B}/punta2/9999.lha\nUrl: {B}/punta2/roto.lha\n")
+# Lo que se pone en el sistema (tests/punta3.py): dos programas con la misma librería en LIBS: y uno con otra
+_punta2("8016", "main", "conlib1", "1.0", [("CL1/CL1", b"cl1"), ("CL1/hangarprueba.library", b"lib de conlib1")],
+        "Install: system LIBS:hangarprueba.library\n")
+_punta2("8017", "main", "conlib2", "1.0", [("CL2/CL2", b"cl2"), ("CL2/hangarprueba.library", b"lib de conlib2")],
+        "Install: system LIBS:hangarprueba.library\n")
+_punta2("8018", "main", "conlib3", "1.0", [("CL3/CL3", b"cl3"), ("CL3/hangarprueba3.library", b"lib de conlib3")],
+        "Install: system LIBS:hangarprueba3.library\n")
 
 
 def respuesta2(ruta, cuerpo_post=None):

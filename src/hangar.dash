@@ -1,6 +1,6 @@
 # Hangar: busca, instala y pone al día el software del Amiga. Busca en el catálogo de hangar.freemem.space, enseña la ficha, instala
 # (baja el .lha y lo descomprime, sin C:lha), actualiza, desinstala y ejecuta.
-@version "Hangar 0.15.1"
+@version "Hangar 0.15.2"
 import "api.dash"
 import "lha.dash"
 import "recibos.dash"
@@ -13,7 +13,7 @@ import "sistema.dash"
 import "plan2.dash"
 import "instalador.dash"
 
-const VERSION = "0.15.1"
+const VERSION = "0.15.2"
 
 const ID_BUSCAR = 1
 const ID_NOVEDADES = 2
@@ -86,6 +86,9 @@ var w_pestanas: Int = 0
 # Desde el Shell (Hangar INSTALA x...) no hay ventana: lo que iría a ella sale por la consola
 var cli: Bool = false
 var cli_si: Bool = false        # la palabra SI: se acepta lo que se preguntaría
+var cli_sistema: Bool = false   # la palabra SISTEMA: QUITA quita también lo suyo de LIBS:, C:, DEVS:...
+# Al quitar un programa, lo que no se toca (en minúsculas): lo suyo en los cajones del sistema (es_del_sistema)
+var quitar_dejar: [String] = []
 var cli_ultimo: String = ""
 
 func estado(t: String)
@@ -113,7 +116,10 @@ func preguntar(texto: String, botones: String) -> Int
     if str_find(botones, "|") < 0 or cli_si
         return 1
     end
-    Print "(No se hace: añade SI a la orden para aceptarlo.)"
+    # sin SI vale el último botón: se dice cuál (no siempre es no hacer nada: "Copiarlo sin él")
+    partes = str_split(botones, "|")
+    ultimo = str_replace(partes[partes.length - 1], "_", "")
+    Print "(Sin SI: " + ultimo + ". Añade SI a la orden para aceptarlo.)"
     return 0
 end
 
@@ -1117,7 +1123,7 @@ func copiar_al_sistema(f: Ficha, escritos: [String]) -> [String]
     if lista.length == 0
         return hechos
     end
-    if preguntar(f.nombre + " quiere copiar a tu sistema:" + texto + "\nLo que haya ahí se guarda como .old y vuelve si lo desinstalas.", "_Copiar|_No copiar") != 1
+    if preguntar(f.nombre + " quiere copiar a tu sistema:" + texto + "\nLo que haya ahí se guarda como .old. Al quitarlo, esto se deja\n(otros programas pueden usarlo), salvo que digas quitarlo.", "_Copiar|_No copiar") != 1
         return hechos
     end
     for d in lista
@@ -1180,6 +1186,33 @@ func desinstalar()
     if preguntar("¿Quitar " + r.nombre + " " + version_ver(r.version) + "?\n" + cuantos(r.ficheros.length, "fichero", "ficheros") + " en " + r.destino + aviso, "_Quitar|_Cancelar") != 1
         return
     end
+    # lo suyo en LIBS:, C:, DEVS:... se queda: otro programa puede usarlo (de Hangar o no). Lo que otro recibo también
+    # tiene, siempre; lo demás, salvo que el usuario diga quitarlo (preocupación del usuario, 2026-11-20)
+    quitar_sis = false
+    propios = sistema_propio(r)
+    if propios.length > 0
+        lista = ""
+        k = 0
+        for x in propios
+            if k < 6
+                lista = lista + "\n  " + x
+            end
+            k = k + 1
+        end
+        if k > 6
+            lista = lista + "\n  y " + str_from_int(k - 6, 10) + " más"
+        end
+        if cli
+            quitar_sis = cli_sistema
+            if not quitar_sis
+                Print r.nombre + " puso esto en el sistema y se deja (otros programas pueden usarlo):" + lista
+                Print "(Añade SISTEMA a la orden para quitarlo también.)"
+            end
+        else
+            quitar_sis = preguntar(r.nombre + " puso esto en el sistema:" + lista + "\n\nOtros programas pueden usarlo.", "_Dejarlo|_Quitarlo también") == 0
+        end
+    end
+    quitar_dejar = dejar_de(r, quitar_sis)
     if not tr_empezar("Quitar " + r.nombre + " " + r.version)
         tr_recuperar()
         tr_empezar("Quitar " + r.nombre + " " + r.version)
@@ -1199,6 +1232,7 @@ func desinstalar()
                 end
                 if preguntar("Se instalaron para otros programas y ya no los necesita ninguno:" + nombres, "_Quitarlos|_Dejarlos") == 1
                     for x in h
+                        quitar_dejar = dejar_de(x, quitar_sis)
                         if quitar_paquete(x)
                             fuera.push(x.nombre)
                             quitados = quitados + 1
@@ -1220,6 +1254,8 @@ func desinstalar()
         fallos = tr_deshacer(tr_diario())
         estado("No se pudo quitar " + r.nombre + ": está como antes")
     end
+    var nada: [String] = []
+    quitar_dejar = nada
     refrescar()
 end
 
@@ -1911,6 +1947,58 @@ end
 
 # Quita un paquete dentro de una transacción: cada fichero se borra guardándolo, lo que pisó del sistema vuelve
 # (su .antes) y su recibo se borra; luego los cajones que queden vacíos. false si algo no se pudo.
+# Si una ruta está en un cajón del sistema que comparten varios programas (LIBS:, C:, DEVS:, Classes:, L:, Fonts:)
+func es_del_sistema(ruta: String) -> Bool
+    r = str_lower(ruta)
+    for p in ["libs:", "c:", "devs:", "classes:", "l:", "fonts:", "sys:libs/", "sys:c/", "sys:devs/", "sys:classes/", "sys:l/", "sys:fonts/"]
+        if str_starts(r, p)
+            return true
+        end
+    end
+    return false
+end
+
+# Lo de un programa en el sistema que no tiene apuntado ningún otro recibo (y que sigue ahí)
+func sistema_propio(r: Recibo) -> [String]
+    var propios: [String] = []
+    otros = sistema_de_otros(r)
+    for f in r.ficheros
+        if es_del_sistema(f) and file_exists(f) and not (str_lower(f) in otros)
+            propios.push(f)
+        end
+    end
+    return propios
+end
+
+# Lo que tienen apuntado en el sistema los demás recibos (en minúsculas)
+func sistema_de_otros(r: Recibo) -> [String]
+    var otros: [String] = []
+    for o in recibos_todos()
+        if recibo_clave(o.nombre) != recibo_clave(r.nombre)
+            for g in o.ficheros
+                if es_del_sistema(g)
+                    otros.push(str_lower(g))
+                end
+            end
+        end
+    end
+    return otros
+end
+
+# Lo que no se toca al quitar r: lo suyo en el sistema que tiene otro recibo, siempre; lo demás del sistema, si no
+# se pidió quitarlo
+func dejar_de(r: Recibo, quitar_sis: Bool) -> [String]
+    var dejar: [String] = []
+    otros = sistema_de_otros(r)
+    for f in r.ficheros
+        b = str_lower(f)
+        if es_del_sistema(f) and (not quitar_sis or b in otros)
+            dejar.push(b)
+        end
+    end
+    return dejar
+end
+
 func quitar_paquete(r: Recibo) -> Bool
     i = 0
     while i < r.ficheros.length
@@ -1925,6 +2013,10 @@ func quitar_paquete(r: Recibo) -> Bool
             end
         end
         i = i + 1
+        # lo suyo en el sistema que se deja (desinstalar): ni se borra ni vuelve su .old
+        if quitar_dejar.length > 0 and str_lower(f) in quitar_dejar
+            continue
+        end
         if not guardar and not tr_borrar(f)
             return false
         end
@@ -2416,6 +2508,8 @@ func orden(palabras: [String]) -> Int
         p = palabras[i]
         if str_upper(p) == "SI" or str_upper(p) == "YES"
             cli_si = true
+        elif str_upper(p) == "SISTEMA" or str_upper(p) == "SYSTEM"
+            cli_sistema = true
         elif str_starts(str_upper(p), "DESTINO=")
             cli_destino = p[8:]
         elif str_starts(str_upper(p), "CORTE=") or str_starts(str_upper(p), "CORTE_DESHAZ=") or str_starts(str_upper(p), "ESPACIO=")
@@ -2527,6 +2621,7 @@ func orden(palabras: [String]) -> Int
     end
     Print "Órdenes: BUSCA texto, INSTALA nombre, QUITA nombre, ACTUALIZA, LISTA, VERIFICA, DESHAZ, RETEN nombre, SUELTA nombre, VUELVE nombre, VERSION"
     Print "Con SI se acepta lo que se preguntaría (sin él solo se enseña); DESTINO=Work: dónde instalar."
+    Print "QUITA deja lo que el programa puso en LIBS:, C:, DEVS:... (otros pueden usarlo); con SISTEMA lo quita también."
     return 5
 end
 
@@ -2754,6 +2849,7 @@ Main
                 # sin ventana para preguntar: lo que diría va al título; con SI se acepta
                 cli = true
                 cli_si = false
+                cli_sistema = false
                 cli_destino = ""
                 rc = orden(partir(o))
                 cli = false
