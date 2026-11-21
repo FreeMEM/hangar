@@ -942,8 +942,8 @@ MSG_1295
 _Sök
 ; _Buscar
 MSG_1296
-_Nytt
-; _Nuevo
+_Nyheter
+; _Novedades
 MSG_1297
 _Mina
 ; _Míos
@@ -1238,3 +1238,6 @@ Nätverk
 MSG_1406
 Utveckling
 ; Desarrollo
+MSG_1407
+_Alla
+; _Todo

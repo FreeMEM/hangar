@@ -164,6 +164,11 @@ func api_novedades(pagina: Int) -> Lista
     return _api_lista("/novedades?pag=" + str_from_int(pagina, 10))
 end
 
+# Todo el catálogo, por nombre
+func api_todo(pagina: Int) -> Lista
+    return _api_lista("/todo?pag=" + str_from_int(pagina, 10))
+end
+
 # Lo de los autores y de GitHub, lo último primero (el escaparate al abrir)
 func api_autores(pagina: Int) -> Lista
     return _api_lista("/autores?pag=" + str_from_int(pagina, 10))

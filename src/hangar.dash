@@ -1,6 +1,6 @@
 # Hangar: busca, instala y pone al día el software del Amiga. Busca en el catálogo de hangar.freemem.space, enseña la ficha, instala
 # (baja el .lha y lo descomprime, sin C:lha), actualiza, desinstala y ejecuta.
-@version "Hangar 0.17.0"
+@version "Hangar 0.17.1"
 @catalog "Hangar.catalog" 1 "español"
 import "api.dash"
 import "lha.dash"
@@ -14,7 +14,7 @@ import "sistema.dash"
 import "plan2.dash"
 import "instalador.dash"
 
-const VERSION = "0.17.0"
+const VERSION = "0.17.1"
 
 const ID_BUSCAR = 1
 const ID_NOVEDADES = 2
@@ -243,6 +243,10 @@ func limpiar_ficha()
     mui_set_text(w_datos, "")
     mui_set_text(w_readme, "")
     mui_set_visible(w_sin_captura, false)
+    # sin la captura del que se veía antes (con la ficha junta se quedaba a la vista al cambiar de lista)
+    mui_set_visible(w_imagen, false)
+    mui_set_text(w_imagen, "T:hangar_vacia.iff")
+    mui_set_visible(w_imagen, true)
     mui_set_enabled(w_instalar, false)
     mui_set_enabled(w_desinstalar, false)
     mui_set_enabled(w_ejecutar, false)
@@ -288,6 +292,8 @@ func cargar(anadir: Bool)
         poner_lista(api_novedades(pagina), anadir)
     elif tipo == "a:"
         poner_lista(api_autores(pagina), anadir)
+    elif tipo == "t:"
+        poner_lista(api_todo(pagina), anadir)
     elif tipo == "k:"
         poner_lista(api_categoria(resto, pagina), anadir)
     end
@@ -2864,7 +2870,6 @@ Main
         mui_hgroup_begin()
             w_buscar = mui_string("", 80)
             bb = mui_button(tr(1295, "_Buscar"))
-            bn = mui_button(tr(1296, "_Nuevo"))
             bi = mui_button(tr(1297, "_Míos"))
             ba = mui_button(tr(1298, "Act_ualizar"))
             w_act = ba
@@ -2873,8 +2878,11 @@ Main
         # las categorías, a un clic (el escaparate del boceto B)
         mui_hgroup_begin()
             mui_label(tr(1398, "Ver:"))
+            bn = mui_button(tr(1296, "_Novedades"))
             bdest = mui_button(tr(1399, "De los autores"))
             mui_on_press(bdest, ID_CATEGORIA - 1)
+            btodo = mui_button(tr(1407, "_Todo"))
+            mui_on_press(btodo, ID_CATEGORIA - 2)
             for k in (0..CATEGORIAS.length - 1)
                 b = mui_button(categoria_titulo(k))
                 mui_on_press(b, ID_CATEGORIA + k)
@@ -3031,6 +3039,10 @@ Main
             cargar(false)
         elif ev == ID_CATEGORIA - 1
             consulta = "a:"
+            pagina = 0
+            cargar(false)
+        elif ev == ID_CATEGORIA - 2
+            consulta = "t:"
             pagina = 0
             cargar(false)
         elif ev >= ID_CATEGORIA and ev < ID_CATEGORIA + CATEGORIAS.length

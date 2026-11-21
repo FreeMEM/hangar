@@ -942,8 +942,8 @@ MSG_1295
 _Hae
 ; _Buscar
 MSG_1296
-_Uudet
-; _Nuevo
+_Uutuudet
+; _Novedades
 MSG_1297
 _Omat
 ; _Míos
@@ -1238,3 +1238,6 @@ Verkko
 MSG_1406
 Kehitys
 ; Desarrollo
+MSG_1407
+_Kaikki
+; _Todo

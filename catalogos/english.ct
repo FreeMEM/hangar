@@ -943,7 +943,7 @@ _Search
 ; _Buscar
 MSG_1296
 _New
-; _Nuevo
+; _Novedades
 MSG_1297
 _Mine
 ; _Míos
@@ -1238,3 +1238,6 @@ Network
 MSG_1406
 Development
 ; Desarrollo
+MSG_1407
+_All
+; _Todo

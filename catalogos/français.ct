@@ -943,7 +943,7 @@ _Chercher
 ; _Buscar
 MSG_1296
 _Nouveautés
-; _Nuevo
+; _Novedades
 MSG_1297
 _Les miens
 ; _Míos
@@ -1238,3 +1238,6 @@ Réseau
 MSG_1406
 Développement
 ; Desarrollo
+MSG_1407
+_Tout
+; _Todo

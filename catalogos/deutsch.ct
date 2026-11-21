@@ -942,8 +942,8 @@ MSG_1295
 _Suchen
 ; _Buscar
 MSG_1296
-_Neu
-; _Nuevo
+_Neues
+; _Novedades
 MSG_1297
 _Meine
 ; _Míos
@@ -1238,3 +1238,6 @@ Netzwerk
 MSG_1406
 Entwicklung
 ; Desarrollo
+MSG_1407
+_Alle
+; _Todo

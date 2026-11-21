@@ -942,8 +942,8 @@ MSG_1295
 _Procurar
 ; _Buscar
 MSG_1296
-_Novo
-; _Nuevo
+_Novidades
+; _Novedades
 MSG_1297
 _Meus
 ; _Míos
@@ -1238,3 +1238,6 @@ Rede
 MSG_1406
 Desenvolvimento
 ; Desarrollo
+MSG_1407
+_Tudo
+; _Todo
