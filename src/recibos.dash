@@ -493,10 +493,10 @@ func recibo_verificar(r: Recibo) -> [String]
             es_config = true
         end
         if not file_exists(f)
-            mal.push("falta " + f)
+            mal.push(tr(1347, "falta ") + f)
         elif (crc != 0 or tam != 0) and not es_config
             if file_size(f) != tam or recibo_crc(f) != crc
-                mal.push("cambiado " + f)
+                mal.push(tr(1348, "cambiado ") + f)
             end
         end
         i = i + 1

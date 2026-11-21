@@ -319,7 +319,7 @@ func instalar_con_guion(staged: String, guion: String, nombre: String, destino: 
     instalador_arranque = ""
     inst = instalador_ruta()
     if inst == ""
-        instalador_error = "no hay Installer en este Amiga"
+        instalador_error = tr(1315, "no hay Installer en este Amiga")
         return escritos
     end
     ruta_guion = staged + guion
@@ -330,7 +330,7 @@ func instalar_con_guion(staged: String, guion: String, nombre: String, destino: 
         ruta_guion = real
     end
     if not file_exists(ruta_guion)
-        instalador_error = "el paquete no trae su guion " + guion
+        instalador_error = tr(1316, "el paquete no trae su guion ") + guion
         return escritos
     end
     # lo que los guiones suelen cambiar y se puede guardar entero
@@ -339,7 +339,7 @@ func instalar_con_guion(staged: String, guion: String, nombre: String, destino: 
     us_antes = _texto_o_nada("S:User-Startup")
     antes = foto_sistema(destino)
     if not instalador_ejecutar(inst, ruta_guion, nombre)
-        instalador_error = "el Installer no se pudo ejecutar o no acabó"
+        instalador_error = tr(1317, "el Installer no se pudo ejecutar o no acabó")
         return escritos
     end
     us_despues = _texto_o_nada("S:User-Startup")

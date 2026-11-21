@@ -105,7 +105,7 @@ func _api_error(r: Respuesta) -> String
         if str_find(cuerpo, "ERROR\t") == 0
             return str_trim(cuerpo[6:])
         end
-        return "el servidor respondió " + str_from_int(r.estado, 10)
+        return tr(1001, "el servidor respondió ") + str_from_int(r.estado, 10)
     end
     return ""
 end
@@ -124,11 +124,11 @@ end
 func api_leer_lista(texto: String) -> Lista
     lineas = str_split(texto, "\n")
     if lineas.length == 0
-        return _lista_vacia("respuesta vacía")
+        return _lista_vacia(tr(1002, "respuesta vacía"))
     end
     cab = str_split(lineas[0], "\t")
     if cab.length < 4 or cab[0] != "LISTA"
-        return _lista_vacia("respuesta rara: " + lineas[0])
+        return _lista_vacia(tr(1003, "respuesta rara: ") + lineas[0])
     end
     l = _lista_vacia("")
     l.total = Int(cab[1])
@@ -192,7 +192,7 @@ end
 func api_leer_ficha(texto: String) -> Ficha
     f = _ficha_vacia("")
     if str_find(texto, "FICHA\n") != 0
-        f.error = "respuesta rara"
+        f.error = tr(1004, "respuesta rara")
         return f
     end
     fin = str_find(texto, "\n\n")

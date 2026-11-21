@@ -1,0 +1,18 @@
+Los textos de Hangar en otros idiomas (2026-11-21: lo pidió la gente de fuera tras el artículo de Amigatronics).
+
+Hangar lleva sus textos en castellano (@catalog "Hangar.catalog" 1 "español" en src/hangar.dash). Con un catálogo de
+locale.library en Catalogs/<idioma>/Hangar.catalog, junto al programa, los enseña en el idioma elegido en las
+Preferencias de Locale; sin idioma elegido, AmigaOS usa el inglés. Hay inglés, francés, alemán, sueco y finlandés,
+traducidos de una vez: por revisar con quien los hable.
+
+- Los números 1001 en adelante son de Hangar; los de menos de 1000 vienen de las librerías de Tachyon (lib/tachyon),
+  con sus textos en inglés y las traducciones de los catálogos de Tachyon (el finlandés, hecho aquí).
+- Hangar.cd: los textos, sacados del código:
+      python3 $DASH/tools/catalogo.py cd src/hangar.dash -o catalogos/Hangar.cd
+- <idioma>.ct: la traducción. Al día con los textos nuevos:
+      python3 $DASH/tools/catalogo.py ct catalogos/Hangar.cd --language deutsch --name Hangar.catalog \
+              --version 1.0 --update catalogos/deutsch.ct -o catalogos/deutsch.ct
+  Debajo de cada MSG_<número>, la traducción (vacía: queda el castellano). Se respetan los espacios del principio y
+  del final (los textos van por trozos), los \n, los \33b y \33c de MUI y la letra con "_" de los botones.
+- tools/paquete.sh hace los catálogos dentro del cajón de Hangar; la actualización de Hangar los trae con él.
+- Un texto nuevo en el código: tr(número, "texto") con el siguiente número libre de 1001 en adelante.

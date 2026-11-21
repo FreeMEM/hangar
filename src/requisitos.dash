@@ -78,9 +78,9 @@ func necesidad_texto(n: Necesidad) -> String
     elif n.tipo == "chipset"
         return "chipset " + n.valor
     elif n.tipo == "rtg"
-        return "tarjeta gráfica"
+        return tr(1349, "tarjeta gráfica")
     elif n.tipo == "os"
-        os = "AmigaOS de la versión " + n.valor
+        os = tr(1350, "AmigaOS de la versión ") + n.valor
         for par in [["36", "2.0"], ["37", "2.04"], ["39", "3.0"], ["40", "3.1"], ["44", "3.5"], ["45", "3.9"], ["46", "3.1.4"], ["47", "3.2"]]
             if par[0] == n.valor
                 os = "AmigaOS " + par[1]
@@ -94,9 +94,9 @@ func necesidad_texto(n: Necesidad) -> String
             t = str_from_int(m / 1024, 10) + " MB"
         end
         if n.tipo == "chip"
-            return t + " de chip"
+            return t + tr(1351, " de chip")
         end
-        return t + " de memoria"
+        return t + tr(1352, " de memoria")
     elif n.tipo == "lib"
         if n.valor == "muimaster.library"
             m = "MUI"
@@ -114,7 +114,7 @@ func necesidad_texto(n: Necesidad) -> String
         end
         return n.valor
     elif n.tipo == "red"
-        return "una pila TCP/IP"
+        return tr(1353, "una pila TCP/IP")
     elif n.tipo == "paquete"
         if n.version != ""
             return n.valor + " " + n.version
@@ -134,20 +134,20 @@ func necesidades_texto(f: Ficha) -> String
         c = necesidad_cumplida(n)
         que = necesidad_texto(n)
         if n.tipo == "cpu" or n.tipo == "os"
-            que = que + " o mejor"
+            que = que + tr(1354, " o mejor")
         end
         if n.tipo == "sistema"
-            t = t + "Es para " + n.valor + "\n"
+            t = t + tr(1355, "Es para ") + n.valor + "\n"
         elif c == 1
             t = t + "  " + que + ": sí\n"
         elif c == 0
-            t = t + "  " + que + ": falta\n"
+            t = t + "  " + que + tr(1358, ": falta\n")
         else
             t = t + "  " + que + "\n"
         end
     end
     if t != ""
-        t = "Necesita:\n" + t
+        t = tr(1359, "Necesita:\n") + t
     end
     return t
 end

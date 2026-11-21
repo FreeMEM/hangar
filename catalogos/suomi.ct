@@ -1,0 +1,1186 @@
+## version $VER: Hangar.catalog 1.0 (21.11.2026)
+## language suomi
+## codeset 0
+;
+MSG_350
+Ei tallennettuja.
+; None stored.
+MSG_351
+%1 tallennettu.
+; %1 stored.
+MSG_352
+Poista kaikki
+; Delete them all
+MSG_353
+Verkkotunnus
+; Domain
+MSG_354
+Nimi
+; Name
+MSG_355
+Arvo
+; Value
+MSG_356
+Vanhenee
+; Expires
+MSG_357
+lopetettaessa
+; on quit
+MSG_358
+poista tämän verkkotunnuksen evästeet
+; delete the ones from this domain
+MSG_400
+liian monta uudelleenohjausta
+; too many redirects
+MSG_401
+palvelin sulki yhteyden vastaamatta
+; the server closed without answering
+MSG_402
+vastaus ei ole HTTP:tä
+; an answer that isn't HTTP
+MSG_403
+rikkinäinen tilarivi
+; broken status line
+MSG_404
+katkenneet otsakkeet
+; cut headers
+MSG_405
+katkennut sisältö
+; cut body
+MSG_406
+purkaminen ei onnistunut
+; could not decompress
+MSG_407
+aikakatkaisu
+; timed out
+MSG_408
+peruttu
+; cancelled
+MSG_409
+tukematon skeema: %1
+; unsupported scheme: %1
+MSG_410
+ei voi kirjoittaa: %1
+; can't write %1
+MSG_420
+liian monta yhteyttä
+; too many connections
+MSG_421
+yhteys suljettu
+; connection closed
+MSG_422
+muisti loppui
+; out of memory
+MSG_423
+lähetys ei onnistu
+; can't send
+MSG_424
+verkko suljettu
+; network closed
+MSG_425
+yhteys torjuttu
+; connection refused
+MSG_426
+liian monta yhteyttä kerralla
+; too many connections at once
+MSG_427
+liian monta TLS-yhteyttä
+; too many TLS connections
+MSG_428
+virhe lähetettäessä
+; error sending
+MSG_429
+virhe vastaanotettaessa
+; error receiving
+MSG_430
+verkkovirhe
+; network error
+MSG_431
+TLS-virhe
+; TLS error
+MSG_432
+verkko kuuluu toiselle tehtävälle
+; the network belongs to another task
+MSG_433
+AmiSSL puuttuu (amisslmaster.library)
+; AmiSSL is missing (amisslmaster.library)
+MSG_434
+ei bsdsocket.librarya (TCP/IP-pino puuttuu)
+; no bsdsocket.library (a TCP/IP stack is missing)
+MSG_435
+palvelinta ei löydy
+; server not found
+MSG_436
+AmiSSL:ää ei voi avata (tarvitaan 5.1 tai uudempi)
+; can't open AmiSSL (5.1 or later is needed)
+MSG_437
+sokettia ei voi avata
+; can't open a socket
+MSG_438
+palvelinta ei voi hakea
+; can't look up the server
+MSG_439
+aikakatkaisu yhdistettäessä
+; timed out connecting
+MSG_440
+aikakatkaisu TLS-neuvottelussa
+; timed out negotiating TLS
+MSG_441
+aikakatkaisu palvelinta haettaessa
+; timed out looking up the server
+MSG_442
+tiedostoa ei voi kirjoittaa
+; can't write the file
+MSG_1001
+palvelin vastasi 
+; el servidor respondió 
+MSG_1002
+tyhjä vastaus
+; respuesta vacía
+MSG_1003
+outo vastaus: 
+; respuesta rara: 
+MSG_1004
+outo vastaus
+; respuesta rara
+MSG_1007
+ei keys-tiedosto
+; no es un fichero keys
+MSG_1008
+keys: 
+; el keys de 
+MSG_1009
+ ei ole juuren allekirjoittama
+;  no viene firmado por una raíz
+MSG_1010
+keys kuuluu toiseen arkistoon
+; el keys es de otro repositorio
+MSG_1011
+keys-tiedostossa ei ole Serialia
+; el keys no tiene Serial
+MSG_1012
+keys: 
+; el keys de 
+MSG_1013
+ on vanhempi kuin viimeksi nähty
+;  es más viejo que el último visto
+MSG_1014
+keys: 
+; el keys de 
+MSG_1015
+ on vanhentunut
+;  ha caducado
+MSG_1016
+en tiedä missä on keys: 
+; no sé dónde está el keys de 
+MSG_1017
+vastaus: 
+; la respuesta de 
+MSG_1018
+ ei ole allekirjoitettu sen avaimella
+;  no viene firmada por su clave
+MSG_1019
+vastaus: 
+; la respuesta de 
+MSG_1020
+ koskee jotain muuta
+;  es de otra cosa
+MSG_1021
+vastaus: 
+; la respuesta de 
+MSG_1022
+ ei kuulu tähän kysymykseen (toistettu)
+;  no es la de esta pregunta (repetida)
+MSG_1023
+vastaus: 
+; la respuesta de 
+MSG_1024
+ on vanhempi kuin viimeksi nähty
+;  es más vieja que la última vista
+MSG_1025
+arkistoja ei ole
+; no hay repositorios
+MSG_1026
+ on tarkoitettu: 
+;  es para 
+MSG_1027
+liian syvät riippuvuudet: 
+; dependencias demasiado hondas en 
+MSG_1028
+ (sen tietoja ei voitu lukea: 
+;  (no se pudo leer su ficha: 
+MSG_1030
+ tarvitsee 
+;  necesita 
+MSG_1031
+ eikä mikään luettelon ohjelma tarjoa sitä
+;  y no lo trae ningún programa del catálogo
+MSG_1032
+(Ilman SI:tä: 
+; (Sin SI: 
+MSG_1033
+. Lisää komentoon SI hyväksyäksesi.)
+; . Añade SI a la orden para aceptarlo.)
+MSG_1034
+Virhe: 
+; Error: 
+MSG_1035
+Ei löytynyt: \"
+; No hay nada con \"
+MSG_1036
+\33bEi löytynyt: \"
+; \33bNo hay nada con \"
+MSG_1037
+Ladataan tietoja...
+; Cargando la ficha...
+MSG_1038
+Virhe: 
+; Error: 
+MSG_1039
+Tekijä: 
+; Autor: 
+MSG_1041
+Koko: 
+; Tamaño: 
+MSG_1042
+Päiväys: 
+; Fecha: 
+MSG_1043
+Järjestelmä: 
+; Para: 
+MSG_1044
+Tarvitsee: 
+; Necesita: 
+MSG_1045
+Asennettu: 
+; Instalado: 
+MSG_1046
+Jo täällä: 
+; Ya está en 
+MSG_1048
+Asenna uudelleen
+; Reinstalar
+MSG_1049
+Päivitä
+; Actualizar
+MSG_1050
+Asenna
+; Instalar
+MSG_1051
+palvelin vastasi 
+; el servidor respondió 
+MSG_1058
+ ei ole vielä allekirjoitetussa hakemistossa: sitä ei voi asentaa
+;  aún no está en el índice firmado: no se puede instalar
+MSG_1059
+Taltio 
+; El volumen 
+MSG_1060
+ puuttuu: ei voi asentaa kohteeseen 
+;  no está: no se puede instalar en 
+MSG_1061
+Tarkistetaan mitä tarvitaan: 
+; Mirando lo que necesita 
+MSG_1062
+ (tarkistetaan allekirjoituksia)...
+;  (comprobando firmas)...
+MSG_1063
+Ei voi asentaa: 
+; No se puede instalar 
+MSG_1064
+Asenna 
+; Instalar 
+MSG_1065
+Päivitä 
+; Actualizar 
+MSG_1066
+Tila ei riitä: 
+; No hay sitio en 
+MSG_1067
+ tarvitaan 
+;  hacen falta 
+MSG_1068
+ kt ja vapaana on 
+;  KB y quedan 
+MSG_1069
+Ei mahdu Hangarin välimuistiin: tarvitaan 
+; No cabe en la caché de Hangar: hacen falta 
+MSG_1070
+ kt ja vapaana on 
+;  KB y quedan 
+MSG_1071
+AmigaOS versio 
+; AmigaOS de la versión 
+MSG_1072
+AmigaOS 
+; AmigaOS 
+MSG_1073
+Ei mitään tehtävää
+; Nada que hacer
+MSG_1074
+\n  huom: 
+; \n  ojo: a 
+MSG_1075
+ voi puuttua 
+;  puede faltarle 
+MSG_1076
+ (sen readme sanoo niin)
+;  (lo dice su readme)
+MSG_1077
+Ei tehty
+; No se hizo
+MSG_1078
+Edellinen asennus jäi kesken.\nSe perutaan nyt; yritä sitten uudelleen.
+; Hay una instalación a medias de antes.\nSe deshace ahora; luego vuelve a intentarlo.
+MSG_1079
+Valmis: 
+; Hecho: 
+MSG_1080
+Ei tehty: kaikki on kuten ennen. 
+; No se hizo: todo está como antes. 
+MSG_1081
+Ei tehty, ja 
+; No se hizo y 
+MSG_1082
+tiedosto ei palannut
+; fichero no volvió
+MSG_1083
+tiedostoa ei palannut
+; ficheros no volvieron
+MSG_1084
+ paikalleen
+;  a su sitio
+MSG_1085
+Tarkistetaan Hangarin allekirjoitusta...
+; Comprobando la firma de Hangar...
+MSG_1086
+Virhe: 
+; Error: 
+MSG_1087
+Tiedot: 
+; La ficha de 
+MSG_1088
+ ei ole Hangarin allekirjoittama,\ntai joku muutti sitä matkalla.\nSitä ei asenneta.
+;  no viene firmada por Hangar,\no alguien la cambió por el camino.\nNo se instala.
+MSG_1089
+Tiedot: 
+; La ficha de 
+MSG_1090
+ tulee ilman allekirjoitusta.\nEi voi tarkistaa, että se tulee Hangarilta.\nSitä ei asenneta.
+;  llega sin firma.\nNo se puede comprobar que venga de Hangar.\nNo se instala.
+MSG_1091
+Hangar ei anna sormenjälkeä (SHA-256): 
+; Hangar no da la huella (SHA-256) de 
+MSG_1092
+: ei asenneta
+; : no se instala
+MSG_1093
+ei mistään ladattavissa
+; no hay dónde bajarlo
+MSG_1094
+. Kokeillaan toista paikkaa...
+; . Probando otro sitio...
+MSG_1095
+Ladataan 
+; Bajando 
+MSG_1096
+Lataus ei onnistunut: 
+; No se pudo bajar: 
+MSG_1097
+Ladattu ei ole sen kokoinen kuin Hangar sanoo
+; Lo bajado no tiene el tamaño que dice Hangar
+MSG_1098
+Tarkistetaan 
+; Comprobando 
+MSG_1099
+ (SHA-256)...
+;  (SHA-256)...
+MSG_1100
+Ladattu ei ole se, minkä Hangar allekirjoitti (eri SHA-256)
+; Lo bajado no es lo que firmó Hangar (SHA-256 distinto)
+MSG_1101
+Virhe purettaessa: 
+; Error al descomprimir: 
+MSG_1102
+Asennetaan 
+; Instalando 
+MSG_1103
+ sisältää oman asennusohjelman (
+;  trae su propio instalador (
+MSG_1104
+).\nKäytetäänkö sitä? Hangar merkitsee kaiken mitä se kopioi,\njotta sen voi päivittää ja poistaa kokonaan.
+; ).\n¿Lo uso? Hangar apunta todo lo que copie,\npara poder actualizarlo y quitarlo entero.
+MSG_1105
+_Käytä sen asennusohjelmaa|_Kopioi ilman sitä
+; _Usar su instalador|_Copiarlo sin él
+MSG_1106
+Ei asenneta: 
+; No se instala 
+MSG_1107
+Asennetaan 
+; Instalando 
+MSG_1108
+ sen Installerilla...
+;  con su Installer...
+MSG_1109
+Installer: 
+; Installer: 
+MSG_1110
+Ei voitu kirjoittaa: 
+; No se pudo escribir 
+MSG_1111
+Ei voitu muuttaa: 
+; No se pudo cambiar 
+MSG_1112
+Ei voitu tallentaa tietokantaan
+; No se pudo guardar en la base
+MSG_1113
+ omaa asetustasi jää; uudet ovat vieressä (.new)
+;  ajustes tuyos se quedan; los nuevos están al lado (.new)
+MSG_1114
+ asennettu. 
+;  instalado. 
+MSG_1115
+ asennettu kohteeseen 
+;  instalado en 
+MSG_1116
+ haluaa kopioida järjestelmääsi:
+;  quiere copiar a tu sistema:
+MSG_1117
+\nSiellä oleva säilytetään .old-tiedostona. Poistettaessa tämä jää\n(muut ohjelmat voivat käyttää sitä), ellet käske poistamaan sitä.
+; \nLo que haya ahí se guarda como .old. Al quitarlo, esto se deja\n(otros programas pueden usarlo), salvo que digas quitarlo.
+MSG_1118
+_Kopioi|_Älä kopioi
+; _Copiar|_No copiar
+MSG_1119
+ on jo olemassa (
+;  ya está (
+MSG_1120
+): se jää
+; ): se queda
+MSG_1121
+\n\nSitä tarvitsee: 
+; \n\nLo necesita: 
+MSG_1122
+.\nIlman sitä se ei ehkä toimi.
+; .\nSin él puede que no funcione.
+MSG_1123
+\n\nSe asennettiin käsin: kaikki sen laatikossa poistetaan,\nmyös sinne tallentamasi.
+; \n\nSe instaló a mano: se borra todo lo que hay en su cajón,\ntambién lo que hayas guardado ahí.
+MSG_1124
+Poistetaanko 
+; ¿Quitar 
+MSG_1125
+ lisää
+;  más
+MSG_1126
+ laittoi tämän järjestelmään ja se jää (muut ohjelmat voivat käyttää sitä):
+;  puso esto en el sistema y se deja (otros programas pueden usarlo):
+MSG_1127
+(Lisää komentoon SISTEMA poistaaksesi senkin.)
+; (Añade SISTEMA a la orden para quitarlo también.)
+MSG_1128
+ laittoi tämän järjestelmään:
+;  puso esto en el sistema:
+MSG_1129
+\n\nMuut ohjelmat voivat käyttää sitä.
+; \n\nOtros programas pueden usarlo.
+MSG_1130
+_Säilytä|_Poista sekin
+; _Dejarlo|_Quitarlo también
+MSG_1131
+Poista 
+; Quitar 
+MSG_1132
+Poista 
+; Quitar 
+MSG_1133
+Ne asennettiin muita ohjelmia varten eikä mikään tarvitse niitä enää:
+; Se instalaron para otros programas y ya no los necesita ninguno:
+MSG_1134
+ poistettu, ja 
+;  quitado, y 
+MSG_1135
+ lisää, joita ei enää tarvittu
+;  más que ya no hacían falta
+MSG_1136
+ poistettu
+;  quitado
+MSG_1137
+Ei voitu poistaa: 
+; No se pudo quitar 
+MSG_1138
+: kaikki kuten ennen
+; : está como antes
+MSG_1139
+Tarkistetaan versioita (tarkistetaan allekirjoituksia)...
+; Mirando versiones (comprobando firmas)...
+MSG_1140
+Ei voi päivittää: 
+; No se puede actualizar: 
+MSG_1141
+Päivitä kaikki
+; Actualizar todo
+MSG_1142
+Kaikki on ajan tasalla
+; Todo está al día
+MSG_1143
+ lukittu: sitä ei päivitetä
+;  retenido: no se actualizará
+MSG_1144
+ päivitetään taas
+;  ya se actualiza
+MSG_1145
+Luetaan versioita: 
+; Leyendo las versiones de 
+MSG_1146
+Ilman palvelimen versioita (
+; Sin las versiones del servidor (
+MSG_1147
+): vain välimuistin sisältö
+; ): solo lo de la caché
+MSG_1148
+Ei ole versiota ohjelmasta 
+; No hay ninguna versión de 
+MSG_1149
+ ennen versiota 
+;  anterior a la 
+MSG_1150
+, ei palvelimella eikä välimuistissa.
+; , ni en el servidor ni en la caché.
+MSG_1151
+\n(Se on välimuistissa: verkkoa ei tarvita.)
+; \n(Está en la caché: no hace falta la red.)
+MSG_1152
+Palataanko: 
+; ¿Volver de 
+MSG_1153
+Palaa: 
+; Volver a 
+MSG_1154
+Palaa: 
+; Volver a 
+MSG_1155
+ palaa versioon 
+;  vuelve a la 
+MSG_1156
+ (lukittu)
+;  (retenido)
+MSG_1157
+Paluu ei onnistunut: kaikki kuten ennen. 
+; No se pudo volver: está como antes. 
+MSG_1158
+Luetaan versioita: 
+; Leyendo las versiones de 
+MSG_1159
+Virhe: 
+; Error: 
+MSG_1160
+Historia: 
+; El historial de 
+MSG_1161
+ ei ole Hangarin allekirjoittama.
+;  no viene firmado por Hangar.
+MSG_1162
+Ei ole versiota ohjelmasta 
+; No hay ninguna versión de 
+MSG_1163
+ ennen versiota 
+;  anterior a la 
+MSG_1164
+\n(Se ei ole välimuistissa: se ladataan alkuperäisestä paikasta, jos se on vielä siellä.)
+; \n(No está en la caché: se baja de su sitio, si aún está.)
+MSG_1165
+Palataanko: 
+; ¿Volver de 
+MSG_1166
+Palaa: 
+; Volver a 
+MSG_1167
+Palaa: 
+; Volver a 
+MSG_1168
+ palaa versioon 
+;  vuelve a la 
+MSG_1169
+ (lukittu)
+;  (retenido)
+MSG_1170
+Paluu ei onnistunut: kaikki kuten ennen. 
+; No se pudo volver: está como antes. 
+MSG_1171
+En tiedä missä laatikossa Hangar on
+; No sé en qué cajón está Hangar
+MSG_1172
+ asennettu: sulje se ja avaa uudelleen
+;  instalado: ciérralo y vuelve a abrirlo
+MSG_1173
+ on jo asennettu.\nSulje se ja avaa uudelleen käyttääksesi uutta versiota.
+;  ya está instalado.\nCiérralo y vuelve a abrirlo para usar la versión nueva.
+MSG_1174
+_Sulje Hangar|_Jatka
+; _Cerrar Hangar|_Seguir
+MSG_1175
+ on uusin versio.
+;  es la última versión.
+MSG_1176
+Hangarista on uusi versio: 
+; Hay una versión nueva de Hangar: 
+MSG_1177
+ (sinulla on 
+;  (tienes la 
+MSG_1178
+).\nAsennetaanko nyt?
+; ).\n¿La instalo ahora?
+MSG_1179
+_Päivitä|_Myöhemmin
+; _Actualizar|_Más tarde
+MSG_1180
+Päivitykset (
+; Actualizar (
+MSG_1181
+Päivitykset
+; Actualizar
+MSG_1182
+Etsitään uusia versioita...
+; Mirando si hay versiones nuevas...
+MSG_1183
+Uusia versioita ei voitu etsiä: 
+; No se pudo mirar si hay versiones nuevas: 
+MSG_1184
+1 ohjelmasta on uusi versio: paina Päivitykset
+; 1 programa tiene versión nueva: pulsa Actualizar
+MSG_1185
+ ohjelmasta on uusi versio: paina Päivitykset
+;  tienen versión nueva: pulsa Actualizar
+MSG_1186
+Hangarilla asentamasi on ajan tasalla
+; Lo instalado con Hangar está al día
+MSG_1187
+Siirsit sen ja olen merkinnyt uuden paikan: 
+; Lo moviste y ya tengo apuntado su sitio nuevo: 
+MSG_1188
+ohjelma siirretty
+; programa movido
+MSG_1189
+ohjelmaa siirretty
+; programas movidos
+MSG_1190
+ käsin: olen merkinnyt uuden paikan
+;  a mano: ya tengo apuntado su sitio nuevo
+MSG_1191
+Siirsit Hangarilla asennettuja ohjelmia.\nOlen merkinnyt niiden uuden paikan:
+; Has movido programas instalados con Hangar.\nYa tengo apuntado su sitio nuevo:
+MSG_1192
+Tarkistetaan asennetut...
+; Verificando lo instalado...
+MSG_1193
+: sen tiedot tietokannassa eivät täsmää eikä hyvää kopiota ole
+; : su ficha en la base no cuadra y no hay copia buena
+MSG_1194
+ tietokannan tietoa tehty uudelleen kopiosta
+;  fichas de la base rehechas desde su copia
+MSG_1195
+ohjelma tarkistettu
+; programa verificado
+MSG_1196
+ohjelmaa tarkistettu
+; programas verificados
+MSG_1197
+: kaikki kunnossa
+; : todo bien
+MSG_1198
+ joissa 
+;  con 
+MSG_1199
+ puuttuvaa tai muuttunutta
+;  que faltan o cambiaron
+MSG_1200
+ohjelma ei ole
+; programa no está
+MSG_1201
+ohjelmaa ei ole
+; programas no están
+MSG_1202
+ alkuperäisessä asennuskunnossa.\nAsennetaanko uudelleen? Ylikirjoitetun voi perua.
+;  como se instalaron.\n¿Reinstalarlos? Lo que se pise se puede deshacer.
+MSG_1203
+Korjaa 
+; Reparar 
+MSG_1204
+Korjaa 
+; Reparar 
+MSG_1205
+ ei ole enää allekirjoitetussa hakemistossa: sitä ei voi korjata
+;  ya no está en el índice firmado: no se puede reparar
+MSG_1206
+ohjelma korjattu
+; programa reparado
+MSG_1207
+ohjelmaa korjattu
+; programas reparados
+MSG_1208
+Korjaus ei onnistunut: kaikki kuten ennen. 
+; No se pudo reparar: está como antes. 
+MSG_1209
+Välimuisti on tyhjä
+; La caché está vacía
+MSG_1210
+tiedosto poistettu
+; fichero borrado
+MSG_1211
+tiedostoa poistettu
+; ficheros borrados
+MSG_1212
+ välimuistista
+;  de la caché
+MSG_1213
+Ei mitään peruttavaa.
+; No hay nada que deshacer.
+MSG_1214
+Perutaanko \"
+; ¿Deshacer \"
+MSG_1215
+\"?\nKaikki palaa ennalleen.
+; \"?\nTodo vuelve a como estaba antes.
+MSG_1216
+Peruttu: 
+; Deshecho: 
+MSG_1217
+Peruttu, mutta 
+; Deshecho, pero 
+MSG_1218
+tiedosto ei palannut
+; fichero no volvió
+MSG_1219
+tiedostoa ei palannut
+; ficheros no volvieron
+MSG_1220
+ paikalleen
+;  a su sitio
+MSG_1221
+Se on Shell-komento: 
+; Es una orden del Shell: 
+MSG_1222
+ on Shell-komento, sillä ei ole ikkunaa.\nKäytä sitä Shellistä:\n\n  
+;  es una orden del Shell, no tiene ventana.\nÚsala desde un Shell:\n\n  
+MSG_1223
+En tiedä mikä ohjelma on: avaa se kohteesta 
+; No sé cuál es el programa: ábrelo desde 
+MSG_1224
+Ei voitu avata: 
+; No se pudo abrir 
+MSG_1225
+Avataan 
+; Abriendo 
+MSG_1226
+Tarkistetaan versioita...
+; Mirando versiones...
+MSG_1227
+ohjelma asennettu
+; programa instalado
+MSG_1228
+ohjelmaa asennettu
+; programas instalados
+MSG_1229
+ Hangarilla
+;  con Hangar
+MSG_1230
+ohjelma asennettu
+; programa instalado
+MSG_1231
+ohjelmaa asennettu
+; programas instalados
+MSG_1232
+ Hangarilla
+;  con Hangar
+MSG_1233
+Luetaan levyn ohjelmia...
+; Leyendo los programas del disco...
+MSG_1234
+Luetaan Work:n ohjelmia...
+; Leyendo los programas de Work:...
+MSG_1235
+Luetaan ohjelmia: 
+; Leyendo los programas de 
+MSG_1236
+Verrataan 
+; Comparando 
+MSG_1237
+ luetteloon...
+;  con el catálogo...
+MSG_1238
+Virhe: 
+; Error: 
+MSG_1239
+Luettelossa on uusi versio: 
+; En el catálogo hay versión nueva de 
+MSG_1240
+ levyllä; 
+;  del disco; 
+MSG_1241
+tiedosto tunnistettu
+; fichero reconocido
+MSG_1242
+tiedostoa tunnistettu
+; ficheros reconocidos
+MSG_1243
+ Hangarissa
+;  en Hangar
+MSG_1244
+ lisää
+;  más
+MSG_1245
+ohjelma asennettu
+; programa instalado
+MSG_1246
+ohjelmaa asennettu
+; programas instalados
+MSG_1247
+ käsin ovat luettelosta:
+;  a mano son del catálogo:
+MSG_1248
+\nMerkitäänkö ne Hangariin, jotta niitä voi päivittää ja poistaa?
+; \n¿Apuntarlos en Hangar, para actualizarlos y quitarlos?
+MSG_1249
+Merkitse 
+; Apuntar 
+MSG_1250
+ohjelma asennettu
+; programa instalado
+MSG_1251
+ohjelmaa asennettu
+; programas instalados
+MSG_1252
+ käsin
+;  a mano
+MSG_1253
+Merkitse 
+; Apuntar 
+MSG_1254
+ohjelma asennettu
+; programa instalado
+MSG_1255
+ohjelmaa asennettu
+; programas instalados
+MSG_1256
+ käsin
+;  a mano
+MSG_1267
+Ei ole olemassa: 
+; No existe 
+MSG_1268
+: se luodaan asennettaessa
+; : se creará al instalar
+MSG_1269
+Asennetaan kohteeseen 
+; Se instalará en 
+MSG_1270
+Virhe: 
+; Error: 
+MSG_1271
+Virhe: 
+; Error: 
+MSG_1272
+Ei löytynyt: \"
+; No hay nada con \"
+MSG_1273
+Ei ole pakettia nimeltä 
+; No hay ningún paquete que se llame 
+MSG_1274
+ ei ole asennettu Hangarilla
+;  no está instalado con Hangar
+MSG_1275
+ ei ole asennettu Hangarilla
+;  no está instalado con Hangar
+MSG_1276
+ lukittu
+;  retenido
+MSG_1277
+ päivitetään taas
+;  ya se actualiza
+MSG_1278
+ ei ole asennettu Hangarilla
+;  no está instalado con Hangar
+MSG_1279
+Virhe: 
+; Error: 
+MSG_1280
+Komennot (myös englanniksi): BUSCA/SEARCH teksti, INSTALA/INSTALL nimi, QUITA/REMOVE nimi, ACTUALIZA/UPGRADE, LISTA/LIST, VERIFICA/VERIFY, DESHAZ/UNDO, RETEN/HOLD nimi, SUELTA/UNHOLD nimi, VUELVE/ROLLBACK nimi, VERSION
+; Órdenes: BUSCA texto, INSTALA nombre, QUITA nombre, ACTUALIZA, LISTA, VERIFICA, DESHAZ, RETEN nombre, SUELTA nombre, VUELVE nombre, VERSION
+MSG_1281
+SI (tai YES) hyväksyy sen mitä kysyttäisiin (ilman sitä vain näytetään); DESTINO=Work: minne asennetaan.
+; Con SI se acepta lo que se preguntaría (sin él solo se enseña); DESTINO=Work: dónde instalar.
+MSG_1282
+QUITA jättää sen, mitä ohjelma laittoi LIBS:iin, C:hen, DEVS:iin... (muut voivat käyttää sitä); SISTEMA (tai SYSTEM) poistaa senkin.
+; QUITA deja lo que el programa puso en LIBS:, C:, DEVS:... (otros pueden usarlo); con SISTEMA lo quita también.
+MSG_1283
+Asennus katkesi kesken viime kerralla: se on peruttu.
+; Una instalación se cortó a mitad la última vez: se ha deshecho.
+MSG_1284
+Tietoja...
+; Acerca de...
+MSG_1287
+Peru viimeisin...
+; Deshacer la última...
+MSG_1288
+Päivitä kaikki...
+; Actualizar todo...
+MSG_1289
+Päivitä Hangar...
+; Actualizar Hangar...
+MSG_1290
+Tarkista asennetut...
+; Verificar lo instalado...
+MSG_1291
+Tyhjennä välimuisti
+; Limpiar la caché
+MSG_1292
+Lukitse tai vapauta valittu
+; Retener o soltar el elegido
+MSG_1293
+Palaa edelliseen versioon...
+; Volver a la versión anterior...
+MSG_1294
+Lopeta
+; Salir
+MSG_1295
+_Hae
+; _Buscar
+MSG_1296
+_Uudet
+; _Nuevo
+MSG_1297
+_Omat
+; _Míos
+MSG_1298
+_Päivitykset
+; Act_ualizar
+MSG_1299
+_Levy
+; _Disco
+MSG_1300
+_Lisää tuloksia
+; _Más resultados
+MSG_1301
+Tiedot|Lueminut|Kuvakaappaus
+; Ficha|Léeme|Captura
+MSG_1302
+\33cTällä ohjelmalla ei ole kuvakaappausta
+; \33cEste programa no tiene captura
+MSG_1303
+_Asenna
+; _Instalar
+MSG_1304
+_Poista
+; _Quitar
+MSG_1305
+_Käynnistä
+; _Ejecutar
+MSG_1306
+_Verkko
+; _Web
+MSG_1307
+_Valitse...
+; _Elegir...
+MSG_1308
+Hangar: ikkunaa ei voitu avata
+; Hangar: no se pudo abrir la ventana
+MSG_1309
+Asennus katkesi kesken viime kerralla.\nSe on peruttu: kaikki on kuten ennen.
+; Una instalación se cortó a mitad la última vez.\nSe ha deshecho: todo está como antes.
+MSG_1310
+Katsonko mitä ohjelmia levylläsi jo on?\nNiin Hangar tietää mitä on, kertoo uusista versioista\nja voi merkitä käsin asentamasi. Se kestää muutaman sekunnin.
+; ¿Miro qué programas tienes ya en el disco?\nAsí Hangar sabe lo que hay, te avisa de versiones nuevas\ny puede apuntar lo que instalaste a mano. Tarda unos segundos.
+MSG_1311
+_Katso|_Ei nyt
+; _Mirar|_Ahora no
+MSG_1312
+Minne asennetaan?
+; ¿Dónde instalar?
+MSG_1313
+\33cHangar 
+; \33cHangar 
+MSG_1314
+\nLöytää, asentaa ja päivittää\nAmigan ohjelmia\n\nhttps://hangar.freemem.space
+; \nBusca, instala y pone al día\nel software del Amiga\n\nhttps://hangar.freemem.space
+MSG_1315
+tässä Amigassa ei ole Installeria
+; no hay Installer en este Amiga
+MSG_1316
+paketissa ei ole sen skriptiä 
+; el paquete no trae su guion 
+MSG_1317
+Installer ei käynnistynyt tai ei päättynyt
+; el Installer no se pudo ejecutar o no acabó
+MSG_1318
+ei voi lukea: 
+; no se puede leer 
+MSG_1319
+ei muistia: 
+; no hay memoria para 
+MSG_1320
+ei voi lukea: 
+; no se puede leer 
+MSG_1321
+otsakkeen taso 
+; cabecera de nivel 
+MSG_1322
+ ei tuettu
+;  no soportada
+MSG_1323
+vaarallinen nimi arkistossa: 
+; nombre peligroso en el archivo: 
+MSG_1324
+katkennut arkisto: 
+; archivo cortado: 
+MSG_1325
+menetelmä 
+; método 
+MSG_1326
+ ei tuettu (
+;  no soportado (
+MSG_1328
+ei muistia: 
+; no hay memoria para 
+MSG_1329
+rikkinäistä dataa: 
+; datos rotos en 
+MSG_1330
+väärä CRC: 
+; CRC malo en 
+MSG_1331
+ei voi kirjoittaa: 
+; no se puede escribir 
+MSG_1332
+poista 
+; quitar 
+MSG_1333
+ (toinen korvaa sen)
+;  (lo sustituye otro)
+MSG_1334
+säilytä 
+; se queda 
+MSG_1336
+päivitä 
+; actualizar 
+MSG_1339
+ (tarvitaan)
+;  (lo necesita)
+MSG_1340
+ (suositeltu)
+;  (recomendado)
+MSG_1341
+asenna 
+; instalar 
+MSG_1343
+mikään versio ohjelmasta 
+; ninguna variante de 
+MSG_1344
+ ei sovi tähän Amigaan
+;  vale para este Amiga
+MSG_1345
+puuttuu 
+; falta 
+MSG_1346
+ paketista
+;  en el paquete
+MSG_1347
+puuttuu 
+; falta 
+MSG_1348
+muuttunut 
+; cambiado 
+MSG_1349
+näytönohjain
+; tarjeta gráfica
+MSG_1350
+AmigaOS versio 
+; AmigaOS de la versión 
+MSG_1351
+ chip-muistia
+;  de chip
+MSG_1352
+ muistia
+;  de memoria
+MSG_1353
+TCP/IP-pino
+; una pila TCP/IP
+MSG_1354
+ tai parempi
+;  o mejor
+MSG_1355
+Se on tarkoitettu: 
+; Es para 
+MSG_1358
+: puuttuu\n
+; : falta\n
+MSG_1359
+Tarvitsee:\n
+; Necesita:\n
+MSG_1360
+(ei versiota)
+; (sin versión)
+MSG_1363
+_Jatka|_Peru
+; _Seguir|_Cancelar
+MSG_1364
+_OK
+; _Vale
+MSG_1365
+_OK
+; _Vale
+MSG_1366
+_OK
+; _Vale
+MSG_1367
+_OK
+; _Vale
+MSG_1368
+_Poista|_Peru
+; _Quitar|_Cancelar
+MSG_1369
+_Poista ne|_Säilytä ne
+; _Quitarlos|_Dejarlos
+MSG_1370
+_OK
+; _Vale
+MSG_1371
+P_alaa|_Peru
+; _Volver|_Cancelar
+MSG_1372
+_OK
+; _Vale
+MSG_1373
+_OK
+; _Vale
+MSG_1374
+P_alaa|_Peru
+; _Volver|_Cancelar
+MSG_1375
+_OK
+; _Vale
+MSG_1376
+_OK
+; _Vale
+MSG_1377
+_Korjaa|_Anna olla
+; _Reparar|_Dejarlo
+MSG_1378
+_OK
+; _Vale
+MSG_1379
+P_eru toiminto|_Keskeytä
+; _Deshacer|_Cancelar
+MSG_1380
+_OK
+; _Vale
+MSG_1381
+_Merkitse ne|_Ei
+; _Apuntarlos|_No
+MSG_1384
+_OK
+; _Vale
+MSG_1385
+_OK
+; _Vale

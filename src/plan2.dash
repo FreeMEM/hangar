@@ -228,19 +228,19 @@ end
 # Un paso del plan en palabras, para enseñarlo antes de seguir
 func plan2_texto(p: PkgPaso) -> String
     if p.tipo == "-"
-        return "quitar " + p.nombre + " (lo sustituye otro)"
+        return tr(1332, "quitar ") + p.nombre + tr(1333, " (lo sustituye otro)")
     elif p.tipo == "="
-        return "se queda " + p.nombre + ": " + p.motivo
+        return tr(1334, "se queda ") + p.nombre + ": " + p.motivo
     elif p.tipo == "^"
-        return "actualizar " + p.nombre + " " + version_ver(p.vieja) + " -> " + version_ver(formato_version_texto(p.entrada.e))
+        return tr(1336, "actualizar ") + p.nombre + " " + version_ver(p.vieja) + " -> " + version_ver(formato_version_texto(p.entrada.e))
     end
     por = ""
     if p.motivo == "dependency"
-        por = " (lo necesita)"
+        por = tr(1339, " (lo necesita)")
     elif p.motivo == "recommended"
-        por = " (recomendado)"
+        por = tr(1340, " (recomendado)")
     end
-    return "instalar " + p.nombre + " " + version_ver(formato_version_texto(p.entrada.e)) + por
+    return tr(1341, "instalar ") + p.nombre + " " + version_ver(formato_version_texto(p.entrada.e)) + por
 end
 
 # Una entrada del formato 2 como ficha, para instalar_ficha. El id es el del recibo si ya está instalado (así se
@@ -348,10 +348,10 @@ func aplicar_variantes(cajon: String, variantes: [String]) -> String
                     end
                 end
                 if elegido == ""
-                    return "ninguna variante de " + d + " vale para este Amiga"
+                    return tr(1343, "ninguna variante de ") + d + tr(1344, " vale para este Amiga")
                 end
                 if not file_exists(cajon + elegido)
-                    return "falta " + elegido + " en el paquete"
+                    return tr(1345, "falta ") + elegido + tr(1346, " en el paquete")
                 end
                 tmp = cajon + elegido + ".elegida"
                 file_rename(cajon + elegido, tmp)

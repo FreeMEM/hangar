@@ -522,15 +522,15 @@ func lha_extraer(archivo: String, destino: String) -> String
     end
     total = file_size(archivo)
     if total <= 0
-        return "no se puede leer " + archivo
+        return tr(1318, "no se puede leer ") + archivo
     end
     _l_ent = buffer_alloc(total)
     if _l_ent == nil
-        return "no hay memoria para " + archivo
+        return tr(1319, "no hay memoria para ") + archivo
     end
     if not _lha_cargar(archivo, total)
         buffer_free(_l_ent)
-        return "no se puede leer " + archivo
+        return tr(1320, "no se puede leer ") + archivo
     end
     error = ""
     p = 0
@@ -564,7 +564,7 @@ func lha_extraer(archivo: String, destino: String) -> String
             tam_ext = _lha_w16(p + 24)
             ext = p + 26
         else
-            error = "cabecera de nivel " + str_from_int(nivel, 10) + " no soportada"
+            error = tr(1321, "cabecera de nivel ") + str_from_int(nivel, 10) + tr(1322, " no soportada")
             break
         end
         # cabeceras extendidas: tipo (1), datos, tamaño de la siguiente (2)
@@ -589,11 +589,11 @@ func lha_extraer(archivo: String, destino: String) -> String
         end
         ruta = _lha_ruta(cajon + nombre)
         if ruta == ""
-            error = "nombre peligroso en el archivo: " + cajon + nombre
+            error = tr(1323, "nombre peligroso en el archivo: ") + cajon + nombre
             break
         end
         if datos + comprimido > total or comprimido < 0
-            error = "archivo cortado: " + ruta
+            error = tr(1324, "archivo cortado: ") + ruta
             break
         end
         if metodo == "-lhd-"
@@ -607,12 +607,12 @@ func lha_extraer(archivo: String, destino: String) -> String
             elif metodo == "-lh7-"
                 dicbit = 16
             elif metodo != "-lh0-"
-                error = "método " + metodo + " no soportado (" + ruta + ")"
+                error = tr(1325, "método ") + metodo + tr(1326, " no soportado (") + ruta + ")"
                 break
             end
             sal = buffer_alloc(original + 1)
             if sal == nil
-                error = "no hay memoria para " + ruta
+                error = tr(1328, "no hay memoria para ") + ruta
                 break
             end
             bien = true
@@ -626,13 +626,13 @@ func lha_extraer(archivo: String, destino: String) -> String
                 bien = _lha_descomprimir(datos, comprimido, sal, original, dicbit)
             end
             if not bien
-                error = "datos rotos en " + ruta
+                error = tr(1329, "datos rotos en ") + ruta
             elif crc >= 0 and _lha_crc(sal, original) != crc
-                error = "CRC malo en " + ruta
+                error = tr(1330, "CRC malo en ") + ruta
             else
                 _lha_cajones(destino, ruta)
                 if file_save(destino + ruta, sal, original) != original
-                    error = "no se puede escribir " + destino + ruta
+                    error = tr(1331, "no se puede escribir ") + destino + ruta
                 else
                     lha_escritos.push(destino + ruta)
                 end

@@ -344,7 +344,7 @@ end
 # Una versión para enseñarla: "0" (lo de Aminet que no la dice en su readme ni tiene fecha) es "sin versión"
 func version_ver(v: String) -> String
     if v == "" or v == "0"
-        return "(sin versión)"
+        return tr(1360, "(sin versión)")
     end
     return v
 end

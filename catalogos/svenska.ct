@@ -1,0 +1,1186 @@
+## version $VER: Hangar.catalog 1.0 (21.11.2026)
+## language svenska
+## codeset 0
+;
+MSG_350
+Inga sparade.
+; None stored.
+MSG_351
+%1 sparade.
+; %1 stored.
+MSG_352
+Ta bort alla
+; Delete them all
+MSG_353
+Domän
+; Domain
+MSG_354
+Namn
+; Name
+MSG_355
+Värde
+; Value
+MSG_356
+Upphör
+; Expires
+MSG_357
+vid avslut
+; on quit
+MSG_358
+ta bort de från denna domän
+; delete the ones from this domain
+MSG_400
+för många omdirigeringar
+; too many redirects
+MSG_401
+servern stängde utan att svara
+; the server closed without answering
+MSG_402
+ett svar som inte är HTTP
+; an answer that isn't HTTP
+MSG_403
+trasig statusrad
+; broken status line
+MSG_404
+avkortade huvuden
+; cut headers
+MSG_405
+avkortad kropp
+; cut body
+MSG_406
+kunde inte packa upp
+; could not decompress
+MSG_407
+tidsgränsen överskreds
+; timed out
+MSG_408
+avbruten
+; cancelled
+MSG_409
+schema som inte stöds: %1
+; unsupported scheme: %1
+MSG_410
+kan inte skriva %1
+; can't write %1
+MSG_420
+för många anslutningar
+; too many connections
+MSG_421
+anslutningen stängd
+; connection closed
+MSG_422
+slut på minne
+; out of memory
+MSG_423
+kan inte skicka
+; can't send
+MSG_424
+nätverket stängt
+; network closed
+MSG_425
+anslutningen nekades
+; connection refused
+MSG_426
+för många anslutningar samtidigt
+; too many connections at once
+MSG_427
+för många TLS-anslutningar
+; too many TLS connections
+MSG_428
+fel vid sändning
+; error sending
+MSG_429
+fel vid mottagning
+; error receiving
+MSG_430
+nätverksfel
+; network error
+MSG_431
+TLS-fel
+; TLS error
+MSG_432
+nätverket tillhör en annan task
+; the network belongs to another task
+MSG_433
+AmiSSL saknas (amisslmaster.library)
+; AmiSSL is missing (amisslmaster.library)
+MSG_434
+ingen bsdsocket.library (en TCP/IP-stack saknas)
+; no bsdsocket.library (a TCP/IP stack is missing)
+MSG_435
+servern hittades inte
+; server not found
+MSG_436
+kan inte öppna AmiSSL (AmiSSL 5.1 eller senare behövs)
+; can't open AmiSSL (5.1 or later is needed)
+MSG_437
+kan inte öppna en socket
+; can't open a socket
+MSG_438
+kan inte slå upp servern
+; can't look up the server
+MSG_439
+tidsgränsen nåddes vid anslutning
+; timed out connecting
+MSG_440
+tidsgränsen nåddes vid TLS-förhandling
+; timed out negotiating TLS
+MSG_441
+tidsgränsen nåddes vid sökning efter servern
+; timed out looking up the server
+MSG_442
+kan inte skriva filen
+; can't write the file
+MSG_1001
+servern svarade 
+; el servidor respondió 
+MSG_1002
+tomt svar
+; respuesta vacía
+MSG_1003
+konstigt svar: 
+; respuesta rara: 
+MSG_1004
+konstigt svar
+; respuesta rara
+MSG_1007
+inte en keys-fil
+; no es un fichero keys
+MSG_1008
+keys för 
+; el keys de 
+MSG_1009
+ är inte signerad av en rot
+;  no viene firmado por una raíz
+MSG_1010
+keys hör till ett annat förråd
+; el keys es de otro repositorio
+MSG_1011
+keys saknar Serial
+; el keys no tiene Serial
+MSG_1012
+keys för 
+; el keys de 
+MSG_1013
+ är äldre än den senast sedda
+;  es más viejo que el último visto
+MSG_1014
+keys för 
+; el keys de 
+MSG_1015
+ har gått ut
+;  ha caducado
+MSG_1016
+jag vet inte var keys finns för 
+; no sé dónde está el keys de 
+MSG_1017
+svaret från 
+; la respuesta de 
+MSG_1018
+ är inte signerat med sin nyckel
+;  no viene firmada por su clave
+MSG_1019
+svaret från 
+; la respuesta de 
+MSG_1020
+ handlar om något annat
+;  es de otra cosa
+MSG_1021
+svaret från 
+; la respuesta de 
+MSG_1022
+ hör inte till den här frågan (upprepat)
+;  no es la de esta pregunta (repetida)
+MSG_1023
+svaret från 
+; la respuesta de 
+MSG_1024
+ är äldre än det senast sedda
+;  es más vieja que la última vista
+MSG_1025
+det finns inga förråd
+; no hay repositorios
+MSG_1026
+ är för 
+;  es para 
+MSG_1027
+för djupa beroenden i 
+; dependencias demasiado hondas en 
+MSG_1028
+ (dess post kunde inte läsas: 
+;  (no se pudo leer su ficha: 
+MSG_1030
+ behöver 
+;  necesita 
+MSG_1031
+ och inget program i katalogen har det
+;  y no lo trae ningún programa del catálogo
+MSG_1032
+(Utan SI: 
+; (Sin SI: 
+MSG_1033
+. Lägg till SI i kommandot för att godta det.)
+; . Añade SI a la orden para aceptarlo.)
+MSG_1034
+Fel: 
+; Error: 
+MSG_1035
+Inget hittades för \"
+; No hay nada con \"
+MSG_1036
+\33bInget hittades för \"
+; \33bNo hay nada con \"
+MSG_1037
+Laddar posten...
+; Cargando la ficha...
+MSG_1038
+Fel: 
+; Error: 
+MSG_1039
+Upphovsman: 
+; Autor: 
+MSG_1041
+Storlek: 
+; Tamaño: 
+MSG_1042
+Datum: 
+; Fecha: 
+MSG_1043
+För: 
+; Para: 
+MSG_1044
+Behöver: 
+; Necesita: 
+MSG_1045
+Installerad: 
+; Instalado: 
+MSG_1046
+Finns redan i 
+; Ya está en 
+MSG_1048
+Installera om
+; Reinstalar
+MSG_1049
+Uppdatera
+; Actualizar
+MSG_1050
+Installera
+; Instalar
+MSG_1051
+servern svarade 
+; el servidor respondió 
+MSG_1058
+ finns inte i det signerade indexet än: det kan inte installeras
+;  aún no está en el índice firmado: no se puede instalar
+MSG_1059
+Volymen 
+; El volumen 
+MSG_1060
+ finns inte: det kan inte installeras i 
+;  no está: no se puede instalar en 
+MSG_1061
+Kollar vad det behöver: 
+; Mirando lo que necesita 
+MSG_1062
+ (kontrollerar signaturer)...
+;  (comprobando firmas)...
+MSG_1063
+Kan inte installera 
+; No se puede instalar 
+MSG_1064
+Installera 
+; Instalar 
+MSG_1065
+Uppdatera 
+; Actualizar 
+MSG_1066
+Inget utrymme på 
+; No hay sitio en 
+MSG_1067
+ det behövs 
+;  hacen falta 
+MSG_1068
+ KB och det finns 
+;  KB y quedan 
+MSG_1069
+Får inte plats i Hangars cache: det behövs 
+; No cabe en la caché de Hangar: hacen falta 
+MSG_1070
+ KB och det finns 
+;  KB y quedan 
+MSG_1071
+AmigaOS version 
+; AmigaOS de la versión 
+MSG_1072
+AmigaOS 
+; AmigaOS 
+MSG_1073
+Inget att göra
+; Nada que hacer
+MSG_1074
+\n  obs: 
+; \n  ojo: a 
+MSG_1075
+ kan sakna 
+;  puede faltarle 
+MSG_1076
+ (enligt dess readme)
+;  (lo dice su readme)
+MSG_1077
+Inte gjort
+; No se hizo
+MSG_1078
+Det finns en halvfärdig installation sedan tidigare.\nDen ångras nu; försök sedan igen.
+; Hay una instalación a medias de antes.\nSe deshace ahora; luego vuelve a intentarlo.
+MSG_1079
+Klart: 
+; Hecho: 
+MSG_1080
+Inte gjort: allt är som förut. 
+; No se hizo: todo está como antes. 
+MSG_1081
+Inte gjort, och 
+; No se hizo y 
+MSG_1082
+fil kom inte tillbaka
+; fichero no volvió
+MSG_1083
+filer kom inte tillbaka
+; ficheros no volvieron
+MSG_1084
+ till sin plats
+;  a su sitio
+MSG_1085
+Kontrollerar Hangars signatur...
+; Comprobando la firma de Hangar...
+MSG_1086
+Fel: 
+; Error: 
+MSG_1087
+Posten för 
+; La ficha de 
+MSG_1088
+ är inte signerad av Hangar,\neller så ändrade någon den på vägen.\nDen installeras inte.
+;  no viene firmada por Hangar,\no alguien la cambió por el camino.\nNo se instala.
+MSG_1089
+Posten för 
+; La ficha de 
+MSG_1090
+ kommer utan signatur.\nDet går inte att kontrollera att den kommer från Hangar.\nDen installeras inte.
+;  llega sin firma.\nNo se puede comprobar que venga de Hangar.\nNo se instala.
+MSG_1091
+Hangar ger inte fingeravtrycket (SHA-256) för 
+; Hangar no da la huella (SHA-256) de 
+MSG_1092
+: installeras inte
+; : no se instala
+MSG_1093
+ingenstans att ladda ner det från
+; no hay dónde bajarlo
+MSG_1094
+. Provar en annan plats...
+; . Probando otro sitio...
+MSG_1095
+Laddar ner 
+; Bajando 
+MSG_1096
+Kunde inte ladda ner: 
+; No se pudo bajar: 
+MSG_1097
+Det nedladdade har inte den storlek som Hangar anger
+; Lo bajado no tiene el tamaño que dice Hangar
+MSG_1098
+Kontrollerar 
+; Comprobando 
+MSG_1099
+ (SHA-256)...
+;  (SHA-256)...
+MSG_1100
+Det nedladdade är inte det som Hangar signerade (annan SHA-256)
+; Lo bajado no es lo que firmó Hangar (SHA-256 distinto)
+MSG_1101
+Fel vid uppackning: 
+; Error al descomprimir: 
+MSG_1102
+Installerar 
+; Instalando 
+MSG_1103
+ har en egen installerare (
+;  trae su propio instalador (
+MSG_1104
+).\nAnvända den? Hangar antecknar allt den kopierar,\nför att kunna uppdatera och ta bort det helt.
+; ).\n¿Lo uso? Hangar apunta todo lo que copie,\npara poder actualizarlo y quitarlo entero.
+MSG_1105
+_Använd dess installerare|_Kopiera utan den
+; _Usar su instalador|_Copiarlo sin él
+MSG_1106
+Installeras inte: 
+; No se instala 
+MSG_1107
+Installerar 
+; Instalando 
+MSG_1108
+ med sin Installer...
+;  con su Installer...
+MSG_1109
+Installer: 
+; Installer: 
+MSG_1110
+Kunde inte skriva 
+; No se pudo escribir 
+MSG_1111
+Kunde inte ändra 
+; No se pudo cambiar 
+MSG_1112
+Kunde inte spara i databasen
+; No se pudo guardar en la base
+MSG_1113
+ av dina inställningar blir kvar; de nya ligger bredvid (.new)
+;  ajustes tuyos se quedan; los nuevos están al lado (.new)
+MSG_1114
+ installerat. 
+;  instalado. 
+MSG_1115
+ installerat i 
+;  instalado en 
+MSG_1116
+ vill kopiera till ditt system:
+;  quiere copiar a tu sistema:
+MSG_1117
+\nDet som finns där sparas som .old. Vid borttagning blir detta kvar\n(andra program kan använda det), om du inte säger att det ska tas bort.
+; \nLo que haya ahí se guarda como .old. Al quitarlo, esto se deja\n(otros programas pueden usarlo), salvo que digas quitarlo.
+MSG_1118
+_Kopiera|_Kopiera inte
+; _Copiar|_No copiar
+MSG_1119
+ finns redan (
+;  ya está (
+MSG_1120
+): blir kvar
+; ): se queda
+MSG_1121
+\n\nBehövs av: 
+; \n\nLo necesita: 
+MSG_1122
+.\nUtan det kanske det inte fungerar.
+; .\nSin él puede que no funcione.
+MSG_1123
+\n\nDet installerades för hand: allt i dess låda raderas,\näven det du sparat där.
+; \n\nSe instaló a mano: se borra todo lo que hay en su cajón,\ntambién lo que hayas guardado ahí.
+MSG_1124
+Ta bort 
+; ¿Quitar 
+MSG_1125
+ till
+;  más
+MSG_1126
+ lade detta i systemet och det blir kvar (andra program kan använda det):
+;  puso esto en el sistema y se deja (otros programas pueden usarlo):
+MSG_1127
+(Lägg till SISTEMA i kommandot för att ta bort det också.)
+; (Añade SISTEMA a la orden para quitarlo también.)
+MSG_1128
+ lade detta i systemet:
+;  puso esto en el sistema:
+MSG_1129
+\n\nAndra program kan använda det.
+; \n\nOtros programas pueden usarlo.
+MSG_1130
+_Behåll|_Ta bort det också
+; _Dejarlo|_Quitarlo también
+MSG_1131
+Ta bort 
+; Quitar 
+MSG_1132
+Ta bort 
+; Quitar 
+MSG_1133
+De installerades för andra program och inget behöver dem längre:
+; Se instalaron para otros programas y ya no los necesita ninguno:
+MSG_1134
+ borttaget, och 
+;  quitado, y 
+MSG_1135
+ till som inte längre behövdes
+;  más que ya no hacían falta
+MSG_1136
+ borttaget
+;  quitado
+MSG_1137
+Kunde inte ta bort 
+; No se pudo quitar 
+MSG_1138
+: allt är som förut
+; : está como antes
+MSG_1139
+Kollar versioner (kontrollerar signaturer)...
+; Mirando versiones (comprobando firmas)...
+MSG_1140
+Kan inte uppdatera: 
+; No se puede actualizar: 
+MSG_1141
+Uppdatera allt
+; Actualizar todo
+MSG_1142
+Allt är uppdaterat
+; Todo está al día
+MSG_1143
+ låst: uppdateras inte
+;  retenido: no se actualizará
+MSG_1144
+ uppdateras igen
+;  ya se actualiza
+MSG_1145
+Läser versionerna av 
+; Leyendo las versiones de 
+MSG_1146
+Utan serverns versioner (
+; Sin las versiones del servidor (
+MSG_1147
+): bara det som finns i cachen
+; ): solo lo de la caché
+MSG_1148
+Det finns ingen version av 
+; No hay ninguna versión de 
+MSG_1149
+ före 
+;  anterior a la 
+MSG_1150
+, varken på servern eller i cachen.
+; , ni en el servidor ni en la caché.
+MSG_1151
+\n(Den finns i cachen: inget nätverk behövs.)
+; \n(Está en la caché: no hace falta la red.)
+MSG_1152
+Gå tillbaka från 
+; ¿Volver de 
+MSG_1153
+Gå tillbaka till 
+; Volver a 
+MSG_1154
+Gå tillbaka till 
+; Volver a 
+MSG_1155
+ går tillbaka till 
+;  vuelve a la 
+MSG_1156
+ (låst)
+;  (retenido)
+MSG_1157
+Kunde inte gå tillbaka: allt är som förut. 
+; No se pudo volver: está como antes. 
+MSG_1158
+Läser versionerna av 
+; Leyendo las versiones de 
+MSG_1159
+Fel: 
+; Error: 
+MSG_1160
+Historiken för 
+; El historial de 
+MSG_1161
+ är inte signerad av Hangar.
+;  no viene firmado por Hangar.
+MSG_1162
+Det finns ingen version av 
+; No hay ninguna versión de 
+MSG_1163
+ före 
+;  anterior a la 
+MSG_1164
+\n(Den finns inte i cachen: den laddas ner från sin plats, om den finns kvar.)
+; \n(No está en la caché: se baja de su sitio, si aún está.)
+MSG_1165
+Gå tillbaka från 
+; ¿Volver de 
+MSG_1166
+Gå tillbaka till 
+; Volver a 
+MSG_1167
+Gå tillbaka till 
+; Volver a 
+MSG_1168
+ går tillbaka till 
+;  vuelve a la 
+MSG_1169
+ (låst)
+;  (retenido)
+MSG_1170
+Kunde inte gå tillbaka: allt är som förut. 
+; No se pudo volver: está como antes. 
+MSG_1171
+Jag vet inte i vilken låda Hangar ligger
+; No sé en qué cajón está Hangar
+MSG_1172
+ installerat: stäng det och öppna det igen
+;  instalado: ciérralo y vuelve a abrirlo
+MSG_1173
+ är redan installerat.\nStäng det och öppna det igen för att använda den nya versionen.
+;  ya está instalado.\nCiérralo y vuelve a abrirlo para usar la versión nueva.
+MSG_1174
+_Stäng Hangar|_Fortsätt
+; _Cerrar Hangar|_Seguir
+MSG_1175
+ är den senaste versionen.
+;  es la última versión.
+MSG_1176
+Det finns en ny version av Hangar: 
+; Hay una versión nueva de Hangar: 
+MSG_1177
+ (du har 
+;  (tienes la 
+MSG_1178
+).\nInstallera den nu?
+; ).\n¿La instalo ahora?
+MSG_1179
+_Uppdatera|_Senare
+; _Actualizar|_Más tarde
+MSG_1180
+Uppdatera (
+; Actualizar (
+MSG_1181
+Uppdatera
+; Actualizar
+MSG_1182
+Letar efter nya versioner...
+; Mirando si hay versiones nuevas...
+MSG_1183
+Kunde inte leta efter nya versioner: 
+; No se pudo mirar si hay versiones nuevas: 
+MSG_1184
+1 program har en ny version: tryck på Uppdatera
+; 1 programa tiene versión nueva: pulsa Actualizar
+MSG_1185
+ har en ny version: tryck på Uppdatera
+;  tienen versión nueva: pulsa Actualizar
+MSG_1186
+Det du installerat med Hangar är uppdaterat
+; Lo instalado con Hangar está al día
+MSG_1187
+Du flyttade det och jag har antecknat dess nya plats: 
+; Lo moviste y ya tengo apuntado su sitio nuevo: 
+MSG_1188
+program flyttat
+; programa movido
+MSG_1189
+program flyttade
+; programas movidos
+MSG_1190
+ för hand: jag har antecknat deras nya plats
+;  a mano: ya tengo apuntado su sitio nuevo
+MSG_1191
+Du har flyttat program som installerats med Hangar.\nJag har antecknat deras nya plats:
+; Has movido programas instalados con Hangar.\nYa tengo apuntado su sitio nuevo:
+MSG_1192
+Kontrollerar det installerade...
+; Verificando lo instalado...
+MSG_1193
+: dess post i databasen stämmer inte och det finns ingen bra kopia
+; : su ficha en la base no cuadra y no hay copia buena
+MSG_1194
+ databasposter återskapade från sin kopia
+;  fichas de la base rehechas desde su copia
+MSG_1195
+program kontrollerat
+; programa verificado
+MSG_1196
+program kontrollerade
+; programas verificados
+MSG_1197
+: allt bra
+; : todo bien
+MSG_1198
+ med 
+;  con 
+MSG_1199
+ som saknas eller ändrats
+;  que faltan o cambiaron
+MSG_1200
+program är inte
+; programa no está
+MSG_1201
+program är inte
+; programas no están
+MSG_1202
+ som de installerades.\nInstallera om dem? Det som skrivs över kan ångras.
+;  como se instalaron.\n¿Reinstalarlos? Lo que se pise se puede deshacer.
+MSG_1203
+Reparera 
+; Reparar 
+MSG_1204
+Reparera 
+; Reparar 
+MSG_1205
+ finns inte längre i det signerade indexet: kan inte repareras
+;  ya no está en el índice firmado: no se puede reparar
+MSG_1206
+program reparerat
+; programa reparado
+MSG_1207
+program reparerade
+; programas reparados
+MSG_1208
+Kunde inte reparera: allt är som förut. 
+; No se pudo reparar: está como antes. 
+MSG_1209
+Cachen är tom
+; La caché está vacía
+MSG_1210
+fil raderad
+; fichero borrado
+MSG_1211
+filer raderade
+; ficheros borrados
+MSG_1212
+ från cachen
+;  de la caché
+MSG_1213
+Det finns inget att ångra.
+; No hay nada que deshacer.
+MSG_1214
+Ångra \"
+; ¿Deshacer \"
+MSG_1215
+\"?\nAllt blir som det var förut.
+; \"?\nTodo vuelve a como estaba antes.
+MSG_1216
+Ångrat: 
+; Deshecho: 
+MSG_1217
+Ångrat, men 
+; Deshecho, pero 
+MSG_1218
+fil kom inte tillbaka
+; fichero no volvió
+MSG_1219
+filer kom inte tillbaka
+; ficheros no volvieron
+MSG_1220
+ till sin plats
+;  a su sitio
+MSG_1221
+Det är ett Shell-kommando: 
+; Es una orden del Shell: 
+MSG_1222
+ är ett Shell-kommando, det har inget fönster.\nAnvänd det från ett Shell:\n\n  
+;  es una orden del Shell, no tiene ventana.\nÚsala desde un Shell:\n\n  
+MSG_1223
+Jag vet inte vilket programmet är: öppna det från 
+; No sé cuál es el programa: ábrelo desde 
+MSG_1224
+Kunde inte öppna 
+; No se pudo abrir 
+MSG_1225
+Öppnar 
+; Abriendo 
+MSG_1226
+Kollar versioner...
+; Mirando versiones...
+MSG_1227
+program installerat
+; programa instalado
+MSG_1228
+program installerade
+; programas instalados
+MSG_1229
+ med Hangar
+;  con Hangar
+MSG_1230
+program installerat
+; programa instalado
+MSG_1231
+program installerade
+; programas instalados
+MSG_1232
+ med Hangar
+;  con Hangar
+MSG_1233
+Läser programmen på disken...
+; Leyendo los programas del disco...
+MSG_1234
+Läser programmen i Work:...
+; Leyendo los programas de Work:...
+MSG_1235
+Läser programmen i 
+; Leyendo los programas de 
+MSG_1236
+Jämför 
+; Comparando 
+MSG_1237
+ med katalogen...
+;  con el catálogo...
+MSG_1238
+Fel: 
+; Error: 
+MSG_1239
+Katalogen har en ny version av 
+; En el catálogo hay versión nueva de 
+MSG_1240
+ på disken; 
+;  del disco; 
+MSG_1241
+fil igenkänd
+; fichero reconocido
+MSG_1242
+filer igenkända
+; ficheros reconocidos
+MSG_1243
+ i Hangar
+;  en Hangar
+MSG_1244
+ till
+;  más
+MSG_1245
+program installerat
+; programa instalado
+MSG_1246
+program installerade
+; programas instalados
+MSG_1247
+ för hand finns i katalogen:
+;  a mano son del catálogo:
+MSG_1248
+\nAnteckna dem i Hangar, för att uppdatera och ta bort dem?
+; \n¿Apuntarlos en Hangar, para actualizarlos y quitarlos?
+MSG_1249
+Anteckna 
+; Apuntar 
+MSG_1250
+program installerat
+; programa instalado
+MSG_1251
+program installerade
+; programas instalados
+MSG_1252
+ för hand
+;  a mano
+MSG_1253
+Anteckna 
+; Apuntar 
+MSG_1254
+program installerat
+; programa instalado
+MSG_1255
+program installerade
+; programas instalados
+MSG_1256
+ för hand
+;  a mano
+MSG_1267
+Finns inte: 
+; No existe 
+MSG_1268
+: skapas vid installationen
+; : se creará al instalar
+MSG_1269
+Installeras i 
+; Se instalará en 
+MSG_1270
+Fel: 
+; Error: 
+MSG_1271
+Fel: 
+; Error: 
+MSG_1272
+Inget hittades för \"
+; No hay nada con \"
+MSG_1273
+Det finns inget paket som heter 
+; No hay ningún paquete que se llame 
+MSG_1274
+ är inte installerat med Hangar
+;  no está instalado con Hangar
+MSG_1275
+ är inte installerat med Hangar
+;  no está instalado con Hangar
+MSG_1276
+ låst
+;  retenido
+MSG_1277
+ uppdateras igen
+;  ya se actualiza
+MSG_1278
+ är inte installerat med Hangar
+;  no está instalado con Hangar
+MSG_1279
+Fel: 
+; Error: 
+MSG_1280
+Kommandon (även på engelska): BUSCA/SEARCH text, INSTALA/INSTALL namn, QUITA/REMOVE namn, ACTUALIZA/UPGRADE, LISTA/LIST, VERIFICA/VERIFY, DESHAZ/UNDO, RETEN/HOLD namn, SUELTA/UNHOLD namn, VUELVE/ROLLBACK namn, VERSION
+; Órdenes: BUSCA texto, INSTALA nombre, QUITA nombre, ACTUALIZA, LISTA, VERIFICA, DESHAZ, RETEN nombre, SUELTA nombre, VUELVE nombre, VERSION
+MSG_1281
+Med SI (eller YES) godtas det som skulle frågas (utan visas det bara); DESTINO=Work: var det ska installeras.
+; Con SI se acepta lo que se preguntaría (sin él solo se enseña); DESTINO=Work: dónde instalar.
+MSG_1282
+QUITA lämnar det programmet lade i LIBS:, C:, DEVS:... (andra kan använda det); med SISTEMA (eller SYSTEM) tas det också bort.
+; QUITA deja lo que el programa puso en LIBS:, C:, DEVS:... (otros pueden usarlo); con SISTEMA lo quita también.
+MSG_1283
+En installation avbröts halvvägs förra gången: den har ångrats.
+; Una instalación se cortó a mitad la última vez: se ha deshecho.
+MSG_1284
+Om...
+; Acerca de...
+MSG_1287
+Ångra den senaste...
+; Deshacer la última...
+MSG_1288
+Uppdatera allt...
+; Actualizar todo...
+MSG_1289
+Uppdatera Hangar...
+; Actualizar Hangar...
+MSG_1290
+Kontrollera det installerade...
+; Verificar lo instalado...
+MSG_1291
+Töm cachen
+; Limpiar la caché
+MSG_1292
+Lås eller lås upp det valda
+; Retener o soltar el elegido
+MSG_1293
+Gå tillbaka till föregående version...
+; Volver a la versión anterior...
+MSG_1294
+Avsluta
+; Salir
+MSG_1295
+_Sök
+; _Buscar
+MSG_1296
+_Nytt
+; _Nuevo
+MSG_1297
+_Mina
+; _Míos
+MSG_1298
+_Uppdatera
+; Act_ualizar
+MSG_1299
+_Disk
+; _Disco
+MSG_1300
+_Fler resultat
+; _Más resultados
+MSG_1301
+Post|Läs mig|Skärmbild
+; Ficha|Léeme|Captura
+MSG_1302
+\33cDet här programmet har ingen skärmbild
+; \33cEste programa no tiene captura
+MSG_1303
+_Installera
+; _Instalar
+MSG_1304
+_Ta bort
+; _Quitar
+MSG_1305
+_Kör
+; _Ejecutar
+MSG_1306
+_Webb
+; _Web
+MSG_1307
+_Välj...
+; _Elegir...
+MSG_1308
+Hangar: fönstret kunde inte öppnas
+; Hangar: no se pudo abrir la ventana
+MSG_1309
+En installation avbröts halvvägs förra gången.\nDen har ångrats: allt är som förut.
+; Una instalación se cortó a mitad la última vez.\nSe ha deshecho: todo está como antes.
+MSG_1310
+Ska jag titta på vilka program du redan har på disken?\nDå vet Hangar vad som finns, berättar om nya versioner\noch kan anteckna det du installerat för hand. Det tar några sekunder.
+; ¿Miro qué programas tienes ya en el disco?\nAsí Hangar sabe lo que hay, te avisa de versiones nuevas\ny puede apuntar lo que instalaste a mano. Tarda unos segundos.
+MSG_1311
+_Titta|_Inte nu
+; _Mirar|_Ahora no
+MSG_1312
+Var ska det installeras?
+; ¿Dónde instalar?
+MSG_1313
+\33cHangar 
+; \33cHangar 
+MSG_1314
+\nHittar, installerar och uppdaterar\nprogramvara för Amiga\n\nhttps://hangar.freemem.space
+; \nBusca, instala y pone al día\nel software del Amiga\n\nhttps://hangar.freemem.space
+MSG_1315
+det finns ingen Installer på den här Amigan
+; no hay Installer en este Amiga
+MSG_1316
+paketet har inte sitt skript 
+; el paquete no trae su guion 
+MSG_1317
+Installer kunde inte köras eller blev inte klar
+; el Installer no se pudo ejecutar o no acabó
+MSG_1318
+kan inte läsa 
+; no se puede leer 
+MSG_1319
+inget minne för 
+; no hay memoria para 
+MSG_1320
+kan inte läsa 
+; no se puede leer 
+MSG_1321
+huvudnivå 
+; cabecera de nivel 
+MSG_1322
+ stöds inte
+;  no soportada
+MSG_1323
+farligt namn i arkivet: 
+; nombre peligroso en el archivo: 
+MSG_1324
+avklippt arkiv: 
+; archivo cortado: 
+MSG_1325
+metod 
+; método 
+MSG_1326
+ stöds inte (
+;  no soportado (
+MSG_1328
+inget minne för 
+; no hay memoria para 
+MSG_1329
+trasiga data i 
+; datos rotos en 
+MSG_1330
+fel CRC i 
+; CRC malo en 
+MSG_1331
+kan inte skriva 
+; no se puede escribir 
+MSG_1332
+ta bort 
+; quitar 
+MSG_1333
+ (ersätts av ett annat)
+;  (lo sustituye otro)
+MSG_1334
+behåll 
+; se queda 
+MSG_1336
+uppdatera 
+; actualizar 
+MSG_1339
+ (behövs)
+;  (lo necesita)
+MSG_1340
+ (rekommenderas)
+;  (recomendado)
+MSG_1341
+installera 
+; instalar 
+MSG_1343
+ingen variant av 
+; ninguna variante de 
+MSG_1344
+ passar den här Amigan
+;  vale para este Amiga
+MSG_1345
+saknas 
+; falta 
+MSG_1346
+ i paketet
+;  en el paquete
+MSG_1347
+saknas 
+; falta 
+MSG_1348
+ändrad 
+; cambiado 
+MSG_1349
+grafikkort
+; tarjeta gráfica
+MSG_1350
+AmigaOS version 
+; AmigaOS de la versión 
+MSG_1351
+ chipminne
+;  de chip
+MSG_1352
+ minne
+;  de memoria
+MSG_1353
+en TCP/IP-stack
+; una pila TCP/IP
+MSG_1354
+ eller bättre
+;  o mejor
+MSG_1355
+Det är för 
+; Es para 
+MSG_1358
+: saknas\n
+; : falta\n
+MSG_1359
+Behöver:\n
+; Necesita:\n
+MSG_1360
+(ingen version)
+; (sin versión)
+MSG_1363
+_Fortsätt|_Avbryt
+; _Seguir|_Cancelar
+MSG_1364
+_OK
+; _Vale
+MSG_1365
+_OK
+; _Vale
+MSG_1366
+_OK
+; _Vale
+MSG_1367
+_OK
+; _Vale
+MSG_1368
+_Ta bort|_Avbryt
+; _Quitar|_Cancelar
+MSG_1369
+_Ta bort dem|_Behåll dem
+; _Quitarlos|_Dejarlos
+MSG_1370
+_OK
+; _Vale
+MSG_1371
+_Gå tillbaka|_Avbryt
+; _Volver|_Cancelar
+MSG_1372
+_OK
+; _Vale
+MSG_1373
+_OK
+; _Vale
+MSG_1374
+_Gå tillbaka|_Avbryt
+; _Volver|_Cancelar
+MSG_1375
+_OK
+; _Vale
+MSG_1376
+_OK
+; _Vale
+MSG_1377
+_Reparera|_Låt vara
+; _Reparar|_Dejarlo
+MSG_1378
+_OK
+; _Vale
+MSG_1379
+Å_ngra|_Avbryt
+; _Deshacer|_Cancelar
+MSG_1380
+_OK
+; _Vale
+MSG_1381
+_Anteckna dem|_Nej
+; _Apuntarlos|_No
+MSG_1384
+_OK
+; _Vale
+MSG_1385
+_OK
+; _Vale

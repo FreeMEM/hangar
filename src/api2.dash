@@ -263,7 +263,7 @@ end
 func api2_keys_aplicar(repo: RepoConf, texto: String, firmas: String) -> String
     lineas = str_split(texto, "\n")
     if lineas.length == 0 or str_trim(lineas[0]) != "PKG-KEYS 2"
-        return "no es un fichero keys"
+        return tr(1007, "no es un fichero keys")
     end
     if firmas != nil
         buena = false
@@ -278,7 +278,7 @@ func api2_keys_aplicar(repo: RepoConf, texto: String, firmas: String) -> String
             end
         end
         if not buena
-            return "el keys de " + repo.nombre + " no viene firmado por una raíz"
+            return tr(1008, "el keys de ") + repo.nombre + tr(1009, " no viene firmado por una raíz")
         end
     end
     var claves: [String] = []
@@ -289,7 +289,7 @@ func api2_keys_aplicar(repo: RepoConf, texto: String, firmas: String) -> String
     for l in lineas
         w = str_split(str_trim(l), " ")
         if str_starts(l, "Repository:") and str_trim(l[11:]) != repo.nombre
-            return "el keys es de otro repositorio"
+            return tr(1010, "el keys es de otro repositorio")
         elif str_starts(l, "Serial:")
             serie = Int(str_trim(l[7:]))
         elif str_starts(l, "Expires:")
@@ -303,15 +303,15 @@ func api2_keys_aplicar(repo: RepoConf, texto: String, firmas: String) -> String
         end
     end
     if serie < 0
-        return "el keys no tiene Serial"
+        return tr(1011, "el keys no tiene Serial")
     end
     if firmas != nil
         if serie < _estado_leer("keys " + repo.nombre)
-            return "el keys de " + repo.nombre + " es más viejo que el último visto"
+            return tr(1012, "el keys de ") + repo.nombre + tr(1013, " es más viejo que el último visto")
         end
         # sin reloj puesto (antes de 2026) no se mira la fecha
         if time_unix() > 1767225600 and caduca > 0 and caduca < time_unix()
-            return "el keys de " + repo.nombre + " ha caducado"
+            return tr(1014, "el keys de ") + repo.nombre + tr(1015, " ha caducado")
         end
     end
     # se cambia lo de este repositorio por lo nuevo
@@ -362,7 +362,7 @@ func api2_keys_traer(repo: RepoConf) -> String
     end
     p = str_find(repo.url, "/pkg/v2/")
     if p < 0
-        return "no sé dónde está el keys de " + repo.nombre
+        return tr(1016, "no sé dónde está el keys de ") + repo.nombre
     end
     base = repo.url[:p] + "/repo/" + repo.nombre + "/keys"
     r = http_get(base, API_ESPERA_MS)
@@ -444,7 +444,7 @@ func api2_pedir(repo: RepoConf, ruta: String, cuerpo: String) -> Respuesta2
         end
     end
     if not buena
-        return _r2_error("la respuesta de " + repo.nombre + " no viene firmada por su clave")
+        return _r2_error(tr(1017, "la respuesta de ") + repo.nombre + tr(1018, " no viene firmada por su clave"))
     end
     h = formato_cabecera(r.cuerpo)
     query = _ruta_de_url(url)
@@ -452,15 +452,15 @@ func api2_pedir(repo: RepoConf, ruta: String, cuerpo: String) -> Respuesta2
         query = query + " " + sha256_text(cuerpo)
     end
     if h.tipo != "PKG-RESPONSE 2" or h.repositorio != repo.nombre or h.arquitectura != api2_arquitectura
-        return _r2_error("la respuesta de " + repo.nombre + " es de otra cosa")
+        return _r2_error(tr(1019, "la respuesta de ") + repo.nombre + tr(1020, " es de otra cosa"))
     end
     if h.nonce != nonce or h.query != query
-        return _r2_error("la respuesta de " + repo.nombre + " no es la de esta pregunta (repetida)")
+        return _r2_error(tr(1021, "la respuesta de ") + repo.nombre + tr(1022, " no es la de esta pregunta (repetida)"))
     end
     clave = "serial " + repo.nombre + " " + api2_arquitectura
     vista = _estado_leer(clave)
     if h.serie < vista
-        return _r2_error("la respuesta de " + repo.nombre + " es más vieja que la última vista")
+        return _r2_error(tr(1023, "la respuesta de ") + repo.nombre + tr(1024, " es más vieja que la última vista"))
     end
     if h.serie > vista
         _estado_poner(clave, h.serie)
@@ -505,7 +505,7 @@ func api2_reconocer(inventario: String) -> Reconocidos
         return v
     end
     if api2_repos.length == 0
-        v.error = "no hay repositorios"
+        v.error = tr(1025, "no hay repositorios")
         return v
     end
     r = api2_pedir(api2_repos[0], "identify", inventario)

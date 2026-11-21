@@ -1,0 +1,790 @@
+; Texts of src/hangar.dash (tools/catalogo.py)
+;
+MSG_350 (350//)
+None stored.
+MSG_351 (351//)
+%1 stored.
+MSG_352 (352//)
+Delete them all
+MSG_353 (353//)
+Domain
+MSG_354 (354//)
+Name
+MSG_355 (355//)
+Value
+MSG_356 (356//)
+Expires
+MSG_357 (357//)
+on quit
+MSG_358 (358//)
+delete the ones from this domain
+MSG_400 (400//)
+too many redirects
+MSG_401 (401//)
+the server closed without answering
+MSG_402 (402//)
+an answer that isn't HTTP
+MSG_403 (403//)
+broken status line
+MSG_404 (404//)
+cut headers
+MSG_405 (405//)
+cut body
+MSG_406 (406//)
+could not decompress
+MSG_407 (407//)
+timed out
+MSG_408 (408//)
+cancelled
+MSG_409 (409//)
+unsupported scheme: %1
+MSG_410 (410//)
+can't write %1
+MSG_420 (420//)
+too many connections
+MSG_421 (421//)
+connection closed
+MSG_422 (422//)
+out of memory
+MSG_423 (423//)
+can't send
+MSG_424 (424//)
+network closed
+MSG_425 (425//)
+connection refused
+MSG_426 (426//)
+too many connections at once
+MSG_427 (427//)
+too many TLS connections
+MSG_428 (428//)
+error sending
+MSG_429 (429//)
+error receiving
+MSG_430 (430//)
+network error
+MSG_431 (431//)
+TLS error
+MSG_432 (432//)
+the network belongs to another task
+MSG_433 (433//)
+AmiSSL is missing (amisslmaster.library)
+MSG_434 (434//)
+no bsdsocket.library (a TCP/IP stack is missing)
+MSG_435 (435//)
+server not found
+MSG_436 (436//)
+can't open AmiSSL (5.1 or later is needed)
+MSG_437 (437//)
+can't open a socket
+MSG_438 (438//)
+can't look up the server
+MSG_439 (439//)
+timed out connecting
+MSG_440 (440//)
+timed out negotiating TLS
+MSG_441 (441//)
+timed out looking up the server
+MSG_442 (442//)
+can't write the file
+MSG_1001 (1001//)
+el servidor respondió 
+MSG_1002 (1002//)
+respuesta vacía
+MSG_1003 (1003//)
+respuesta rara: 
+MSG_1004 (1004//)
+respuesta rara
+MSG_1007 (1007//)
+no es un fichero keys
+MSG_1008 (1008//)
+el keys de 
+MSG_1009 (1009//)
+ no viene firmado por una raíz
+MSG_1010 (1010//)
+el keys es de otro repositorio
+MSG_1011 (1011//)
+el keys no tiene Serial
+MSG_1012 (1012//)
+el keys de 
+MSG_1013 (1013//)
+ es más viejo que el último visto
+MSG_1014 (1014//)
+el keys de 
+MSG_1015 (1015//)
+ ha caducado
+MSG_1016 (1016//)
+no sé dónde está el keys de 
+MSG_1017 (1017//)
+la respuesta de 
+MSG_1018 (1018//)
+ no viene firmada por su clave
+MSG_1019 (1019//)
+la respuesta de 
+MSG_1020 (1020//)
+ es de otra cosa
+MSG_1021 (1021//)
+la respuesta de 
+MSG_1022 (1022//)
+ no es la de esta pregunta (repetida)
+MSG_1023 (1023//)
+la respuesta de 
+MSG_1024 (1024//)
+ es más vieja que la última vista
+MSG_1025 (1025//)
+no hay repositorios
+MSG_1026 (1026//)
+ es para 
+MSG_1027 (1027//)
+dependencias demasiado hondas en 
+MSG_1028 (1028//)
+ (no se pudo leer su ficha: 
+MSG_1030 (1030//)
+ necesita 
+MSG_1031 (1031//)
+ y no lo trae ningún programa del catálogo
+MSG_1032 (1032//)
+(Sin SI: 
+MSG_1033 (1033//)
+. Añade SI a la orden para aceptarlo.)
+MSG_1034 (1034//)
+Error: 
+MSG_1035 (1035//)
+No hay nada con \"
+MSG_1036 (1036//)
+\33bNo hay nada con \"
+MSG_1037 (1037//)
+Cargando la ficha...
+MSG_1038 (1038//)
+Error: 
+MSG_1039 (1039//)
+Autor: 
+MSG_1041 (1041//)
+Tamaño: 
+MSG_1042 (1042//)
+Fecha: 
+MSG_1043 (1043//)
+Para: 
+MSG_1044 (1044//)
+Necesita: 
+MSG_1045 (1045//)
+Instalado: 
+MSG_1046 (1046//)
+Ya está en 
+MSG_1048 (1048//)
+Reinstalar
+MSG_1049 (1049//)
+Actualizar
+MSG_1050 (1050//)
+Instalar
+MSG_1051 (1051//)
+el servidor respondió 
+MSG_1058 (1058//)
+ aún no está en el índice firmado: no se puede instalar
+MSG_1059 (1059//)
+El volumen 
+MSG_1060 (1060//)
+ no está: no se puede instalar en 
+MSG_1061 (1061//)
+Mirando lo que necesita 
+MSG_1062 (1062//)
+ (comprobando firmas)...
+MSG_1063 (1063//)
+No se puede instalar 
+MSG_1064 (1064//)
+Instalar 
+MSG_1065 (1065//)
+Actualizar 
+MSG_1066 (1066//)
+No hay sitio en 
+MSG_1067 (1067//)
+ hacen falta 
+MSG_1068 (1068//)
+ KB y quedan 
+MSG_1069 (1069//)
+No cabe en la caché de Hangar: hacen falta 
+MSG_1070 (1070//)
+ KB y quedan 
+MSG_1071 (1071//)
+AmigaOS de la versión 
+MSG_1072 (1072//)
+AmigaOS 
+MSG_1073 (1073//)
+Nada que hacer
+MSG_1074 (1074//)
+\n  ojo: a 
+MSG_1075 (1075//)
+ puede faltarle 
+MSG_1076 (1076//)
+ (lo dice su readme)
+MSG_1077 (1077//)
+No se hizo
+MSG_1078 (1078//)
+Hay una instalación a medias de antes.\nSe deshace ahora; luego vuelve a intentarlo.
+MSG_1079 (1079//)
+Hecho: 
+MSG_1080 (1080//)
+No se hizo: todo está como antes. 
+MSG_1081 (1081//)
+No se hizo y 
+MSG_1082 (1082//)
+fichero no volvió
+MSG_1083 (1083//)
+ficheros no volvieron
+MSG_1084 (1084//)
+ a su sitio
+MSG_1085 (1085//)
+Comprobando la firma de Hangar...
+MSG_1086 (1086//)
+Error: 
+MSG_1087 (1087//)
+La ficha de 
+MSG_1088 (1088//)
+ no viene firmada por Hangar,\no alguien la cambió por el camino.\nNo se instala.
+MSG_1089 (1089//)
+La ficha de 
+MSG_1090 (1090//)
+ llega sin firma.\nNo se puede comprobar que venga de Hangar.\nNo se instala.
+MSG_1091 (1091//)
+Hangar no da la huella (SHA-256) de 
+MSG_1092 (1092//)
+: no se instala
+MSG_1093 (1093//)
+no hay dónde bajarlo
+MSG_1094 (1094//)
+. Probando otro sitio...
+MSG_1095 (1095//)
+Bajando 
+MSG_1096 (1096//)
+No se pudo bajar: 
+MSG_1097 (1097//)
+Lo bajado no tiene el tamaño que dice Hangar
+MSG_1098 (1098//)
+Comprobando 
+MSG_1099 (1099//)
+ (SHA-256)...
+MSG_1100 (1100//)
+Lo bajado no es lo que firmó Hangar (SHA-256 distinto)
+MSG_1101 (1101//)
+Error al descomprimir: 
+MSG_1102 (1102//)
+Instalando 
+MSG_1103 (1103//)
+ trae su propio instalador (
+MSG_1104 (1104//)
+).\n¿Lo uso? Hangar apunta todo lo que copie,\npara poder actualizarlo y quitarlo entero.
+MSG_1105 (1105//)
+_Usar su instalador|_Copiarlo sin él
+MSG_1106 (1106//)
+No se instala 
+MSG_1107 (1107//)
+Instalando 
+MSG_1108 (1108//)
+ con su Installer...
+MSG_1109 (1109//)
+Installer: 
+MSG_1110 (1110//)
+No se pudo escribir 
+MSG_1111 (1111//)
+No se pudo cambiar 
+MSG_1112 (1112//)
+No se pudo guardar en la base
+MSG_1113 (1113//)
+ ajustes tuyos se quedan; los nuevos están al lado (.new)
+MSG_1114 (1114//)
+ instalado. 
+MSG_1115 (1115//)
+ instalado en 
+MSG_1116 (1116//)
+ quiere copiar a tu sistema:
+MSG_1117 (1117//)
+\nLo que haya ahí se guarda como .old. Al quitarlo, esto se deja\n(otros programas pueden usarlo), salvo que digas quitarlo.
+MSG_1118 (1118//)
+_Copiar|_No copiar
+MSG_1119 (1119//)
+ ya está (
+MSG_1120 (1120//)
+): se queda
+MSG_1121 (1121//)
+\n\nLo necesita: 
+MSG_1122 (1122//)
+.\nSin él puede que no funcione.
+MSG_1123 (1123//)
+\n\nSe instaló a mano: se borra todo lo que hay en su cajón,\ntambién lo que hayas guardado ahí.
+MSG_1124 (1124//)
+¿Quitar 
+MSG_1125 (1125//)
+ más
+MSG_1126 (1126//)
+ puso esto en el sistema y se deja (otros programas pueden usarlo):
+MSG_1127 (1127//)
+(Añade SISTEMA a la orden para quitarlo también.)
+MSG_1128 (1128//)
+ puso esto en el sistema:
+MSG_1129 (1129//)
+\n\nOtros programas pueden usarlo.
+MSG_1130 (1130//)
+_Dejarlo|_Quitarlo también
+MSG_1131 (1131//)
+Quitar 
+MSG_1132 (1132//)
+Quitar 
+MSG_1133 (1133//)
+Se instalaron para otros programas y ya no los necesita ninguno:
+MSG_1134 (1134//)
+ quitado, y 
+MSG_1135 (1135//)
+ más que ya no hacían falta
+MSG_1136 (1136//)
+ quitado
+MSG_1137 (1137//)
+No se pudo quitar 
+MSG_1138 (1138//)
+: está como antes
+MSG_1139 (1139//)
+Mirando versiones (comprobando firmas)...
+MSG_1140 (1140//)
+No se puede actualizar: 
+MSG_1141 (1141//)
+Actualizar todo
+MSG_1142 (1142//)
+Todo está al día
+MSG_1143 (1143//)
+ retenido: no se actualizará
+MSG_1144 (1144//)
+ ya se actualiza
+MSG_1145 (1145//)
+Leyendo las versiones de 
+MSG_1146 (1146//)
+Sin las versiones del servidor (
+MSG_1147 (1147//)
+): solo lo de la caché
+MSG_1148 (1148//)
+No hay ninguna versión de 
+MSG_1149 (1149//)
+ anterior a la 
+MSG_1150 (1150//)
+, ni en el servidor ni en la caché.
+MSG_1151 (1151//)
+\n(Está en la caché: no hace falta la red.)
+MSG_1152 (1152//)
+¿Volver de 
+MSG_1153 (1153//)
+Volver a 
+MSG_1154 (1154//)
+Volver a 
+MSG_1155 (1155//)
+ vuelve a la 
+MSG_1156 (1156//)
+ (retenido)
+MSG_1157 (1157//)
+No se pudo volver: está como antes. 
+MSG_1158 (1158//)
+Leyendo las versiones de 
+MSG_1159 (1159//)
+Error: 
+MSG_1160 (1160//)
+El historial de 
+MSG_1161 (1161//)
+ no viene firmado por Hangar.
+MSG_1162 (1162//)
+No hay ninguna versión de 
+MSG_1163 (1163//)
+ anterior a la 
+MSG_1164 (1164//)
+\n(No está en la caché: se baja de su sitio, si aún está.)
+MSG_1165 (1165//)
+¿Volver de 
+MSG_1166 (1166//)
+Volver a 
+MSG_1167 (1167//)
+Volver a 
+MSG_1168 (1168//)
+ vuelve a la 
+MSG_1169 (1169//)
+ (retenido)
+MSG_1170 (1170//)
+No se pudo volver: está como antes. 
+MSG_1171 (1171//)
+No sé en qué cajón está Hangar
+MSG_1172 (1172//)
+ instalado: ciérralo y vuelve a abrirlo
+MSG_1173 (1173//)
+ ya está instalado.\nCiérralo y vuelve a abrirlo para usar la versión nueva.
+MSG_1174 (1174//)
+_Cerrar Hangar|_Seguir
+MSG_1175 (1175//)
+ es la última versión.
+MSG_1176 (1176//)
+Hay una versión nueva de Hangar: 
+MSG_1177 (1177//)
+ (tienes la 
+MSG_1178 (1178//)
+).\n¿La instalo ahora?
+MSG_1179 (1179//)
+_Actualizar|_Más tarde
+MSG_1180 (1180//)
+Actualizar (
+MSG_1181 (1181//)
+Actualizar
+MSG_1182 (1182//)
+Mirando si hay versiones nuevas...
+MSG_1183 (1183//)
+No se pudo mirar si hay versiones nuevas: 
+MSG_1184 (1184//)
+1 programa tiene versión nueva: pulsa Actualizar
+MSG_1185 (1185//)
+ tienen versión nueva: pulsa Actualizar
+MSG_1186 (1186//)
+Lo instalado con Hangar está al día
+MSG_1187 (1187//)
+Lo moviste y ya tengo apuntado su sitio nuevo: 
+MSG_1188 (1188//)
+programa movido
+MSG_1189 (1189//)
+programas movidos
+MSG_1190 (1190//)
+ a mano: ya tengo apuntado su sitio nuevo
+MSG_1191 (1191//)
+Has movido programas instalados con Hangar.\nYa tengo apuntado su sitio nuevo:
+MSG_1192 (1192//)
+Verificando lo instalado...
+MSG_1193 (1193//)
+: su ficha en la base no cuadra y no hay copia buena
+MSG_1194 (1194//)
+ fichas de la base rehechas desde su copia
+MSG_1195 (1195//)
+programa verificado
+MSG_1196 (1196//)
+programas verificados
+MSG_1197 (1197//)
+: todo bien
+MSG_1198 (1198//)
+ con 
+MSG_1199 (1199//)
+ que faltan o cambiaron
+MSG_1200 (1200//)
+programa no está
+MSG_1201 (1201//)
+programas no están
+MSG_1202 (1202//)
+ como se instalaron.\n¿Reinstalarlos? Lo que se pise se puede deshacer.
+MSG_1203 (1203//)
+Reparar 
+MSG_1204 (1204//)
+Reparar 
+MSG_1205 (1205//)
+ ya no está en el índice firmado: no se puede reparar
+MSG_1206 (1206//)
+programa reparado
+MSG_1207 (1207//)
+programas reparados
+MSG_1208 (1208//)
+No se pudo reparar: está como antes. 
+MSG_1209 (1209//)
+La caché está vacía
+MSG_1210 (1210//)
+fichero borrado
+MSG_1211 (1211//)
+ficheros borrados
+MSG_1212 (1212//)
+ de la caché
+MSG_1213 (1213//)
+No hay nada que deshacer.
+MSG_1214 (1214//)
+¿Deshacer \"
+MSG_1215 (1215//)
+\"?\nTodo vuelve a como estaba antes.
+MSG_1216 (1216//)
+Deshecho: 
+MSG_1217 (1217//)
+Deshecho, pero 
+MSG_1218 (1218//)
+fichero no volvió
+MSG_1219 (1219//)
+ficheros no volvieron
+MSG_1220 (1220//)
+ a su sitio
+MSG_1221 (1221//)
+Es una orden del Shell: 
+MSG_1222 (1222//)
+ es una orden del Shell, no tiene ventana.\nÚsala desde un Shell:\n\n  
+MSG_1223 (1223//)
+No sé cuál es el programa: ábrelo desde 
+MSG_1224 (1224//)
+No se pudo abrir 
+MSG_1225 (1225//)
+Abriendo 
+MSG_1226 (1226//)
+Mirando versiones...
+MSG_1227 (1227//)
+programa instalado
+MSG_1228 (1228//)
+programas instalados
+MSG_1229 (1229//)
+ con Hangar
+MSG_1230 (1230//)
+programa instalado
+MSG_1231 (1231//)
+programas instalados
+MSG_1232 (1232//)
+ con Hangar
+MSG_1233 (1233//)
+Leyendo los programas del disco...
+MSG_1234 (1234//)
+Leyendo los programas de Work:...
+MSG_1235 (1235//)
+Leyendo los programas de 
+MSG_1236 (1236//)
+Comparando 
+MSG_1237 (1237//)
+ con el catálogo...
+MSG_1238 (1238//)
+Error: 
+MSG_1239 (1239//)
+En el catálogo hay versión nueva de 
+MSG_1240 (1240//)
+ del disco; 
+MSG_1241 (1241//)
+fichero reconocido
+MSG_1242 (1242//)
+ficheros reconocidos
+MSG_1243 (1243//)
+ en Hangar
+MSG_1244 (1244//)
+ más
+MSG_1245 (1245//)
+programa instalado
+MSG_1246 (1246//)
+programas instalados
+MSG_1247 (1247//)
+ a mano son del catálogo:
+MSG_1248 (1248//)
+\n¿Apuntarlos en Hangar, para actualizarlos y quitarlos?
+MSG_1249 (1249//)
+Apuntar 
+MSG_1250 (1250//)
+programa instalado
+MSG_1251 (1251//)
+programas instalados
+MSG_1252 (1252//)
+ a mano
+MSG_1253 (1253//)
+Apuntar 
+MSG_1254 (1254//)
+programa instalado
+MSG_1255 (1255//)
+programas instalados
+MSG_1256 (1256//)
+ a mano
+MSG_1267 (1267//)
+No existe 
+MSG_1268 (1268//)
+: se creará al instalar
+MSG_1269 (1269//)
+Se instalará en 
+MSG_1270 (1270//)
+Error: 
+MSG_1271 (1271//)
+Error: 
+MSG_1272 (1272//)
+No hay nada con \"
+MSG_1273 (1273//)
+No hay ningún paquete que se llame 
+MSG_1274 (1274//)
+ no está instalado con Hangar
+MSG_1275 (1275//)
+ no está instalado con Hangar
+MSG_1276 (1276//)
+ retenido
+MSG_1277 (1277//)
+ ya se actualiza
+MSG_1278 (1278//)
+ no está instalado con Hangar
+MSG_1279 (1279//)
+Error: 
+MSG_1280 (1280//)
+Órdenes: BUSCA texto, INSTALA nombre, QUITA nombre, ACTUALIZA, LISTA, VERIFICA, DESHAZ, RETEN nombre, SUELTA nombre, VUELVE nombre, VERSION
+MSG_1281 (1281//)
+Con SI se acepta lo que se preguntaría (sin él solo se enseña); DESTINO=Work: dónde instalar.
+MSG_1282 (1282//)
+QUITA deja lo que el programa puso en LIBS:, C:, DEVS:... (otros pueden usarlo); con SISTEMA lo quita también.
+MSG_1283 (1283//)
+Una instalación se cortó a mitad la última vez: se ha deshecho.
+MSG_1284 (1284//)
+Acerca de...
+MSG_1287 (1287//)
+Deshacer la última...
+MSG_1288 (1288//)
+Actualizar todo...
+MSG_1289 (1289//)
+Actualizar Hangar...
+MSG_1290 (1290//)
+Verificar lo instalado...
+MSG_1291 (1291//)
+Limpiar la caché
+MSG_1292 (1292//)
+Retener o soltar el elegido
+MSG_1293 (1293//)
+Volver a la versión anterior...
+MSG_1294 (1294//)
+Salir
+MSG_1295 (1295//)
+_Buscar
+MSG_1296 (1296//)
+_Nuevo
+MSG_1297 (1297//)
+_Míos
+MSG_1298 (1298//)
+Act_ualizar
+MSG_1299 (1299//)
+_Disco
+MSG_1300 (1300//)
+_Más resultados
+MSG_1301 (1301//)
+Ficha|Léeme|Captura
+MSG_1302 (1302//)
+\33cEste programa no tiene captura
+MSG_1303 (1303//)
+_Instalar
+MSG_1304 (1304//)
+_Quitar
+MSG_1305 (1305//)
+_Ejecutar
+MSG_1306 (1306//)
+_Web
+MSG_1307 (1307//)
+_Elegir...
+MSG_1308 (1308//)
+Hangar: no se pudo abrir la ventana
+MSG_1309 (1309//)
+Una instalación se cortó a mitad la última vez.\nSe ha deshecho: todo está como antes.
+MSG_1310 (1310//)
+¿Miro qué programas tienes ya en el disco?\nAsí Hangar sabe lo que hay, te avisa de versiones nuevas\ny puede apuntar lo que instalaste a mano. Tarda unos segundos.
+MSG_1311 (1311//)
+_Mirar|_Ahora no
+MSG_1312 (1312//)
+¿Dónde instalar?
+MSG_1313 (1313//)
+\33cHangar 
+MSG_1314 (1314//)
+\nBusca, instala y pone al día\nel software del Amiga\n\nhttps://hangar.freemem.space
+MSG_1315 (1315//)
+no hay Installer en este Amiga
+MSG_1316 (1316//)
+el paquete no trae su guion 
+MSG_1317 (1317//)
+el Installer no se pudo ejecutar o no acabó
+MSG_1318 (1318//)
+no se puede leer 
+MSG_1319 (1319//)
+no hay memoria para 
+MSG_1320 (1320//)
+no se puede leer 
+MSG_1321 (1321//)
+cabecera de nivel 
+MSG_1322 (1322//)
+ no soportada
+MSG_1323 (1323//)
+nombre peligroso en el archivo: 
+MSG_1324 (1324//)
+archivo cortado: 
+MSG_1325 (1325//)
+método 
+MSG_1326 (1326//)
+ no soportado (
+MSG_1328 (1328//)
+no hay memoria para 
+MSG_1329 (1329//)
+datos rotos en 
+MSG_1330 (1330//)
+CRC malo en 
+MSG_1331 (1331//)
+no se puede escribir 
+MSG_1332 (1332//)
+quitar 
+MSG_1333 (1333//)
+ (lo sustituye otro)
+MSG_1334 (1334//)
+se queda 
+MSG_1336 (1336//)
+actualizar 
+MSG_1339 (1339//)
+ (lo necesita)
+MSG_1340 (1340//)
+ (recomendado)
+MSG_1341 (1341//)
+instalar 
+MSG_1343 (1343//)
+ninguna variante de 
+MSG_1344 (1344//)
+ vale para este Amiga
+MSG_1345 (1345//)
+falta 
+MSG_1346 (1346//)
+ en el paquete
+MSG_1347 (1347//)
+falta 
+MSG_1348 (1348//)
+cambiado 
+MSG_1349 (1349//)
+tarjeta gráfica
+MSG_1350 (1350//)
+AmigaOS de la versión 
+MSG_1351 (1351//)
+ de chip
+MSG_1352 (1352//)
+ de memoria
+MSG_1353 (1353//)
+una pila TCP/IP
+MSG_1354 (1354//)
+ o mejor
+MSG_1355 (1355//)
+Es para 
+MSG_1358 (1358//)
+: falta\n
+MSG_1359 (1359//)
+Necesita:\n
+MSG_1360 (1360//)
+(sin versión)
+MSG_1363 (1363//)
+_Seguir|_Cancelar
+MSG_1364 (1364//)
+_Vale
+MSG_1365 (1365//)
+_Vale
+MSG_1366 (1366//)
+_Vale
+MSG_1367 (1367//)
+_Vale
+MSG_1368 (1368//)
+_Quitar|_Cancelar
+MSG_1369 (1369//)
+_Quitarlos|_Dejarlos
+MSG_1370 (1370//)
+_Vale
+MSG_1371 (1371//)
+_Volver|_Cancelar
+MSG_1372 (1372//)
+_Vale
+MSG_1373 (1373//)
+_Vale
+MSG_1374 (1374//)
+_Volver|_Cancelar
+MSG_1375 (1375//)
+_Vale
+MSG_1376 (1376//)
+_Vale
+MSG_1377 (1377//)
+_Reparar|_Dejarlo
+MSG_1378 (1378//)
+_Vale
+MSG_1379 (1379//)
+_Deshacer|_Cancelar
+MSG_1380 (1380//)
+_Vale
+MSG_1381 (1381//)
+_Apuntarlos|_No
+MSG_1384 (1384//)
+_Vale
+MSG_1385 (1385//)
+_Vale

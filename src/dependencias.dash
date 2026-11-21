@@ -31,16 +31,16 @@ end
 func _plan_de(f: Ficha, plan: Plan, hondo: Int)
     for n in f.necesita
         if n.tipo == "sistema"
-            plan.otros.push(f.nombre + " es para " + n.valor)
+            plan.otros.push(f.nombre + tr(1026, " es para ") + n.valor)
         elif necesidad_cumplida(n) == 0
             if n.paquete > 0 and n.paquete != f.id and not _visto(n.paquete)
                 if hondo >= 8
-                    plan.otros.push("dependencias demasiado hondas en " + f.nombre)
+                    plan.otros.push(tr(1027, "dependencias demasiado hondas en ") + f.nombre)
                 else
                     _plan_vistos.push(n.paquete)
                     d = api_ficha(n.paquete)
                     if d.error != ""
-                        plan.otros.push(necesidad_texto(n) + " (no se pudo leer su ficha: " + d.error + ")")
+                        plan.otros.push(necesidad_texto(n) + tr(1028, " (no se pudo leer su ficha: ") + d.error + ")")
                     else
                         # primero lo que pide la dependencia, luego ella
                         _plan_de(d, plan, hondo + 1)
@@ -48,7 +48,7 @@ func _plan_de(f: Ficha, plan: Plan, hondo: Int)
                     end
                 end
             elif n.paquete == 0 and n.tipo != "cpu" and n.tipo != "fpu" and n.tipo != "rtg" and n.tipo != "os" and n.tipo != "chipset" and n.tipo != "memoria" and n.tipo != "chip"
-                plan.otros.push(f.nombre + " necesita " + necesidad_texto(n) + " y no lo trae ningún programa del catálogo")
+                plan.otros.push(f.nombre + tr(1030, " necesita ") + necesidad_texto(n) + tr(1031, " y no lo trae ningún programa del catálogo"))
             end
         end
     end

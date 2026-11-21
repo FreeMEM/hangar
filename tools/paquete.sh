@@ -1,5 +1,5 @@
 #!/bin/sh
-# El paquete de Hangar para el Amiga: build/Hangar.lha con el programa, sus iconos, el LEEME (Latin-1) y las
+# El paquete de Hangar para el Amiga: build/Hangar.lha con el programa, sus iconos, sus catálogos, el LEEME (Latin-1) y las
 # licencias de lo que lleva dentro (Dash y Tachyon, MIT). LHA -lh5- con tools/lha.py (de Tachyon).
 #
 #   tools/paquete.sh
@@ -13,6 +13,8 @@ mkdir -p "$B/Hangar/Licencias"
 "$DASH/dash" --gcc --cpu 68020 "$R/src/hangar.dash" -o "$B/Hangar/Hangar"
 iconv -f UTF-8 -t LATIN1 "$R/paquete/LEEME" > "$B/Hangar/LEEME"
 python3 "$R/tools/iconos_wb.py" "$B"
+# los catálogos (catalogos/*.ct): Catalogs/<idioma>/Hangar.catalog junto al programa; sale en el idioma del sistema
+(cd "$B/Hangar" && for ct in "$R"/catalogos/*.ct; do python3 "$DASH/tools/catalogo.py" catalog "$ct" >/dev/null; done)
 cp "$DASH/LICENSE" "$B/Hangar/Licencias/Dash"
 cp "$R/lib/tachyon/LICENSE" "$B/Hangar/Licencias/Tachyon"
 cd "$B"

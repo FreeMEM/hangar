@@ -1,6 +1,7 @@
 # Hangar: busca, instala y pone al día el software del Amiga. Busca en el catálogo de hangar.freemem.space, enseña la ficha, instala
 # (baja el .lha y lo descomprime, sin C:lha), actualiza, desinstala y ejecuta.
-@version "Hangar 0.15.2"
+@version "Hangar 0.16.0"
+@catalog "Hangar.catalog" 1 "español"
 import "api.dash"
 import "lha.dash"
 import "recibos.dash"
@@ -13,7 +14,7 @@ import "sistema.dash"
 import "plan2.dash"
 import "instalador.dash"
 
-const VERSION = "0.15.2"
+const VERSION = "0.16.0"
 
 const ID_BUSCAR = 1
 const ID_NOVEDADES = 2
@@ -119,7 +120,7 @@ func preguntar(texto: String, botones: String) -> Int
     # sin SI vale el último botón: se dice cuál (no siempre es no hacer nada: "Copiarlo sin él")
     partes = str_split(botones, "|")
     ultimo = str_replace(partes[partes.length - 1], "_", "")
-    Print "(Sin SI: " + ultimo + ". Añade SI a la orden para aceptarlo.)"
+    Print tr(1032, "(Sin SI: ") + ultimo + tr(1033, ". Añade SI a la orden para aceptarlo.)")
     return 0
 end
 
@@ -248,7 +249,7 @@ end
 
 func poner_lista(l: Lista, anadir: Bool)
     if l.error != ""
-        estado("Error: " + l.error)
+        estado(tr(1034, "Error: ") + l.error)
         return
     end
     lista_quieta(true)
@@ -268,8 +269,8 @@ func poner_lista(l: Lista, anadir: Bool)
     pagina = l.pagina
     mui_set_enabled(w_mas, actuales.length < total)
     if total == 0 and consulta[:2] == "b:"
-        estado("No hay nada con \"" + consulta[2:] + "\"")
-        mui_set_text(w_titulo, "\33bNo hay nada con \"" + corta(consulta[2:], 30) + "\"")
+        estado(tr(1035, "No hay nada con \"") + consulta[2:] + "\"")
+        mui_set_text(w_titulo, tr(1036, "\33bNo hay nada con \"") + corta(consulta[2:], 30) + "\"")
     else
         estado(str_from_int(actuales.length, 10) + " de " + str_from_int(total, 10))
     end
@@ -291,7 +292,7 @@ func ver_ficha(i: Int)
         limpiar_ficha()
         return
     end
-    estado("Cargando la ficha...")
+    estado(tr(1037, "Cargando la ficha..."))
     var f: Ficha = nil
     if viendo_instalados and i < instalados_vistos.length and instalados_vistos[i].id == actuales[i].id and instalados_vistos[i].repo != ""
         rec = instalados_vistos[i]
@@ -303,21 +304,21 @@ func ver_ficha(i: Int)
         f = api_ficha(actuales[i].id)
     end
     if f.error != ""
-        estado("Error: " + f.error)
+        estado(tr(1038, "Error: ") + f.error)
         return
     end
     ficha_actual = f
     mui_set_text(w_titulo, "\33b" + corta(f.nombre + " " + f.version, 40))
     d = corta(f.corto, 36) + "\n"
     if f.autor != ""
-        d = d + "Autor: " + corta(f.autor, 29) + "\n"
+        d = d + tr(1039, "Autor: ") + corta(f.autor, 29) + "\n"
     end
-    d = d + "Tamaño: " + tamano_texto(f.tamano) + "\n"
+    d = d + tr(1041, "Tamaño: ") + tamano_texto(f.tamano) + "\n"
     if f.fecha != ""
-        d = d + "Fecha: " + f.fecha + "\n"
+        d = d + tr(1042, "Fecha: ") + f.fecha + "\n"
     end
     if f.arquitectura != ""
-        d = d + "Para: " + corta(f.arquitectura, 30) + "\n"
+        d = d + tr(1043, "Para: ") + corta(f.arquitectura, 30) + "\n"
     end
     if f.necesita.length > 0
         for l in str_split(necesidades_texto(f), "\n")
@@ -326,7 +327,7 @@ func ver_ficha(i: Int)
             end
         end
     elif f.requiere != ""
-        d = d + "Necesita: " + corta(f.requiere, 26) + "\n"
+        d = d + tr(1044, "Necesita: ") + corta(f.requiere, 26) + "\n"
     end
     r = recibo_de_ficha(f)
     instalada = version_instalada(r)
@@ -335,9 +336,9 @@ func ver_ficha(i: Int)
         sin_recibo = instalado_sin_recibo(f.nombre, [mui_get_text(w_destino), "SYS:", "Work:"])
     end
     if r.id != 0
-        d = d + corta("Instalado: " + version_ver(instalada) + " en " + r.destino, 36)
+        d = d + corta(tr(1045, "Instalado: ") + version_ver(instalada) + " en " + r.destino, 36)
     elif sin_recibo != ""
-        d = d + corta("Ya está en " + sin_recibo, 36)
+        d = d + corta(tr(1046, "Ya está en ") + sin_recibo, 36)
     end
     # esconder y volver a enseñar: con MUI en RTG (CoffinOS) el texto nuevo quedaba encima del viejo
     mui_set_visible(w_datos, false)
@@ -362,11 +363,11 @@ func ver_ficha(i: Int)
     progreso(0)
     mui_set_enabled(w_instalar, f.descarga != "")
     if r.id != 0 and not version_mayor(f.version, instalada)
-        mui_set_text(w_instalar, "Reinstalar")      # la misma, o una más nueva que el catálogo (se actualizó sola)
+        mui_set_text(w_instalar, tr(1048, "Reinstalar"))      # la misma, o una más nueva que el catálogo (se actualizó sola)
     elif r.id != 0 or sin_recibo != ""
-        mui_set_text(w_instalar, "Actualizar")
+        mui_set_text(w_instalar, tr(1049, "Actualizar"))
     else
-        mui_set_text(w_instalar, "Instalar")
+        mui_set_text(w_instalar, tr(1050, "Instalar"))
     end
     mui_set_enabled(w_desinstalar, r.id != 0)
     mui_set_enabled(w_ejecutar, r.id != 0)
@@ -397,7 +398,7 @@ func bajar(url: String, fichero: String) -> String
         return r.error
     end
     if r.estado != 200
-        return "el servidor respondió " + str_from_int(r.estado, 10)
+        return tr(1051, "el servidor respondió ") + str_from_int(r.estado, 10)
     end
     return ""
 end
@@ -429,7 +430,7 @@ func instalar()
     end
     # sin entrada firmada del formato 2 no se instala (el camino de la versión 1 se cerró: la ficha sola no basta)
     instalado_bien = false
-    estado_texto = f.nombre + " aún no está en el índice firmado: no se puede instalar"
+    estado_texto = f.nombre + tr(1058, " aún no está en el índice firmado: no se puede instalar")
     estado(estado_texto)
 end
 
@@ -456,18 +457,18 @@ func instalar_pkg(pedido: String)
     # esperando; path_free_kb no lo pide. RAM: siempre vale
     v = volumen_de(destino_elegido())
     if v != "" and str_upper(v) != "RAM:" and prueba_libre_kb < 0 and path_free_kb(v) < 0
-        estado_texto = "El volumen " + v + " no está: no se puede instalar en " + destino_elegido()
+        estado_texto = tr(1059, "El volumen ") + v + tr(1060, " no está: no se puede instalar en ") + destino_elegido()
         estado(estado_texto)
         return
     end
-    estado("Mirando lo que necesita " + pedido + " (comprobando firmas)...")
+    estado(tr(1061, "Mirando lo que necesita ") + pedido + tr(1062, " (comprobando firmas)..."))
     if not plan2_instalar(pedido)
-        estado_texto = "No se puede instalar " + pedido + ": " + plan2_error
+        estado_texto = tr(1063, "No se puede instalar ") + pedido + ": " + plan2_error
         estado(estado_texto)
         return
     end
     # si lo pedido ya estaba y llega una versión nueva, es actualizar (el título y Deshacer lo dicen así)
-    verbo = "Instalar "
+    verbo = tr(1064, "Instalar ")
     nom = pedido
     a = str_find(nom, "@")
     if a > 0
@@ -475,7 +476,7 @@ func instalar_pkg(pedido: String)
     end
     for p in resolutor_pasos
         if p.nombre == nom and es_subida(p)
-            verbo = "Actualizar "
+            verbo = tr(1065, "Actualizar ")
         end
     end
     hacer_plan2(verbo + pedido)
@@ -533,7 +534,7 @@ func plan2_falta_espacio() -> String
                 hace = hace + cache_kb
             end
             if libre >= 0 and hace > libre
-                return "No hay sitio en " + v + " hacen falta " + str_from_int(hace, 10) + " KB y quedan " + str_from_int(libre, 10) + " KB"
+                return tr(1066, "No hay sitio en ") + v + tr(1067, " hacen falta ") + str_from_int(hace, 10) + tr(1068, " KB y quedan ") + str_from_int(libre, 10) + " KB"
             end
         end
         i = i + 1
@@ -558,7 +559,7 @@ func plan2_falta_espacio() -> String
             nuevo_dir = bajadas + "/Nuevo/"
             return ""
         end
-        return "No cabe en la caché de Hangar: hacen falta " + str_from_int(cache_kb, 10) + " KB y quedan " + str_from_int(libre_cache, 10) + " KB"
+        return tr(1069, "No cabe en la caché de Hangar: hacen falta ") + str_from_int(cache_kb, 10) + tr(1070, " KB y quedan ") + str_from_int(libre_cache, 10) + " KB"
     end
     return ""
 end
@@ -588,10 +589,10 @@ func aviso_legible(c: String) -> String
                 t = t + " " + str_trim(o[w[0].length + w[1].length + 2:])
             end
         elif w.length == 2 and w[0] == "os"
-            t = "AmigaOS de la versión " + w[1]
+            t = tr(1071, "AmigaOS de la versión ") + w[1]
             for par in [["36", "2.0"], ["37", "2.04"], ["39", "3.0"], ["40", "3.1"], ["44", "3.5"], ["45", "3.9"], ["46", "3.1.4"], ["47", "3.2"]]
                 if par[0] == w[1]
-                    t = "AmigaOS " + par[1]
+                    t = tr(1072, "AmigaOS ") + par[1]
                 end
             end
         elif w.length == 2 and w[0] == "cpu"
@@ -625,7 +626,7 @@ end
 
 func hacer_plan2(titulo: String)
     if resolutor_pasos.length == 0
-        estado("Nada que hacer")
+        estado(tr(1073, "Nada que hacer"))
         instalado_bien = true
         return
     end
@@ -639,12 +640,12 @@ func hacer_plan2(titulo: String)
         if not (a in vistos)
             vistos.push(a)
             dp = str_find(a, ": ")
-            resumen = resumen + "\n  ojo: a " + a[:dp] + " puede faltarle " + aviso_legible(a[dp + 2:]) + " (lo dice su readme)"
+            resumen = resumen + tr(1074, "\n  ojo: a ") + a[:dp] + tr(1075, " puede faltarle ") + aviso_legible(a[dp + 2:]) + tr(1076, " (lo dice su readme)")
         end
     end
     if resolutor_pasos.length > 1 or resolutor_pasos[0].tipo != "+" or vistos.length > 0
-        if preguntar(titulo + ":" + resumen, "_Seguir|_Cancelar") != 1
-            estado("No se hizo")
+        if preguntar(titulo + ":" + resumen, tr(1363, "_Seguir|_Cancelar")) != 1
+            estado(tr(1077, "No se hizo"))
             return
         end
     end
@@ -655,13 +656,13 @@ func hacer_plan2(titulo: String)
     if falta != ""
         estado_texto = falta
         if not cli
-            preguntar(falta, "_Vale")
+            preguntar(falta, tr(1364, "_Vale"))
         end
         estado(falta)
         return
     end
     if not tr_empezar(titulo)
-        preguntar("Hay una instalación a medias de antes.\nSe deshace ahora; luego vuelve a intentarlo.", "_Vale")
+        preguntar(tr(1078, "Hay una instalación a medias de antes.\nSe deshace ahora; luego vuelve a intentarlo."), tr(1365, "_Vale"))
         tr_recuperar()
         return
     end
@@ -702,14 +703,14 @@ func hacer_plan2(titulo: String)
         if a > 0
             hecho_texto = hecho_texto[:a]
         end
-        resultado = "Hecho: " + hecho_texto
+        resultado = tr(1079, "Hecho: ") + hecho_texto
         estado(resultado)
     else
         fallos = tr_deshacer(tr_diario())
         if fallos == 0
-            estado("No se hizo: todo está como antes. " + estado_texto)
+            estado(tr(1080, "No se hizo: todo está como antes. ") + estado_texto)
         else
-            estado("No se hizo y " + cuantos(fallos, "fichero no volvió", "ficheros no volvieron") + " a su sitio")
+            estado(tr(1081, "No se hizo y ") + cuantos(fallos, tr(1082, "fichero no volvió"), tr(1083, "ficheros no volvieron")) + tr(1084, " a su sitio"))
         end
     end
     # la carpeta temporal del volumen de destino (si no cabía en la caché): fuera, con lo bajado
@@ -725,20 +726,20 @@ end
 # La ficha de un paquete con su firma comprobada (unos segundos): nil si no viene de Hangar o la cambió alguien por
 # el camino (o no se pudo leer); sin firma, se pregunta
 func ficha_comprobada(id: Int) -> Ficha
-    estado("Comprobando la firma de Hangar...")
+    estado(tr(1085, "Comprobando la firma de Hangar..."))
     g = api_ficha_firmada(id)
     if g.error != ""
-        estado("Error: " + g.error)
+        estado(tr(1086, "Error: ") + g.error)
         return nil
     end
     if g.firma < 0
-        preguntar("La ficha de " + g.nombre + " no viene firmada por Hangar,\no alguien la cambió por el camino.\nNo se instala.", "_Vale")
+        preguntar(tr(1087, "La ficha de ") + g.nombre + tr(1088, " no viene firmada por Hangar,\no alguien la cambió por el camino.\nNo se instala."), tr(1366, "_Vale"))
         return nil
     end
     # sin firma no se instala nunca (antes se podía "Instalar igual": una ficha sin firma por el camino bajaba la
     # seguridad a la de no comprobar nada)
     if g.firma == 0
-        preguntar("La ficha de " + g.nombre + " llega sin firma.\nNo se puede comprobar que venga de Hangar.\nNo se instala.", "_Vale")
+        preguntar(tr(1089, "La ficha de ") + g.nombre + tr(1090, " llega sin firma.\nNo se puede comprobar que venga de Hangar.\nNo se instala."), tr(1367, "_Vale"))
         return nil
     end
     return g
@@ -799,7 +800,7 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
     end
     # sin la huella que firma Hangar no se instala: no habría forma de saber que lo bajado es lo publicado
     if f.sha256 == ""
-        estado_texto = "Hangar no da la huella (SHA-256) de " + f.nombre + ": no se instala"
+        estado_texto = tr(1091, "Hangar no da la huella (SHA-256) de ") + f.nombre + tr(1092, ": no se instala")
         estado(estado_texto)
         return false
     end
@@ -809,25 +810,25 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
     en_cache = f.sha256 != "" and file_exists(temporal) and api_sha256_fichero(temporal) == f.sha256
     if not en_cache
         # el original y sus copias (Url repetible, P6a), por orden: vale el primero que da lo firmado (tamaño y SHA-256)
-        mal = "no hay dónde bajarlo"
+        mal = tr(1093, "no hay dónde bajarlo")
         sitios = 0
         for u0 in str_split(f.descarga, "\n")
             u = str_trim(u0)
             if u != "" and mal != ""
                 if sitios > 0
-                    estado(mal + ". Probando otro sitio...")
+                    estado(mal + tr(1094, ". Probando otro sitio..."))
                 end
                 sitios = sitios + 1
-                estado("Bajando " + f.nombre + "...")
+                estado(tr(1095, "Bajando ") + f.nombre + "...")
                 e = bajar(api_url_descarga(f, u), temporal)
                 if e != ""
-                    mal = "No se pudo bajar: " + e
+                    mal = tr(1096, "No se pudo bajar: ") + e
                 elif f.tamano_fichero > 0 and file_size(temporal) != f.tamano_fichero
-                    mal = "Lo bajado no tiene el tamaño que dice Hangar"
+                    mal = tr(1097, "Lo bajado no tiene el tamaño que dice Hangar")
                 else
-                    estado("Comprobando " + f.nombre + " (SHA-256)...")
+                    estado(tr(1098, "Comprobando ") + f.nombre + tr(1099, " (SHA-256)..."))
                     if api_sha256_fichero(temporal) != f.sha256
-                        mal = "Lo bajado no es lo que firmó Hangar (SHA-256 distinto)"
+                        mal = tr(1100, "Lo bajado no es lo que firmó Hangar (SHA-256 distinto)")
                     else
                         mal = ""
                     end
@@ -852,7 +853,7 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
     borrar_arbol(nuevo_dir[:nuevo_dir.length - 1])
     e = lha_extraer(temporal, nuevo_dir)
     if e != ""
-        estado_texto = "Error al descomprimir: " + e
+        estado_texto = tr(1101, "Error al descomprimir: ") + e
         return false
     end
     var puestos: [String] = []
@@ -897,7 +898,7 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
         end
     end
     puestos = sin_manifiesto
-    estado("Instalando " + f.nombre + "...")
+    estado(tr(1102, "Instalando ") + f.nombre + "...")
     var escritos: [String] = []
     var configs: [String] = []
     # de los ajustes del usuario que se quedan: su ruta y el CRC del que trae el paquete (el de la base es ese: si no,
@@ -915,7 +916,7 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
         # Hangar apunta todo lo que copie, para quitarlo entero y saber dónde está
         g = guion_del_paquete(nuevo_dir, puestos)
         if g != ""
-            if preguntar(f.nombre + " trae su propio instalador (" + g + ").\n¿Lo uso? Hangar apunta todo lo que copie,\npara poder actualizarlo y quitarlo entero.", "_Usar su instalador|_Copiarlo sin él") == 1
+            if preguntar(f.nombre + tr(1103, " trae su propio instalador (") + g + tr(1104, ").\n¿Lo uso? Hangar apunta todo lo que copie,\npara poder actualizarlo y quitarlo entero."), tr(1105, "_Usar su instalador|_Copiarlo sin él")) == 1
                 con_guion = true
                 guion = g
             end
@@ -961,7 +962,7 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
             i = 0
             while i < duenos_f.length
                 if duenos_f[i] == bajo
-                    estado_texto = "No se instala " + f.nombre + ": " + d + " es de " + duenos_n[i]
+                    estado_texto = tr(1106, "No se instala ") + f.nombre + ": " + d + " es de " + duenos_n[i]
                     return false
                 end
                 i = i + 1
@@ -970,13 +971,13 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
     end
     if con_guion
         # con su guion de Installer: lo que escriba, apuntado por la foto de antes y después
-        estado("Instalando " + f.nombre + " con su Installer...")
+        estado(tr(1107, "Instalando ") + f.nombre + tr(1108, " con su Installer..."))
         instalador_otros = sitios_de_guion(destino)
         for x in instalar_con_guion(nuevo_dir, guion, f.nombre, destino)
             escritos.push(x)
         end
         if instalador_error != ""
-            estado_texto = "Installer: " + instalador_error
+            estado_texto = tr(1109, "Installer: ") + instalador_error
             return false
         end
         # donde lo dejó el guion es su sitio (para seguirlo si se mueve, y en Míos)
@@ -1013,7 +1014,7 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
             end
         end
         if not tr_poner(x, poner_en)
-            estado_texto = "No se pudo escribir " + poner_en
+            estado_texto = tr(1110, "No se pudo escribir ") + poner_en
             return false
         end
         escritos.push(poner_en)
@@ -1050,7 +1051,7 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
     hay_bloque = false
     if lineas != ""
         if not bloque_poner(f.nombre, lineas)
-            estado_texto = "No se pudo cambiar " + arranque_ruta
+            estado_texto = tr(1111, "No se pudo cambiar ") + arranque_ruta
             return false
         end
         hay_bloque = true
@@ -1089,19 +1090,19 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
         end
     end
     if not recibo_guardar(r)
-        estado_texto = "No se pudo guardar en la base"
+        estado_texto = tr(1112, "No se pudo guardar en la base")
         return false
     end
     if nuevos_config > 0
-        estado_texto = str_from_int(nuevos_config, 10) + " ajustes tuyos se quedan; los nuevos están al lado (.new)"
-        estado(f.nombre + " " + f.version + " instalado. " + estado_texto)
+        estado_texto = str_from_int(nuevos_config, 10) + tr(1113, " ajustes tuyos se quedan; los nuevos están al lado (.new)")
+        estado(f.nombre + " " + f.version + tr(1114, " instalado. ") + estado_texto)
     else
         # con su Installer, Hangar no copia nada él: cuentan los que apuntó del guion
         nf = puestos.length
         if nf == 0
             nf = escritos.length
         end
-        estado(f.nombre + " " + version_ver(f.version) + " instalado en " + destino + " (" + cuantos(nf, "fichero", "ficheros") + ")")
+        estado(f.nombre + " " + version_ver(f.version) + tr(1115, " instalado en ") + destino + " (" + cuantos(nf, "fichero", "ficheros") + ")")
     end
     return true
 end
@@ -1123,7 +1124,7 @@ func copiar_al_sistema(f: Ficha, escritos: [String]) -> [String]
     if lista.length == 0
         return hechos
     end
-    if preguntar(f.nombre + " quiere copiar a tu sistema:" + texto + "\nLo que haya ahí se guarda como .old. Al quitarlo, esto se deja\n(otros programas pueden usarlo), salvo que digas quitarlo.", "_Copiar|_No copiar") != 1
+    if preguntar(f.nombre + tr(1116, " quiere copiar a tu sistema:") + texto + tr(1117, "\nLo que haya ahí se guarda como .old. Al quitarlo, esto se deja\n(otros programas pueden usarlo), salvo que digas quitarlo."), tr(1118, "_Copiar|_No copiar")) != 1
         return hechos
     end
     for d in lista
@@ -1143,7 +1144,7 @@ func copiar_al_sistema(f: Ficha, escritos: [String]) -> [String]
                 # hay (una reqtools.library de 1997 pisó la 39.3 de Coffin)
                 if ya == "" or nueva == "" or not version_mayor(nueva, ya)
                     copiar = false
-                    estado(d + " ya está (" + version_ver(ya) + "): se queda")
+                    estado(d + tr(1119, " ya está (") + version_ver(ya) + tr(1120, "): se queda"))
                 else
                     tr_guardar(d + ".old")
                     tr_guardar(d)
@@ -1178,12 +1179,12 @@ func desinstalar()
             end
             lista = lista + x
         end
-        aviso = "\n\nLo necesita: " + lista + ".\nSin él puede que no funcione."
+        aviso = tr(1121, "\n\nLo necesita: ") + lista + tr(1122, ".\nSin él puede que no funcione.")
     end
     if r.motivo == "adoptado"
-        aviso = aviso + "\n\nSe instaló a mano: se borra todo lo que hay en su cajón,\ntambién lo que hayas guardado ahí."
+        aviso = aviso + tr(1123, "\n\nSe instaló a mano: se borra todo lo que hay en su cajón,\ntambién lo que hayas guardado ahí.")
     end
-    if preguntar("¿Quitar " + r.nombre + " " + version_ver(r.version) + "?\n" + cuantos(r.ficheros.length, "fichero", "ficheros") + " en " + r.destino + aviso, "_Quitar|_Cancelar") != 1
+    if preguntar(tr(1124, "¿Quitar ") + r.nombre + " " + version_ver(r.version) + "?\n" + cuantos(r.ficheros.length, "fichero", "ficheros") + " en " + r.destino + aviso, tr(1368, "_Quitar|_Cancelar")) != 1
         return
     end
     # lo suyo en LIBS:, C:, DEVS:... se queda: otro programa puede usarlo (de Hangar o no). Lo que otro recibo también
@@ -1200,22 +1201,22 @@ func desinstalar()
             k = k + 1
         end
         if k > 6
-            lista = lista + "\n  y " + str_from_int(k - 6, 10) + " más"
+            lista = lista + "\n  y " + str_from_int(k - 6, 10) + tr(1125, " más")
         end
         if cli
             quitar_sis = cli_sistema
             if not quitar_sis
-                Print r.nombre + " puso esto en el sistema y se deja (otros programas pueden usarlo):" + lista
-                Print "(Añade SISTEMA a la orden para quitarlo también.)"
+                Print r.nombre + tr(1126, " puso esto en el sistema y se deja (otros programas pueden usarlo):") + lista
+                Print tr(1127, "(Añade SISTEMA a la orden para quitarlo también.)")
             end
         else
-            quitar_sis = preguntar(r.nombre + " puso esto en el sistema:" + lista + "\n\nOtros programas pueden usarlo.", "_Dejarlo|_Quitarlo también") == 0
+            quitar_sis = preguntar(r.nombre + tr(1128, " puso esto en el sistema:") + lista + tr(1129, "\n\nOtros programas pueden usarlo."), tr(1130, "_Dejarlo|_Quitarlo también")) == 0
         end
     end
     quitar_dejar = dejar_de(r, quitar_sis)
-    if not tr_empezar("Quitar " + r.nombre + " " + r.version)
+    if not tr_empezar(tr(1131, "Quitar ") + r.nombre + " " + r.version)
         tr_recuperar()
-        tr_empezar("Quitar " + r.nombre + " " + r.version)
+        tr_empezar(tr(1132, "Quitar ") + r.nombre + " " + r.version)
     end
     if quitar_paquete(r)
         # lo que se instaló para otros y ya no pide nadie: se ofrece quitarlo también (y lo que deje huérfano eso)
@@ -1230,7 +1231,7 @@ func desinstalar()
                 for x in h
                     nombres = nombres + "\n  " + x.nombre + " " + version_ver(x.version)
                 end
-                if preguntar("Se instalaron para otros programas y ya no los necesita ninguno:" + nombres, "_Quitarlos|_Dejarlos") == 1
+                if preguntar(tr(1133, "Se instalaron para otros programas y ya no los necesita ninguno:") + nombres, tr(1369, "_Quitarlos|_Dejarlos")) == 1
                     for x in h
                         quitar_dejar = dejar_de(x, quitar_sis)
                         if quitar_paquete(x)
@@ -1244,15 +1245,15 @@ func desinstalar()
         end
         tr_cerrar()
         if quitados > 1
-            resultado = r.nombre + " quitado, y " + str_from_int(quitados - 1, 10) + " más que ya no hacían falta"
+            resultado = r.nombre + tr(1134, " quitado, y ") + str_from_int(quitados - 1, 10) + tr(1135, " más que ya no hacían falta")
             estado(resultado)
         else
-            resultado = r.nombre + " quitado"
+            resultado = r.nombre + tr(1136, " quitado")
             estado(resultado)
         end
     else
         fallos = tr_deshacer(tr_diario())
-        estado("No se pudo quitar " + r.nombre + ": está como antes")
+        estado(tr(1137, "No se pudo quitar ") + r.nombre + tr(1138, ": está como antes"))
     end
     var nada: [String] = []
     quitar_dejar = nada
@@ -1265,17 +1266,17 @@ end
 func actualizar_todo() -> Bool
     mv = movidos_al_dia()
     # el formato 2: una pregunta firmada por repositorio y el plan del resolutor
-    estado("Mirando versiones (comprobando firmas)...")
+    estado(tr(1139, "Mirando versiones (comprobando firmas)..."))
     if not plan2_actualizar()
-        estado("No se puede actualizar: " + plan2_error)
+        estado(tr(1140, "No se puede actualizar: ") + plan2_error)
         return false
     end
     if resolutor_pasos.length > 0
         instalado_bien = false
-        hacer_plan2("Actualizar todo")
+        hacer_plan2(tr(1141, "Actualizar todo"))
         return instalado_bien
     end
-    estado("Todo está al día")
+    estado(tr(1142, "Todo está al día"))
     return true
 end
 
@@ -1290,9 +1291,9 @@ func retener()
     r.retenido = not r.retenido
     recibo_guardar(r)
     if r.retenido
-        estado(r.nombre + " " + r.version + " retenido: no se actualizará")
+        estado(r.nombre + " " + r.version + tr(1143, " retenido: no se actualizará"))
     else
-        estado(r.nombre + " ya se actualiza")
+        estado(r.nombre + tr(1144, " ya se actualiza"))
     end
 end
 
@@ -1368,7 +1369,7 @@ func volver_atras()
         _volver_atras1()
         return
     end
-    estado("Leyendo las versiones de " + r.nombre + "...")
+    estado(tr(1145, "Leyendo las versiones de ") + r.nombre + "...")
     vs = cache_anteriores(r)
     for rc in api2_repos
         if rc.nombre == r.repo
@@ -1380,21 +1381,21 @@ func volver_atras()
                     end
                 end
             else
-                estado("Sin las versiones del servidor (" + resp.error + "): solo lo de la caché")
+                estado(tr(1146, "Sin las versiones del servidor (") + resp.error + tr(1147, "): solo lo de la caché"))
             end
         end
     end
     k = _la_mayor(vs)
     if k < 0
-        preguntar("No hay ninguna versión de " + r.nombre + " anterior a la " + r.version + ", ni en el servidor ni en la caché.", "_Vale")
+        preguntar(tr(1148, "No hay ninguna versión de ") + r.nombre + tr(1149, " anterior a la ") + r.version + tr(1150, ", ni en el servidor ni en la caché."), tr(1370, "_Vale"))
         return
     end
     v = vs[k]
     nota = ""
     if v.url == ""
-        nota = "\n(Está en la caché: no hace falta la red.)"
+        nota = tr(1151, "\n(Está en la caché: no hace falta la red.)")
     end
-    if preguntar("¿Volver de " + r.nombre + " " + r.version + " a la " + v.version + "?" + nota, "_Volver|_Cancelar") != 1
+    if preguntar(tr(1152, "¿Volver de ") + r.nombre + " " + r.version + " a la " + v.version + "?" + nota, tr(1371, "_Volver|_Cancelar")) != 1
         return
     end
     f = ficha_actual
@@ -1411,19 +1412,19 @@ end
 
 # Instala esa versión en una transacción y la deja retenida (si no, la próxima actualización la volvería a subir)
 func _volver_a(r: Recibo, f: Ficha, version: String)
-    if not tr_empezar("Volver a " + r.nombre + " " + version)
+    if not tr_empezar(tr(1153, "Volver a ") + r.nombre + " " + version)
         tr_recuperar()
-        tr_empezar("Volver a " + r.nombre + " " + version)
+        tr_empezar(tr(1154, "Volver a ") + r.nombre + " " + version)
     end
     if instalar_ficha(f, r.destino, r.motivo)
         nuevo = recibo_leer(r.id)
         nuevo.retenido = true
         recibo_guardar(nuevo)
         tr_cerrar()
-        estado(r.nombre + " vuelve a la " + version + " (retenido)")
+        estado(r.nombre + tr(1155, " vuelve a la ") + version + tr(1156, " (retenido)"))
     else
         tr_deshacer(tr_diario())
-        estado("No se pudo volver: está como antes. " + estado_texto)
+        estado(tr(1157, "No se pudo volver: está como antes. ") + estado_texto)
     end
     refrescar()
 end
@@ -1439,14 +1440,14 @@ func _volver_atras1()
     if r.id == 0
         return
     end
-    estado("Leyendo las versiones de " + r.nombre + "...")
+    estado(tr(1158, "Leyendo las versiones de ") + r.nombre + "...")
     h = api_historial(r.id)
     if h.error != ""
-        estado("Error: " + h.error)
+        estado(tr(1159, "Error: ") + h.error)
         return
     end
     if h.firma < 0
-        preguntar("El historial de " + r.nombre + " no viene firmado por Hangar.", "_Vale")
+        preguntar(tr(1160, "El historial de ") + r.nombre + tr(1161, " no viene firmado por Hangar."), tr(1372, "_Vale"))
         return
     end
     actual = version_instalada(r)
@@ -1459,16 +1460,16 @@ func _volver_atras1()
         i = i + 1
     end
     if elegida < 0
-        preguntar("No hay ninguna versión de " + r.nombre + " anterior a la " + actual + ".", "_Vale")
+        preguntar(tr(1162, "No hay ninguna versión de ") + r.nombre + tr(1163, " anterior a la ") + actual + ".", tr(1373, "_Vale"))
         return
     end
     v = h.lista[elegida]
     en_cache = file_exists(CACHE + "/" + recibo_clave(r.nombre) + "-" + recibo_clave(v.version) + ".lha")
     nota = ""
     if not en_cache
-        nota = "\n(No está en la caché: se baja de su sitio, si aún está.)"
+        nota = tr(1164, "\n(No está en la caché: se baja de su sitio, si aún está.)")
     end
-    if preguntar("¿Volver de " + r.nombre + " " + actual + " a la " + v.version + " (" + v.fecha + ")?" + nota, "_Volver|_Cancelar") != 1
+    if preguntar(tr(1165, "¿Volver de ") + r.nombre + " " + actual + " a la " + v.version + " (" + v.fecha + ")?" + nota, tr(1374, "_Volver|_Cancelar")) != 1
         return
     end
     f = ficha_actual
@@ -1477,19 +1478,19 @@ func _volver_atras1()
     f.sha256 = v.sha256
     f.tamano_fichero = v.tamano
     f.descarga = v.url
-    if not tr_empezar("Volver a " + r.nombre + " " + v.version)
+    if not tr_empezar(tr(1166, "Volver a ") + r.nombre + " " + v.version)
         tr_recuperar()
-        tr_empezar("Volver a " + r.nombre + " " + v.version)
+        tr_empezar(tr(1167, "Volver a ") + r.nombre + " " + v.version)
     end
     if instalar_ficha(f, r.destino, r.motivo)
         nuevo = recibo_leer(r.id)
         nuevo.retenido = true       # si no, la próxima actualización la volvería a subir
         recibo_guardar(nuevo)
         tr_cerrar()
-        estado(r.nombre + " vuelve a la " + v.version + " (retenido)")
+        estado(r.nombre + tr(1168, " vuelve a la ") + v.version + tr(1169, " (retenido)"))
     else
         tr_deshacer(tr_diario())
-        estado("No se pudo volver: está como antes. " + estado_texto)
+        estado(tr(1170, "No se pudo volver: está como antes. ") + estado_texto)
     end
     refrescar()
 end
@@ -1663,7 +1664,7 @@ end
 func actualizar_hangar(v: String)
     real = file_real_path("PROGDIR:")
     if real == ""
-        estado("No sé en qué cajón está Hangar")
+        estado(tr(1171, "No sé en qué cajón está Hangar"))
         return
     end
     if not str_ends(real, "/") and not str_ends(real, ":")
@@ -1683,9 +1684,9 @@ func actualizar_hangar(v: String)
     instalar_pkg("hangar@main")
     destino_forzado = ""
     if instalado_bien
-        resultado = "Hangar " + v + " instalado: ciérralo y vuelve a abrirlo"
+        resultado = "Hangar " + v + tr(1172, " instalado: ciérralo y vuelve a abrirlo")
         estado(resultado)
-        if not cli and preguntar("Hangar " + v + " ya está instalado.\nCiérralo y vuelve a abrirlo para usar la versión nueva.", "_Cerrar Hangar|_Seguir") == 1
+        if not cli and preguntar("Hangar " + v + tr(1173, " ya está instalado.\nCiérralo y vuelve a abrirlo para usar la versión nueva."), tr(1174, "_Cerrar Hangar|_Seguir")) == 1
             cerrar_pedido = true
         end
     end
@@ -1698,7 +1699,7 @@ func mirar_hangar(desde_menu: Bool)
     v = hangar_nuevo()
     if v == ""
         if desde_menu
-            preguntar("Hangar " + VERSION + " es la última versión.", "_Vale")
+            preguntar("Hangar " + VERSION + tr(1175, " es la última versión."), tr(1375, "_Vale"))
         end
         return
     end
@@ -1706,7 +1707,7 @@ func mirar_hangar(desde_menu: Bool)
         return
     end
     env_set("Hangar/aviso_version", v, true)
-    if preguntar("Hay una versión nueva de Hangar: " + v + " (tienes la " + VERSION + ").\n¿La instalo ahora?", "_Actualizar|_Más tarde") == 1
+    if preguntar(tr(1176, "Hay una versión nueva de Hangar: ") + v + tr(1177, " (tienes la ") + VERSION + tr(1178, ").\n¿La instalo ahora?"), tr(1179, "_Actualizar|_Más tarde")) == 1
         actualizar_hangar(v)
     end
 end
@@ -1718,9 +1719,9 @@ func poner_nuevas(n: Int)
         return
     end
     if n > 0
-        mui_set_text(w_act, "Actualizar (" + str_from_int(n, 10) + ")")
+        mui_set_text(w_act, tr(1180, "Actualizar (") + str_from_int(n, 10) + ")")
     else
-        mui_set_text(w_act, "Actualizar")
+        mui_set_text(w_act, tr(1181, "Actualizar"))
     end
 end
 
@@ -1733,7 +1734,7 @@ func contar_versiones(callado: Bool)
         return
     end
     if not callado
-        estado("Mirando si hay versiones nuevas...")
+        estado(tr(1182, "Mirando si hay versiones nuevas..."))
     end
     for r in recibos_todos()
         if recibo_completar_repo(r)
@@ -1743,7 +1744,7 @@ func contar_versiones(callado: Bool)
     n = 0
     if not plan2_actualizar()
         if not callado
-            estado("No se pudo mirar si hay versiones nuevas: " + plan2_error)
+            estado(tr(1183, "No se pudo mirar si hay versiones nuevas: ") + plan2_error)
         end
         return
     else
@@ -1759,13 +1760,13 @@ func contar_versiones(callado: Bool)
             return
         end
         if n == 1
-            estado("1 programa tiene versión nueva: pulsa Actualizar")
+            estado(tr(1184, "1 programa tiene versión nueva: pulsa Actualizar"))
         else
-            estado(cuantos(n, "programa", "programas") + " tienen versión nueva: pulsa Actualizar")
+            estado(cuantos(n, "programa", "programas") + tr(1185, " tienen versión nueva: pulsa Actualizar"))
         end
     else
         if not callado
-            estado("Lo instalado con Hangar está al día")
+            estado(tr(1186, "Lo instalado con Hangar está al día"))
         end
     end
 end
@@ -1777,9 +1778,9 @@ func movidos_al_dia() -> String
     if m.length == 0
         return ""
     end
-    t = "Lo moviste y ya tengo apuntado su sitio nuevo: " + m[0]
+    t = tr(1187, "Lo moviste y ya tengo apuntado su sitio nuevo: ") + m[0]
     if m.length > 1
-        t = cuantos(m.length, "programa movido", "programas movidos") + " a mano: ya tengo apuntado su sitio nuevo"
+        t = cuantos(m.length, tr(1188, "programa movido"), tr(1189, "programas movidos")) + tr(1190, " a mano: ya tengo apuntado su sitio nuevo")
     end
     estado(t)
     return t
@@ -1795,14 +1796,14 @@ func avisar_movidos()
     for x in m
         t = t + "\n  " + x
     end
-    preguntar("Has movido programas instalados con Hangar.\nYa tengo apuntado su sitio nuevo:" + t, "_Vale")
+    preguntar(tr(1191, "Has movido programas instalados con Hangar.\nYa tengo apuntado su sitio nuevo:") + t, tr(1376, "_Vale"))
 end
 
 # Mira que lo instalado con Hangar siga como se instaló (CRC-32 y tamaño de cada fichero) y, si algo falta o
 # cambió, ofrece repararlo: reinstalar ese paquete en una transacción (lo que se pise se puede deshacer)
 func verificar()
     avisar_movidos()
-    estado("Verificando lo instalado...")
+    estado(tr(1192, "Verificando lo instalado..."))
     lista_quieta(true)
     lista_vaciar()
     limpiar_ficha()
@@ -1820,13 +1821,13 @@ func verificar()
                 rehechos = rehechos + 1
             else
                 actuales.push(Paquete(r.id, r.nombre, r.version, "", 0, "", r.destino))
-                lista_poner("? " + r.nombre + ": su ficha en la base no cuadra y no hay copia buena")
+                lista_poner("? " + r.nombre + tr(1193, ": su ficha en la base no cuadra y no hay copia buena"))
             end
         end
     end
     if rehechos > 0
         todos = recibos_todos()
-        estado(str_from_int(rehechos, 10) + " fichas de la base rehechas desde su copia")
+        estado(str_from_int(rehechos, 10) + tr(1194, " fichas de la base rehechas desde su copia"))
     end
     for r in todos
         mal = recibo_verificar(r)
@@ -1844,17 +1845,17 @@ func verificar()
     lista_quieta(false)
     mas_apagado()
     if rotos.length == 0
-        estado(cuantos(todos.length, "programa verificado", "programas verificados") + ": todo bien")
+        estado(cuantos(todos.length, tr(1195, "programa verificado"), tr(1196, "programas verificados")) + tr(1197, ": todo bien"))
         return
     end
-    estado(cuantos(rotos.length, "programa", "programas") + " con " + cuantos(total_mal, "fichero", "ficheros") + " que faltan o cambiaron")
-    no_estan = cuantos(rotos.length, "programa no está", "programas no están")
-    if preguntar(no_estan + " como se instalaron.\n¿Reinstalarlos? Lo que se pise se puede deshacer.", "_Reparar|_Dejarlo") != 1
+    estado(cuantos(rotos.length, "programa", "programas") + tr(1198, " con ") + cuantos(total_mal, "fichero", "ficheros") + tr(1199, " que faltan o cambiaron"))
+    no_estan = cuantos(rotos.length, tr(1200, "programa no está"), tr(1201, "programas no están"))
+    if preguntar(no_estan + tr(1202, " como se instalaron.\n¿Reinstalarlos? Lo que se pise se puede deshacer."), tr(1377, "_Reparar|_Dejarlo")) != 1
         return
     end
-    if not tr_empezar("Reparar " + cuantos(rotos.length, "programa", "programas") + "")
+    if not tr_empezar(tr(1203, "Reparar ") + cuantos(rotos.length, "programa", "programas") + "")
         tr_recuperar()
-        tr_empezar("Reparar " + cuantos(rotos.length, "programa", "programas") + "")
+        tr_empezar(tr(1204, "Reparar ") + cuantos(rotos.length, "programa", "programas") + "")
     end
     hecho = true
     for r in rotos
@@ -1865,17 +1866,17 @@ func verificar()
                 g = plan2_ficha(r.repo, recibo_clave(r.nombre), r.version)
             end
             if g == nil
-                estado_texto = r.nombre + " " + r.version + " ya no está en el índice firmado: no se puede reparar"
+                estado_texto = r.nombre + " " + r.version + tr(1205, " ya no está en el índice firmado: no se puede reparar")
             end
             hecho = g != nil and instalar_ficha(g, r.destino, r.motivo)
         end
     end
     if hecho
         tr_cerrar()
-        estado(cuantos(rotos.length, "programa reparado", "programas reparados") + "")
+        estado(cuantos(rotos.length, tr(1206, "programa reparado"), tr(1207, "programas reparados")) + "")
     else
         tr_deshacer(tr_diario())
-        estado("No se pudo reparar: está como antes. " + estado_texto)
+        estado(tr(1208, "No se pudo reparar: está como antes. ") + estado_texto)
     end
 end
 
@@ -1897,7 +1898,7 @@ func limpiar_cache()
     end
     n = dir_read(CACHE)
     if n <= 0
-        estado("La caché está vacía")
+        estado(tr(1209, "La caché está vacía"))
         return
     end
     var nombres: [String] = []
@@ -1921,24 +1922,24 @@ func limpiar_cache()
         end
         i = i + 1
     end
-    estado(cuantos(borrados, "fichero borrado", "ficheros borrados") + " de la caché")
+    estado(cuantos(borrados, tr(1210, "fichero borrado"), tr(1211, "ficheros borrados")) + tr(1212, " de la caché"))
 end
 
 # Deshace la última instalación, actualización o desinstalación que acabó bien
 func deshacer_ultima()
     que = tr_ultima()
     if que == ""
-        preguntar("No hay nada que deshacer.", "_Vale")
+        preguntar(tr(1213, "No hay nada que deshacer."), tr(1378, "_Vale"))
         return
     end
-    if preguntar("¿Deshacer \"" + que + "\"?\nTodo vuelve a como estaba antes.", "_Deshacer|_Cancelar") != 1
+    if preguntar(tr(1214, "¿Deshacer \"") + que + tr(1215, "\"?\nTodo vuelve a como estaba antes."), tr(1379, "_Deshacer|_Cancelar")) != 1
         return
     end
     fallos = tr_deshacer(tr_copias() + "/Diario")
     if fallos == 0
-        estado("Deshecho: " + que)
+        estado(tr(1216, "Deshecho: ") + que)
     else
-        estado("Deshecho, pero " + cuantos(fallos, "fichero no volvió", "ficheros no volvieron") + " a su sitio")
+        estado(tr(1217, "Deshecho, pero ") + cuantos(fallos, tr(1218, "fichero no volvió"), tr(1219, "ficheros no volvieron")) + tr(1220, " a su sitio"))
     end
     if ficha_actual != nil
         refrescar()
@@ -2143,10 +2144,10 @@ func ejecutar()
             end
         end
         if orden_shell != ""
-            estado("Es una orden del Shell: " + orden_shell)
-            preguntar(r.nombre + " es una orden del Shell, no tiene ventana.\nÚsala desde un Shell:\n\n  " + orden_shell, "_Vale")
+            estado(tr(1221, "Es una orden del Shell: ") + orden_shell)
+            preguntar(r.nombre + tr(1222, " es una orden del Shell, no tiene ventana.\nÚsala desde un Shell:\n\n  ") + orden_shell, tr(1380, "_Vale"))
         else
-            estado("No sé cuál es el programa: ábrelo desde " + r.destino)
+            estado(tr(1223, "No sé cuál es el programa: ábrelo desde ") + r.destino)
         end
         return
     end
@@ -2162,15 +2163,15 @@ func ejecutar()
         dir_change(antes)
     end
     if not abierto and not wb_open(p)
-        estado("No se pudo abrir " + p)
+        estado(tr(1224, "No se pudo abrir ") + p)
         return
     end
-    estado("Abriendo " + p)
+    estado(tr(1225, "Abriendo ") + p)
 end
 
 # Lo instalado con Hangar que tiene versión nueva en el catálogo
 func actualizaciones()
-    estado("Mirando versiones...")
+    estado(tr(1226, "Mirando versiones..."))
     rs = recibos_todos()
     var lista: [Paquete] = []
     lista_quieta(true)
@@ -2189,7 +2190,7 @@ func actualizaciones()
     end
     lista_quieta(false)
     mas_apagado()
-    estado(cuantos(hay, "actualización", "actualizaciones") + " de " + cuantos(rs.length, "programa instalado", "programas instalados") + " con Hangar")
+    estado(cuantos(hay, "actualización", "actualizaciones") + " de " + cuantos(rs.length, tr(1227, "programa instalado"), tr(1228, "programas instalados")) + tr(1229, " con Hangar"))
 end
 
 # Cómo se ve el nombre de un paquete: el del formato 2 va en minúsculas ("amicloser"); si alguno de sus ficheros o
@@ -2238,32 +2239,32 @@ func instalados()
     if movido != ""
         estado(movido)
     else
-        estado(cuantos(rs.length, "programa instalado", "programas instalados") + " con Hangar")
+        estado(cuantos(rs.length, tr(1230, "programa instalado"), tr(1231, "programas instalados")) + tr(1232, " con Hangar"))
     end
 end
 
 # El disco entero (C:, LIBS:, Utilities..., y Work: con sus subcajones) contra el catálogo: cada programa o librería
 # se reconoce por su fichero (nombre y tamaño) o por su $VER:, y sale una vez lo que tiene versión nueva
 func inventario()
-    estado("Leyendo los programas del disco...")
+    estado(tr(1233, "Leyendo los programas del disco..."))
     inv = inventario_recorrer(["C:", "LIBS:", "DEVS:", "SYS:Utilities", "SYS:Tools", "SYS:System", "SYS:Prefs"], 1)
-    estado("Leyendo los programas de Work:...")
+    estado(tr(1234, "Leyendo los programas de Work:..."))
     for f in inventario_recorrer(["Work:"], 3)
         inv.push(f)
     end
     # y los otros sitios de programas de este Amiga (en Coffin, Programs:)
     for d in destinos_posibles()
         if d != "Work:" and d != "SYS:" and d != "SYS:Utilities/" and d != "SYS:Tools/"
-            estado("Leyendo los programas de " + d + "...")
+            estado(tr(1235, "Leyendo los programas de ") + d + "...")
             for f in inventario_recorrer([d], 1)
                 inv.push(f)
             end
         end
     end
-    estado("Comparando " + cuantos(inv.length, "programa", "programas") + " con el catálogo...")
+    estado(tr(1236, "Comparando ") + cuantos(inv.length, "programa", "programas") + tr(1237, " con el catálogo..."))
     v = api2_reconocer(inventario_texto(inv))
     if v.error != ""
-        estado("Error: " + v.error)
+        estado(tr(1238, "Error: ") + v.error)
         return
     end
     lista_quieta(true)
@@ -2298,11 +2299,11 @@ func inventario()
     end
     lista_quieta(false)
     mas_apagado()
-    resumen = "En el catálogo hay versión nueva de " + cuantos(actuales.length, "programa", "programas") + " del disco; " + str_from_int(conocidos, 10) + " de " + cuantos(inv.length, "fichero reconocido", "ficheros reconocidos")
+    resumen = tr(1239, "En el catálogo hay versión nueva de ") + cuantos(actuales.length, "programa", "programas") + tr(1240, " del disco; ") + str_from_int(conocidos, 10) + " de " + cuantos(inv.length, tr(1241, "fichero reconocido"), tr(1242, "ficheros reconocidos"))
     estado(resumen)
     apuntados = adoptar(inv, v)
     if apuntados > 0
-        estado(resumen + "; " + cuantos(apuntados, "apuntado", "apuntados") + " en Hangar")
+        estado(resumen + "; " + cuantos(apuntados, "apuntado", "apuntados") + tr(1243, " en Hangar"))
     end
     # sin ninguno elegido: el título sigue diciendo lo del disco (una ficha elegida lo borraba)
     if not cli
@@ -2356,14 +2357,14 @@ func adoptar(inv: [FicheroDisco], v: Reconocidos) -> Int
         return 0
     end
     if cuales.length > 12
-        nombres = nombres + "\n  y " + str_from_int(cuales.length - 12, 10) + " más"
+        nombres = nombres + "\n  y " + str_from_int(cuales.length - 12, 10) + tr(1244, " más")
     end
-    if preguntar(cuantos(cuales.length, "programa instalado", "programas instalados") + " a mano son del catálogo:" + nombres + "\n¿Apuntarlos en Hangar, para actualizarlos y quitarlos?", "_Apuntarlos|_No") != 1
+    if preguntar(cuantos(cuales.length, tr(1245, "programa instalado"), tr(1246, "programas instalados")) + tr(1247, " a mano son del catálogo:") + nombres + tr(1248, "\n¿Apuntarlos en Hangar, para actualizarlos y quitarlos?"), tr(1381, "_Apuntarlos|_No")) != 1
         return 0
     end
-    if not tr_empezar("Apuntar " + cuantos(cuales.length, "programa instalado", "programas instalados") + " a mano")
+    if not tr_empezar(tr(1249, "Apuntar ") + cuantos(cuales.length, tr(1250, "programa instalado"), tr(1251, "programas instalados")) + tr(1252, " a mano"))
         tr_recuperar()
-        tr_empezar("Apuntar " + cuantos(cuales.length, "programa instalado", "programas instalados") + " a mano")
+        tr_empezar(tr(1253, "Apuntar ") + cuantos(cuales.length, tr(1254, "programa instalado"), tr(1255, "programas instalados")) + tr(1256, " a mano"))
     end
     for k0 in cuales
         k = fichero_principal(v, inv, k0)
@@ -2466,10 +2467,10 @@ func destino_cambiado()
     existe = dir_read(d) >= 0
     dos_requesters(true)
     if not existe
-        estado("No existe " + d + ": se creará al instalar")
+        estado(tr(1267, "No existe ") + d + tr(1268, ": se creará al instalar"))
     end
     env_set("Hangar/destino", d, true)
-    estado("Se instalará en " + d)
+    estado(tr(1269, "Se instalará en ") + d)
 end
 
 # El paquete del catálogo que se llama así (o con ese número): nil si no está
@@ -2484,7 +2485,7 @@ func buscar_paquete(nombre: String) -> Ficha
     end
     l = api_buscar(n, 0)
     if l.error != ""
-        estado("Error: " + l.error)
+        estado(tr(1270, "Error: ") + l.error)
         return nil
     end
     for p in l.paquetes
@@ -2525,11 +2526,11 @@ func orden(palabras: [String]) -> Int
     if que == "BUSCA" or que == "SEARCH"
         l = api_buscar(resto, 0)
         if l.error != ""
-            Print "Error: " + l.error
+            Print tr(1271, "Error: ") + l.error
             return 10
         end
         if l.paquetes.length == 0
-            Print "No hay nada con \"" + resto + "\""
+            Print tr(1272, "No hay nada con \"") + resto + "\""
             return 5
         end
         for p in l.paquetes
@@ -2539,7 +2540,7 @@ func orden(palabras: [String]) -> Int
     elif que == "INSTALA" or que == "INSTALL"
         f = buscar_paquete(resto)
         if f == nil
-            Print "No hay ningún paquete que se llame " + resto
+            Print tr(1273, "No hay ningún paquete que se llame ") + resto
             return 10
         end
         ficha_actual = f
@@ -2552,7 +2553,7 @@ func orden(palabras: [String]) -> Int
     elif que == "QUITA" or que == "REMOVE"
         r = recibo_de(resto)
         if r.id == 0
-            Print resto + " no está instalado con Hangar"
+            Print resto + tr(1274, " no está instalado con Hangar")
             return 10
         end
         ficha_actual = api_ficha(r.id)
@@ -2581,26 +2582,26 @@ func orden(palabras: [String]) -> Int
     elif que == "RETEN" or que == "SUELTA" or que == "HOLD" or que == "UNHOLD"
         r = recibo_de(resto)
         if r.id == 0
-            Print resto + " no está instalado con Hangar"
+            Print resto + tr(1275, " no está instalado con Hangar")
             return 10
         end
         r.retenido = que == "RETEN" or que == "HOLD"
         recibo_guardar(r)
         if r.retenido
-            Print r.nombre + " " + r.version + " retenido"
+            Print r.nombre + " " + r.version + tr(1276, " retenido")
         else
-            Print r.nombre + " ya se actualiza"
+            Print r.nombre + tr(1277, " ya se actualiza")
         end
         return 0
     elif que == "VUELVE" or que == "ROLLBACK"
         r = recibo_de(resto)
         if r.id == 0
-            Print resto + " no está instalado con Hangar"
+            Print resto + tr(1278, " no está instalado con Hangar")
             return 10
         end
         ficha_actual = api_ficha(r.id)
         if ficha_actual.error != ""
-            Print "Error: " + ficha_actual.error
+            Print tr(1279, "Error: ") + ficha_actual.error
             return 10
         end
         antes = r.version
@@ -2619,9 +2620,9 @@ func orden(palabras: [String]) -> Int
         Print "Hangar " + VERSION
         return 0
     end
-    Print "Órdenes: BUSCA texto, INSTALA nombre, QUITA nombre, ACTUALIZA, LISTA, VERIFICA, DESHAZ, RETEN nombre, SUELTA nombre, VUELVE nombre, VERSION"
-    Print "Con SI se acepta lo que se preguntaría (sin él solo se enseña); DESTINO=Work: dónde instalar."
-    Print "QUITA deja lo que el programa puso en LIBS:, C:, DEVS:... (otros pueden usarlo); con SISTEMA lo quita también."
+    Print tr(1280, "Órdenes: BUSCA texto, INSTALA nombre, QUITA nombre, ACTUALIZA, LISTA, VERIFICA, DESHAZ, RETEN nombre, SUELTA nombre, VUELVE nombre, VERSION")
+    Print tr(1281, "Con SI se acepta lo que se preguntaría (sin él solo se enseña); DESTINO=Work: dónde instalar.")
+    Print tr(1282, "QUITA deja lo que el programa puso en LIBS:, C:, DEVS:... (otros pueden usarlo); con SISTEMA lo quita también.")
     return 5
 end
 
@@ -2707,7 +2708,7 @@ Main
     if arg_count() > 0 and str_find(arg(0), ":") < 0
         cli = true
         if cortada >= 0
-            Print "Una instalación se cortó a mitad la última vez: se ha deshecho."
+            Print tr(1283, "Una instalación se cortó a mitad la última vez: se ha deshecho.")
         end
         var ps: [String] = []
         for k in (0..arg_count() - 1)
@@ -2718,39 +2719,39 @@ Main
     mui_app_begin("Hangar", "HANGAR")
     w_ventana = mui_window_begin("Hangar " + VERSION, 1)
         mui_menu_begin("Hangar")
-            mui_menu_item("Acerca de...", "?", ID_ACERCA)
+            mui_menu_item(tr(1284, "Acerca de..."), "?", ID_ACERCA)
             mui_menu_separator()
-            mui_menu_item("Deshacer la última...", "Z", ID_DESHACER)
+            mui_menu_item(tr(1287, "Deshacer la última..."), "Z", ID_DESHACER)
             mui_menu_separator()
-            mui_menu_item("Actualizar todo...", "U", ID_ACTUALIZAR_TODO)
-            mui_menu_item("Actualizar Hangar...", "", ID_HANGAR)
-            mui_menu_item("Verificar lo instalado...", "K", ID_VERIFICAR)
-            mui_menu_item("Limpiar la caché", "L", ID_LIMPIAR)
+            mui_menu_item(tr(1288, "Actualizar todo..."), "U", ID_ACTUALIZAR_TODO)
+            mui_menu_item(tr(1289, "Actualizar Hangar..."), "", ID_HANGAR)
+            mui_menu_item(tr(1290, "Verificar lo instalado..."), "K", ID_VERIFICAR)
+            mui_menu_item(tr(1291, "Limpiar la caché"), "L", ID_LIMPIAR)
             mui_menu_separator()
             # lo del programa elegido, aparte: "Retener" pegado a "Actualizar todo" se elegía sin querer
-            mui_menu_item("Retener o soltar el elegido", "R", ID_RETENER)
-            mui_menu_item("Volver a la versión anterior...", "V", ID_VOLVER)
+            mui_menu_item(tr(1292, "Retener o soltar el elegido"), "R", ID_RETENER)
+            mui_menu_item(tr(1293, "Volver a la versión anterior..."), "V", ID_VOLVER)
             mui_menu_separator()
-            mui_menu_item("Salir", "Q", ID_SALIR)
+            mui_menu_item(tr(1294, "Salir"), "Q", ID_SALIR)
         mui_menu_end()
         mui_hgroup_begin()
             w_buscar = mui_string("", 80)
-            bb = mui_button("_Buscar")
-            bn = mui_button("_Nuevo")
-            bi = mui_button("_Míos")
-            ba = mui_button("Act_ualizar")
+            bb = mui_button(tr(1295, "_Buscar"))
+            bn = mui_button(tr(1296, "_Nuevo"))
+            bi = mui_button(tr(1297, "_Míos"))
+            ba = mui_button(tr(1298, "Act_ualizar"))
             w_act = ba
-            bv = mui_button("_Disco")
+            bv = mui_button(tr(1299, "_Disco"))
         mui_group_end()
         mui_hgroup_begin()
             mui_vgroup_begin()
                 w_lista = mui_list()
-                w_mas = mui_button("_Más resultados")
+                w_mas = mui_button(tr(1300, "_Más resultados"))
             mui_group_end()
             mui_balance()
             mui_vgroup_begin()
                 w_titulo = mui_text("")
-                w_pestanas = mui_register_begin("Ficha|Léeme|Captura")
+                w_pestanas = mui_register_begin(tr(1301, "Ficha|Léeme|Captura"))
                     # la ficha arriba (sola, MUI la centraba en todo el alto de la pestaña)
                     mui_vgroup_begin()
                         w_datos = mui_text("")
@@ -2759,7 +2760,7 @@ Main
                     # sin alto fijo: llena la pestaña (Dash PR #176)
                     w_readme = mui_text_editor(0)
                     mui_vgroup_begin()
-                        w_sin_captura = mui_text("\33cEste programa no tiene captura")
+                        w_sin_captura = mui_text(tr(1302, "\33cEste programa no tiene captura"))
                         mui_hgroup_begin()
                             mui_space()
                             w_imagen = mui_image(imagen_vacia())
@@ -2768,15 +2769,15 @@ Main
                     mui_group_end()
                 mui_group_end()
                 mui_hgroup_begin()
-                    w_instalar = mui_button("_Instalar")
-                    w_desinstalar = mui_button("_Quitar")
-                    w_ejecutar = mui_button("_Ejecutar")
-                    w_web = mui_button("_Web")
+                    w_instalar = mui_button(tr(1303, "_Instalar"))
+                    w_desinstalar = mui_button(tr(1304, "_Quitar"))
+                    w_ejecutar = mui_button(tr(1305, "_Ejecutar"))
+                    w_web = mui_button(tr(1306, "_Web"))
                 mui_group_end()
                 mui_hgroup_begin()
                     mui_label("En:")
                     w_destino = mui_combo(destino_por_defecto(), destinos_texto())
-                    w_elegir = mui_button("_Elegir...")
+                    w_elegir = mui_button(tr(1307, "_Elegir..."))
                     mui_weight(w_elegir, 15)
                     w_progreso = mui_gauge(100)
                     mui_weight(w_progreso, 40)
@@ -2815,11 +2816,11 @@ Main
     end
     abierta = mui_window_open(w_ventana)
     if not abierta
-        Print "Hangar: no se pudo abrir la ventana"
+        Print tr(1308, "Hangar: no se pudo abrir la ventana")
     else
         mui_set_active(w_ventana, w_buscar)
         if cortada >= 0
-            preguntar("Una instalación se cortó a mitad la última vez.\nSe ha deshecho: todo está como antes.", "_Vale")
+            preguntar(tr(1309, "Una instalación se cortó a mitad la última vez.\nSe ha deshecho: todo está como antes."), tr(1384, "_Vale"))
         end
         consulta = "n:"
         pagina = 0
@@ -2828,7 +2829,7 @@ Main
         avisar_movidos()
         if env_get("Hangar/escaneado") == ""
             env_set("Hangar/escaneado", "si", true)
-            if preguntar("¿Miro qué programas tienes ya en el disco?\nAsí Hangar sabe lo que hay, te avisa de versiones nuevas\ny puede apuntar lo que instalaste a mano. Tarda unos segundos.", "_Mirar|_Ahora no") == 1
+            if preguntar(tr(1310, "¿Miro qué programas tienes ya en el disco?\nAsí Hangar sabe lo que hay, te avisa de versiones nuevas\ny puede apuntar lo que instalaste a mano. Tarda unos segundos."), tr(1311, "_Mirar|_Ahora no")) == 1
                 inventario()
                 mirar_callado = true       # el título sigue con lo del disco; el número, en el botón
             end
@@ -2896,7 +2897,7 @@ Main
             destino_cambiado()
         elif ev == ID_ELEGIR
             # la petición de cajones (Dash PR #176): el elegido pasa a "En:" y se recuerda
-            c = dialog_drawer("¿Dónde instalar?", str_trim(mui_get_text(w_destino)))
+            c = dialog_drawer(tr(1312, "¿Dónde instalar?"), str_trim(mui_get_text(w_destino)))
             if c != ""
                 mui_set_text(w_destino, c)
                 destino_cambiado()
@@ -2929,7 +2930,7 @@ Main
         elif ev == ID_VERIFICAR
             verificar()
         elif ev == ID_ACERCA
-            preguntar("\33cHangar " + VERSION + "\nBusca, instala y pone al día\nel software del Amiga\n\nhttps://hangar.freemem.space", "_Vale")
+            preguntar(tr(1313, "\33cHangar ") + VERSION + tr(1314, "\nBusca, instala y pone al día\nel software del Amiga\n\nhttps://hangar.freemem.space"), tr(1385, "_Vale"))
         end
         if cerrar_pedido
             abierta = false
