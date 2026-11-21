@@ -81,6 +81,8 @@ struct Ficha
     repo: String = ""          # su repositorio ("aminet", "main")
     epoch: Int = 0
     variantes: [String] = nil  # Variant: un fichero según la máquina
+    antivirus: String = ""     # lo que dijo el antivirus del servidor ("limpio (xvs 33.49, 12 ficheros)", "VIRUS ...")
+    verificado: Bool = false   # su autor está verificado (otro programa tenía su nombre)
 end
 
 struct Comparacion
@@ -160,6 +162,11 @@ end
 
 func api_novedades(pagina: Int) -> Lista
     return _api_lista("/novedades?pag=" + str_from_int(pagina, 10))
+end
+
+# Lo de los autores y de GitHub, lo último primero (el escaparate al abrir)
+func api_autores(pagina: Int) -> Lista
+    return _api_lista("/autores?pag=" + str_from_int(pagina, 10))
 end
 
 func api_categoria(cajon: String, pagina: Int) -> Lista
@@ -267,6 +274,10 @@ func api_leer_ficha(texto: String) -> Ficha
                 f.descarga = v
             elif k == "imagenes"
                 f.imagenes = Int(v)
+            elif k == "antivirus"
+                f.antivirus = v
+            elif k == "verificado"
+                f.verificado = v == "si"
             elif k == "pkg"
                 f.pkg2 = v
             elif k == "repo"

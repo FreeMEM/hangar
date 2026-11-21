@@ -216,10 +216,10 @@ MSG_1031
  e nenhum programa do catálogo o fornece
 ;  y no lo trae ningún programa del catálogo
 MSG_1032
-(Sem SI: 
+(Sem SIM: 
 ; (Sin SI: 
 MSG_1033
-. Acrescente SI à ordem para o aceitar.)
+. Acrescente SIM à ordem para o aceitar.)
 ; . Añade SI a la orden para aceptarlo.)
 MSG_1034
 Erro: 
@@ -330,7 +330,7 @@ MSG_1077
 Não feito
 ; No se hizo
 MSG_1078
-Há uma instalação a meio de antes.\nVai ser desfeita agora; depois tente de novo.
+Há uma instalação anterior pendente.\nVai ser desfeita agora; depois tente de novo.
 ; Hay una instalación a medias de antes.\nSe deshace ahora; luego vuelve a intentarlo.
 MSG_1079
 Feito: 
@@ -900,13 +900,13 @@ MSG_1279
 Erro: 
 ; Error: 
 MSG_1280
-Ordens (também em inglês): BUSCA/SEARCH texto, INSTALA/INSTALL nome, QUITA/REMOVE nome, ACTUALIZA/UPGRADE, LISTA/LIST, VERIFICA/VERIFY, DESHAZ/UNDO, RETEN/HOLD nome, SUELTA/UNHOLD nome, VUELVE/ROLLBACK nome, VERSION
+Ordens (também em inglês): BUSCA/SEARCH texto, INSTALA/INSTALL nome, APAGA/REMOVE nome, ATUALIZA/UPGRADE, LISTA/LIST, VERIFICA/VERIFY, DESFAZ/UNDO, RETÉM/HOLD nome, LIBERA/UNHOLD nome, REVERTER/ROLLBACK nome, VERSÃO
 ; Órdenes: BUSCA texto, INSTALA nombre, QUITA nombre, ACTUALIZA, LISTA, VERIFICA, DESHAZ, RETEN nombre, SUELTA nombre, VUELVE nombre, VERSION
 MSG_1281
-Com SI (ou YES) aceita o que perguntaria (sem isso, só mostra); DESTINO=Work: onde instalar.
+Com o SIM (ou YES), aceita-se aquilo que se perguntaria (sem ele, apenas se ensina); DESTINO=Work: onde instalar.
 ; Con SI se acepta lo que se preguntaría (sin él solo se enseña); DESTINO=Work: dónde instalar.
 MSG_1282
-QUITA deixa o que o programa pôs em LIBS:, C:, DEVS:... (outros podem usá-lo); com SISTEMA (ou SYSTEM) remove-o também.
+APAGA deixa o que o programa pôs em LIBS:, C:, DEVS:... (outros podem usá-lo); com SISTEMA (ou SYSTEM) remove-o também.
 ; QUITA deja lo que el programa puso en LIBS:, C:, DEVS:... (otros pueden usarlo); con SISTEMA lo quita también.
 MSG_1283
 Uma instalação ficou a meio da última vez: foi desfeita.
@@ -942,7 +942,7 @@ MSG_1295
 _Procurar
 ; _Buscar
 MSG_1296
-_Novos
+_Novo
 ; _Nuevo
 MSG_1297
 _Meus
@@ -1191,8 +1191,50 @@ MSG_1390
 Do a_utor
 ; _De su autor
 MSG_1391
- está em dois sítios: no Aminet e nos programas que os seus autores publicam no Hangar (verificados).\nDe onde o instalo?
+ está em dois sítios: na Aminet e nos programas que os seus autores publicam no Hangar (verificados).\nDe onde o instalo?
 ;  está en dos sitios: en Aminet y entre los programas que publican sus autores en Hangar (verificados).\n¿De dónde lo instalo?
 MSG_1392
 |C_ancelar
 ; |_Cancelar
+MSG_1393
+Da Aminet
+; De Aminet
+MSG_1394
+Do autor
+; De su autor
+MSG_1395
+Autor verificado
+; Autor verificado
+MSG_1396
+ANTIVÍRUS: 
+; ¡ANTIVIRUS: 
+MSG_1397
+antivírus: limpo
+; antivirus: limpio
+MSG_1398
+Ver:
+; Ver:
+MSG_1399
+Dos autores
+; De los autores
+MSG_1400
+Jogos
+; Juegos
+MSG_1401
+Demos
+; Demos
+MSG_1402
+Utilitários
+; Utilidades
+MSG_1403
+Gráficos
+; Gráficos
+MSG_1404
+Música
+; Música
+MSG_1405
+Rede
+; Red
+MSG_1406
+Desenvolvimento
+; Desarrollo

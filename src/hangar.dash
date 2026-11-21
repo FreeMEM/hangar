@@ -1,6 +1,6 @@
 # Hangar: busca, instala y pone al día el software del Amiga. Busca en el catálogo de hangar.freemem.space, enseña la ficha, instala
 # (baja el .lha y lo descomprime, sin C:lha), actualiza, desinstala y ejecuta.
-@version "Hangar 0.16.2"
+@version "Hangar 0.17.0"
 @catalog "Hangar.catalog" 1 "español"
 import "api.dash"
 import "lha.dash"
@@ -14,7 +14,7 @@ import "sistema.dash"
 import "plan2.dash"
 import "instalador.dash"
 
-const VERSION = "0.16.2"
+const VERSION = "0.17.0"
 
 const ID_BUSCAR = 1
 const ID_NOVEDADES = 2
@@ -40,6 +40,7 @@ const ID_MIRAR = 24
 const ID_ELEGIR = 25
 const ID_CONTAR = 26          # tras una acción: el número de Actualizar (N), otra vez
 const ID_HANGAR = 27          # menú: Actualizar Hangar
+const ID_CATEGORIA = 40       # los botones de categorías: 40 en adelante, en el orden de CATEGORIAS
 
 # Lo que se baja: aquí se queda cada versión (para volver a ella) y aquí se descomprime antes de ponerla en su sitio
 const CACHE = "PROGDIR:Cache"
@@ -56,7 +57,7 @@ var viendo_instalados: Bool = false
 var captura_anterior: String = "T:hangar_captura.iff"
 var instalados_vistos: [Recibo] = []
 var ficha_actual: Ficha = nil
-var consulta: String = ""     # "b:texto", "n:" (novedades), "u:" (actualizaciones), "i:" (instalados)
+var consulta: String = ""     # "b:texto", "n:" (novedades), "u:" (actualizaciones), "i:" (instalados), "a:" (de los autores), "k:cajón" (categoría)
 var pagina: Int = 0
 var total: Int = 0
 
@@ -81,6 +82,7 @@ var resultado: String = ""     # lo último que acabó (instalar, quitar...): se
 var w_ventana: Int = 0
 var w_imagen: Int = 0
 var w_pestanas: Int = 0
+var ficha_junta: Bool = true     # la ficha sin pestañas (pantallas de 480 o más de alto)
 
 
 # El estado va en el título de la ventana: no ocupa sitio en una pantalla de 640 x 256
@@ -284,6 +286,10 @@ func cargar(anadir: Bool)
         poner_lista(api_buscar(resto, pagina), anadir)
     elif tipo == "n:"
         poner_lista(api_novedades(pagina), anadir)
+    elif tipo == "a:"
+        poner_lista(api_autores(pagina), anadir)
+    elif tipo == "k:"
+        poner_lista(api_categoria(resto, pagina), anadir)
     end
 end
 
@@ -309,25 +315,49 @@ func ver_ficha(i: Int)
     end
     ficha_actual = f
     mui_set_text(w_titulo, "\33b" + corta(f.nombre + " " + f.version, 40))
-    d = corta(f.corto, 36) + "\n"
+    # junta, la ficha tiene todo el ancho del panel: textos más largos y el origen delante
+    a = 36
+    if ficha_junta
+        a = 70
+    end
+    d = corta(f.corto, a) + "\n"
+    if ficha_junta
+        o = ""
+        if f.repo == "aminet"
+            o = tr(1393, "De Aminet")
+        elif f.repo != ""
+            o = tr(1394, "De su autor")
+            if f.verificado
+                o = tr(1395, "Autor verificado")
+            end
+        end
+        if str_starts(f.antivirus, "VIRUS")
+            o = o + "  ·  " + tr(1396, "¡ANTIVIRUS: ") + corta(f.antivirus, 40) + "!"
+        elif str_starts(f.antivirus, "limpio")
+            o = o + "  ·  " + tr(1397, "antivirus: limpio")
+        end
+        if o != ""
+            d = "\33b" + o + "\33n\n" + d
+        end
+    end
     if f.autor != ""
-        d = d + tr(1039, "Autor: ") + corta(f.autor, 29) + "\n"
+        d = d + tr(1039, "Autor: ") + corta(f.autor, a - 7) + "\n"
     end
     d = d + tr(1041, "Tamaño: ") + tamano_texto(f.tamano) + "\n"
     if f.fecha != ""
         d = d + tr(1042, "Fecha: ") + f.fecha + "\n"
     end
     if f.arquitectura != ""
-        d = d + tr(1043, "Para: ") + corta(f.arquitectura, 30) + "\n"
+        d = d + tr(1043, "Para: ") + corta(f.arquitectura, a - 6) + "\n"
     end
     if f.necesita.length > 0
         for l in str_split(necesidades_texto(f), "\n")
             if l != ""
-                d = d + corta(l, 36) + "\n"
+                d = d + corta(l, a) + "\n"
             end
         end
     elif f.requiere != ""
-        d = d + tr(1044, "Necesita: ") + corta(f.requiere, 26) + "\n"
+        d = d + tr(1044, "Necesita: ") + corta(f.requiere, a - 10) + "\n"
     end
     r = recibo_de_ficha(f)
     instalada = version_instalada(r)
@@ -336,9 +366,9 @@ func ver_ficha(i: Int)
         sin_recibo = instalado_sin_recibo(f.nombre, [mui_get_text(w_destino), "SYS:", "Work:"])
     end
     if r.id != 0
-        d = d + corta(tr(1045, "Instalado: ") + version_ver(instalada) + " en " + r.destino, 36)
+        d = d + corta(tr(1045, "Instalado: ") + version_ver(instalada) + " en " + r.destino, a)
     elif sin_recibo != ""
-        d = d + corta(tr(1046, "Ya está en ") + sin_recibo, 36)
+        d = d + corta(tr(1046, "Ya está en ") + sin_recibo, a)
     end
     # esconder y volver a enseñar: con MUI en RTG (CoffinOS) el texto nuevo quedaba encima del viejo
     mui_set_visible(w_datos, false)
@@ -2549,6 +2579,46 @@ func buscar_paquete(nombre: String) -> Ficha
     return nil
 end
 
+# Las categorías generales de Aminet que salen como botones
+var CATEGORIAS: [String] = ["game", "demo", "util", "gfx", "mus", "comm", "dev"]
+
+func categoria_titulo(k: Int) -> String
+    if k == 0
+        return tr(1400, "Juegos")
+    elif k == 1
+        return tr(1401, "Demos")
+    elif k == 2
+        return tr(1402, "Utilidades")
+    elif k == 3
+        return tr(1403, "Gráficos")
+    elif k == 4
+        return tr(1404, "Música")
+    elif k == 5
+        return tr(1405, "Red")
+    end
+    return tr(1406, "Desarrollo")
+end
+
+# Las órdenes en portugués, a su nombre de siempre (la ayuda del catálogo portugués las da así)
+func orden_portugues(q: String) -> String
+    if q == "APAGA"
+        return "QUITA"
+    elif q == "ATUALIZA"
+        return "ACTUALIZA"
+    elif q == "DESFAZ"
+        return "DESHAZ"
+    elif q == "RETÉM" or q == "RETéM" or q == "RETEM"
+        return "RETEN"
+    elif q == "LIBERA"
+        return "SUELTA"
+    elif q == "REVERTER"
+        return "VUELVE"
+    elif q == "VERSÃO" or q == "VERSãO" or q == "VERSAO"
+        return "VERSION"
+    end
+    return q
+end
+
 # Una orden (del Shell o de ARexx): BUSCA texto, INSTALA x, QUITA x, ACTUALIZA, LISTA, VERIFICA, DESHAZ, RETEN x,
 # SUELTA x, VUELVE x, VERSION. Devuelve el código de retorno: 0 bien, 5 no se hizo (falta SI o no hay nada), 10 error.
 func orden(palabras: [String]) -> Int
@@ -2556,11 +2626,13 @@ func orden(palabras: [String]) -> Int
         return 5
     end
     que = str_upper(palabras[0])
+    # las órdenes también en portugués (Hugo Pereira las tradujo en la ayuda del catálogo)
+    que = orden_portugues(que)
     resto = ""
     i = 1
     while i < palabras.length
         p = palabras[i]
-        if str_upper(p) == "SI" or str_upper(p) == "YES"
+        if str_upper(p) == "SI" or str_upper(p) == "YES" or str_upper(p) == "SIM"
             cli_si = true
         elif str_upper(p) == "SISTEMA" or str_upper(p) == "SYSTEM"
             cli_sistema = true
@@ -2769,6 +2841,8 @@ Main
         end
         program_exit(orden(ps))
     end
+    # la ficha con la captura y el léeme juntos si la pantalla es alta (las capturas llegan hasta 256 de alto)
+    ficha_junta = screen_height() >= 480
     mui_app_begin("Hangar", "HANGAR")
     w_ventana = mui_window_begin("Hangar " + VERSION, 1)
         mui_menu_begin("Hangar")
@@ -2796,6 +2870,16 @@ Main
             w_act = ba
             bv = mui_button(tr(1299, "_Disco"))
         mui_group_end()
+        # las categorías, a un clic (el escaparate del boceto B)
+        mui_hgroup_begin()
+            mui_label(tr(1398, "Ver:"))
+            bdest = mui_button(tr(1399, "De los autores"))
+            mui_on_press(bdest, ID_CATEGORIA - 1)
+            for k in (0..CATEGORIAS.length - 1)
+                b = mui_button(categoria_titulo(k))
+                mui_on_press(b, ID_CATEGORIA + k)
+            end
+        mui_group_end()
         mui_hgroup_begin()
             mui_vgroup_begin()
                 w_lista = mui_list()
@@ -2804,28 +2888,43 @@ Main
             mui_balance()
             mui_vgroup_begin()
                 w_titulo = mui_text("")
-                w_pestanas = mui_register_begin(tr(1301, "Ficha|Léeme|Captura"))
-                    # la ficha arriba (sola, MUI la centraba en todo el alto de la pestaña)
-                    mui_vgroup_begin()
-                        w_datos = mui_text("")
+                if ficha_junta
+                    # todo junto, como la web (el usuario, 2026-11-21): los datos, la captura y el léeme debajo
+                    w_datos = mui_text("")
+                    mui_hgroup_begin()
+                        mui_space()
+                        w_imagen = mui_image(imagen_vacia())
                         mui_space()
                     mui_group_end()
-                    # sin alto fijo: llena la pestaña (Dash PR #176)
+                    w_sin_captura = mui_text("")
                     w_readme = mui_text_editor(0)
-                    mui_vgroup_begin()
-                        w_sin_captura = mui_text(tr(1302, "\33cEste programa no tiene captura"))
-                        mui_hgroup_begin()
-                            mui_space()
-                            w_imagen = mui_image(imagen_vacia())
+                else
+                    # pantallas bajas (640x256): no cabe todo junto, en pestañas
+                    w_pestanas = mui_register_begin(tr(1301, "Ficha|Léeme|Captura"))
+                        # la ficha arriba (sola, MUI la centraba en todo el alto de la pestaña)
+                        mui_vgroup_begin()
+                            w_datos = mui_text("")
                             mui_space()
                         mui_group_end()
+                        # sin alto fijo: llena la pestaña (Dash PR #176)
+                        w_readme = mui_text_editor(0)
+                        mui_vgroup_begin()
+                            w_sin_captura = mui_text(tr(1302, "\33cEste programa no tiene captura"))
+                            mui_hgroup_begin()
+                                mui_space()
+                                w_imagen = mui_image(imagen_vacia())
+                                mui_space()
+                            mui_group_end()
+                        mui_group_end()
                     mui_group_end()
-                mui_group_end()
+                end
                 mui_hgroup_begin()
                     w_instalar = mui_button(tr(1303, "_Instalar"))
                     w_desinstalar = mui_button(tr(1304, "_Quitar"))
                     w_ejecutar = mui_button(tr(1305, "_Ejecutar"))
                     w_web = mui_button(tr(1306, "_Web"))
+                    # Instalar, lo principal: el doble de ancho
+                    mui_weight(w_instalar, 200)
                 mui_group_end()
                 mui_hgroup_begin()
                     mui_label("En:")
@@ -2875,9 +2974,13 @@ Main
         if cortada >= 0
             preguntar(tr(1309, "Una instalación se cortó a mitad la última vez.\nSe ha deshecho: todo está como antes."), tr(1384, "_Vale"))
         end
-        consulta = "n:"
+        consulta = "a:"
         pagina = 0
         cargar(false)
+        # al abrir, el escaparate: lo último de los autores, con el primero ya en la ficha
+        if actuales.length > 0
+            mui_set_value(w_lista, 0)
+        end
         # lo que el usuario movió a mano, apuntado; la primera vez, qué hay ya en el disco; y si hay versiones nuevas
         avisar_movidos()
         if env_get("Hangar/escaneado") == ""
@@ -2924,6 +3027,14 @@ Main
             end
         elif ev == ID_NOVEDADES
             consulta = "n:"
+            pagina = 0
+            cargar(false)
+        elif ev == ID_CATEGORIA - 1
+            consulta = "a:"
+            pagina = 0
+            cargar(false)
+        elif ev >= ID_CATEGORIA and ev < ID_CATEGORIA + CATEGORIAS.length
+            consulta = "k:" + CATEGORIAS[ev - ID_CATEGORIA]
             pagina = 0
             cargar(false)
         elif ev == ID_MAS
