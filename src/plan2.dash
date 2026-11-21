@@ -38,7 +38,8 @@ func _repo_de(nombre: String) -> RepoConf
 end
 
 # La máquina, los repositorios y lo instalado (de la base). Lo instalado antes del formato 2 no dice de qué
-# repositorio vino: el que ya tenga ese nombre en la caché (el de más prioridad), o aminet.
+# repositorio vino: aminet si allí está ese nombre (contra la suplantación: un paquete de autor con el mismo nombre no
+# le llega como actualización); si no, el de más prioridad que lo tenga, o aminet.
 func _plan2_empezar()
     resolutor_libs_reales = true
     resolutor_empezar(maquina_real())
@@ -53,11 +54,13 @@ func _plan2_instalados()
         repo = rec.repo
         if repo == ""
             repo = "aminet"
-            mejor = -1
-            for r in api2_repos
-                if resolutor_en_cache(r.nombre, n) > 0 and r.prioridad > mejor
-                    repo = r.nombre
-                    mejor = r.prioridad
+            if resolutor_en_cache("aminet", n) == 0
+                mejor = -1
+                for r in api2_repos
+                    if resolutor_en_cache(r.nombre, n) > 0 and r.prioridad > mejor
+                        repo = r.nombre
+                        mejor = r.prioridad
+                    end
                 end
             end
         end
@@ -125,6 +128,19 @@ func _plan2_pedir(e: String, pedidos: [String]) -> Bool
         end
     end
     return true
+end
+
+# Los repositorios que tienen un paquete con ese nombre (en el orden de api2_repos)
+func plan2_repos_de(nombre: String) -> [String]
+    var r: [String] = []
+    _plan2_empezar()
+    api2_traer(nombre)
+    for x in api2_repos
+        if resolutor_en_cache(x.nombre, nombre) > 0
+            r.push(x.nombre)
+        end
+    end
+    return r
 end
 
 # El plan para instalar un paquete ("nombre" o "nombre@repositorio"): true si se puede; los pasos quedan en

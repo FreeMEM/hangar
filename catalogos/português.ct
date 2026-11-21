@@ -1,0 +1,1198 @@
+## version $VER: Hangar.catalog 1.0 (21.11.2026)
+## language português
+## codeset 0
+;
+MSG_350
+Nenhum guardado.
+; None stored.
+MSG_351
+%1 guardados.
+; %1 stored.
+MSG_352
+Apagar todos
+; Delete them all
+MSG_353
+Domínio
+; Domain
+MSG_354
+Nome
+; Name
+MSG_355
+Valor
+; Value
+MSG_356
+Expira
+; Expires
+MSG_357
+ao sair
+; on quit
+MSG_358
+apagar os deste domínio
+; delete the ones from this domain
+MSG_400
+demasiados redirecionamentos
+; too many redirects
+MSG_401
+o servidor fechou sem responder
+; the server closed without answering
+MSG_402
+uma resposta que não é HTTP
+; an answer that isn't HTTP
+MSG_403
+linha de estado inválida
+; broken status line
+MSG_404
+cabeçalhos cortados
+; cut headers
+MSG_405
+conteúdo cortado
+; cut body
+MSG_406
+não foi possível descomprimir
+; could not decompress
+MSG_407
+tempo esgotado
+; timed out
+MSG_408
+cancelado
+; cancelled
+MSG_409
+esquema não suportado: %1
+; unsupported scheme: %1
+MSG_410
+não é possível escrever %1
+; can't write %1
+MSG_420
+demasiadas ligações
+; too many connections
+MSG_421
+ligação fechada
+; connection closed
+MSG_422
+sem memória
+; out of memory
+MSG_423
+não é possível enviar
+; can't send
+MSG_424
+rede fechada
+; network closed
+MSG_425
+ligação recusada
+; connection refused
+MSG_426
+demasiadas ligações ao mesmo tempo
+; too many connections at once
+MSG_427
+demasiadas ligações TLS
+; too many TLS connections
+MSG_428
+erro ao enviar
+; error sending
+MSG_429
+erro ao receber
+; error receiving
+MSG_430
+erro de rede
+; network error
+MSG_431
+erro de TLS
+; TLS error
+MSG_432
+a rede pertence a outra tarefa
+; the network belongs to another task
+MSG_433
+falta o AmiSSL (amisslmaster.library)
+; AmiSSL is missing (amisslmaster.library)
+MSG_434
+sem bsdsocket.library (falta uma pilha TCP/IP)
+; no bsdsocket.library (a TCP/IP stack is missing)
+MSG_435
+servidor não encontrado
+; server not found
+MSG_436
+não é possível abrir o AmiSSL (é preciso o 5.1 ou superior)
+; can't open AmiSSL (5.1 or later is needed)
+MSG_437
+não é possível abrir um socket
+; can't open a socket
+MSG_438
+não é possível encontrar o servidor
+; can't look up the server
+MSG_439
+tempo esgotado ao ligar
+; timed out connecting
+MSG_440
+tempo esgotado ao negociar o TLS
+; timed out negotiating TLS
+MSG_441
+tempo esgotado ao procurar o servidor
+; timed out looking up the server
+MSG_442
+não é possível escrever o ficheiro
+; can't write the file
+MSG_1001
+o servidor respondeu 
+; el servidor respondió 
+MSG_1002
+resposta vazia
+; respuesta vacía
+MSG_1003
+resposta estranha: 
+; respuesta rara: 
+MSG_1004
+resposta estranha
+; respuesta rara
+MSG_1007
+não é um ficheiro de chaves
+; no es un fichero keys
+MSG_1008
+as chaves de 
+; el keys de 
+MSG_1009
+ não estão assinadas por uma raiz
+;  no viene firmado por una raíz
+MSG_1010
+as chaves pertencem a outro repositório
+; el keys es de otro repositorio
+MSG_1011
+as chaves não têm Serial
+; el keys no tiene Serial
+MSG_1012
+as chaves de 
+; el keys de 
+MSG_1013
+ são mais antigas do que as últimas vistas
+;  es más viejo que el último visto
+MSG_1014
+as chaves de 
+; el keys de 
+MSG_1015
+ expiraram
+;  ha caducado
+MSG_1016
+não sei onde estão as chaves de 
+; no sé dónde está el keys de 
+MSG_1017
+a resposta de 
+; la respuesta de 
+MSG_1018
+ não está assinada com a sua chave
+;  no viene firmada por su clave
+MSG_1019
+a resposta de 
+; la respuesta de 
+MSG_1020
+ é sobre outra coisa
+;  es de otra cosa
+MSG_1021
+a resposta de 
+; la respuesta de 
+MSG_1022
+ não é a desta pergunta (repetida)
+;  no es la de esta pregunta (repetida)
+MSG_1023
+a resposta de 
+; la respuesta de 
+MSG_1024
+ é mais antiga do que a última vista
+;  es más vieja que la última vista
+MSG_1025
+não há repositórios
+; no hay repositorios
+MSG_1026
+ é para 
+;  es para 
+MSG_1027
+dependências demasiado profundas em 
+; dependencias demasiado hondas en 
+MSG_1028
+ (não foi possível ler a sua ficha: 
+;  (no se pudo leer su ficha: 
+MSG_1030
+ precisa de 
+;  necesita 
+MSG_1031
+ e nenhum programa do catálogo o fornece
+;  y no lo trae ningún programa del catálogo
+MSG_1032
+(Sem SI: 
+; (Sin SI: 
+MSG_1033
+. Acrescente SI à ordem para o aceitar.)
+; . Añade SI a la orden para aceptarlo.)
+MSG_1034
+Erro: 
+; Error: 
+MSG_1035
+Nada encontrado para \"
+; No hay nada con \"
+MSG_1036
+\33bNada encontrado para \"
+; \33bNo hay nada con \"
+MSG_1037
+A carregar a ficha...
+; Cargando la ficha...
+MSG_1038
+Erro: 
+; Error: 
+MSG_1039
+Autor: 
+; Autor: 
+MSG_1041
+Tamanho: 
+; Tamaño: 
+MSG_1042
+Data: 
+; Fecha: 
+MSG_1043
+Para: 
+; Para: 
+MSG_1044
+Precisa de: 
+; Necesita: 
+MSG_1045
+Instalado: 
+; Instalado: 
+MSG_1046
+Já em 
+; Ya está en 
+MSG_1048
+Reinstalar
+; Reinstalar
+MSG_1049
+Atualizar
+; Actualizar
+MSG_1050
+Instalar
+; Instalar
+MSG_1051
+o servidor respondeu 
+; el servidor respondió 
+MSG_1058
+ ainda não está no índice assinado: não se pode instalar
+;  aún no está en el índice firmado: no se puede instalar
+MSG_1059
+O volume 
+; El volumen 
+MSG_1060
+ não está presente: não se pode instalar em 
+;  no está: no se puede instalar en 
+MSG_1061
+A ver o que precisa: 
+; Mirando lo que necesita 
+MSG_1062
+ (a verificar assinaturas)...
+;  (comprobando firmas)...
+MSG_1063
+Não se pode instalar 
+; No se puede instalar 
+MSG_1064
+Instalar 
+; Instalar 
+MSG_1065
+Atualizar 
+; Actualizar 
+MSG_1066
+Sem espaço em 
+; No hay sitio en 
+MSG_1067
+ são precisos 
+;  hacen falta 
+MSG_1068
+ KB e há 
+;  KB y quedan 
+MSG_1069
+Não cabe na cache do Hangar: são precisos 
+; No cabe en la caché de Hangar: hacen falta 
+MSG_1070
+ KB e há 
+;  KB y quedan 
+MSG_1071
+Versão do AmigaOS 
+; AmigaOS de la versión 
+MSG_1072
+AmigaOS 
+; AmigaOS 
+MSG_1073
+Nada a fazer
+; Nada que hacer
+MSG_1074
+\n  nota: 
+; \n  ojo: a 
+MSG_1075
+ pode faltar 
+;  puede faltarle 
+MSG_1076
+ (di-lo o seu readme)
+;  (lo dice su readme)
+MSG_1077
+Não feito
+; No se hizo
+MSG_1078
+Há uma instalação a meio de antes.\nVai ser desfeita agora; depois tente de novo.
+; Hay una instalación a medias de antes.\nSe deshace ahora; luego vuelve a intentarlo.
+MSG_1079
+Feito: 
+; Hecho: 
+MSG_1080
+Não feito: está tudo como antes. 
+; No se hizo: todo está como antes. 
+MSG_1081
+Não feito, e 
+; No se hizo y 
+MSG_1082
+ficheiro não voltou
+; fichero no volvió
+MSG_1083
+ficheiros não voltaram
+; ficheros no volvieron
+MSG_1084
+ ao seu lugar
+;  a su sitio
+MSG_1085
+A verificar a assinatura do Hangar...
+; Comprobando la firma de Hangar...
+MSG_1086
+Erro: 
+; Error: 
+MSG_1087
+A ficha de 
+; La ficha de 
+MSG_1088
+ não está assinada pelo Hangar,\nou alguém a alterou pelo caminho.\nNão é instalado.
+;  no viene firmada por Hangar,\no alguien la cambió por el camino.\nNo se instala.
+MSG_1089
+A ficha de 
+; La ficha de 
+MSG_1090
+ chega sem assinatura.\nNão é possível verificar que vem do Hangar.\nNão é instalado.
+;  llega sin firma.\nNo se puede comprobar que venga de Hangar.\nNo se instala.
+MSG_1091
+O Hangar não dá a impressão digital (SHA-256) de 
+; Hangar no da la huella (SHA-256) de 
+MSG_1092
+: não é instalado
+; : no se instala
+MSG_1093
+não há de onde o transferir
+; no hay dónde bajarlo
+MSG_1094
+. A tentar outro sítio...
+; . Probando otro sitio...
+MSG_1095
+A transferir 
+; Bajando 
+MSG_1096
+Não foi possível transferir: 
+; No se pudo bajar: 
+MSG_1097
+A transferência não tem o tamanho que o Hangar indica
+; Lo bajado no tiene el tamaño que dice Hangar
+MSG_1098
+A verificar 
+; Comprobando 
+MSG_1099
+ (SHA-256)...
+;  (SHA-256)...
+MSG_1100
+A transferência não é o que o Hangar assinou (SHA-256 diferente)
+; Lo bajado no es lo que firmó Hangar (SHA-256 distinto)
+MSG_1101
+Erro ao descomprimir: 
+; Error al descomprimir: 
+MSG_1102
+A instalar 
+; Instalando 
+MSG_1103
+ traz o seu próprio instalador (
+;  trae su propio instalador (
+MSG_1104
+).\nUsá-lo? O Hangar regista tudo o que copia,\npara o poder atualizar e remover por completo.
+; ).\n¿Lo uso? Hangar apunta todo lo que copie,\npara poder actualizarlo y quitarlo entero.
+MSG_1105
+_Usar o instalador|_Copiar sem ele
+; _Usar su instalador|_Copiarlo sin él
+MSG_1106
+Não instalado: 
+; No se instala 
+MSG_1107
+A instalar 
+; Instalando 
+MSG_1108
+ com o seu Installer...
+;  con su Installer...
+MSG_1109
+Installer: 
+; Installer: 
+MSG_1110
+Não foi possível escrever 
+; No se pudo escribir 
+MSG_1111
+Não foi possível alterar 
+; No se pudo cambiar 
+MSG_1112
+Não foi possível guardar na base de dados
+; No se pudo guardar en la base
+MSG_1113
+ ajustes seus ficam; os novos ficam ao lado (.new)
+;  ajustes tuyos se quedan; los nuevos están al lado (.new)
+MSG_1114
+ instalado. 
+;  instalado. 
+MSG_1115
+ instalado em 
+;  instalado en 
+MSG_1116
+ quer copiar para o seu sistema:
+;  quiere copiar a tu sistema:
+MSG_1117
+\nO que lá estiver fica guardado como .old. Ao removê-lo, isto fica\n(outros programas podem usá-lo), a não ser que diga para o remover.
+; \nLo que haya ahí se guarda como .old. Al quitarlo, esto se deja\n(otros programas pueden usarlo), salvo que digas quitarlo.
+MSG_1118
+_Copiar|_Não copiar
+; _Copiar|_No copiar
+MSG_1119
+ já lá está (
+;  ya está (
+MSG_1120
+): fica
+; ): se queda
+MSG_1121
+\n\nPrecisam dele: 
+; \n\nLo necesita: 
+MSG_1122
+.\nSem ele, podem não funcionar.
+; .\nSin él puede que no funcione.
+MSG_1123
+\n\nFoi instalado à mão: é apagado tudo o que está na sua gaveta,\ntambém o que lá guardou.
+; \n\nSe instaló a mano: se borra todo lo que hay en su cajón,\ntambién lo que hayas guardado ahí.
+MSG_1124
+Remover 
+; ¿Quitar 
+MSG_1125
+ mais
+;  más
+MSG_1126
+ pôs isto no sistema e fica (outros programas podem usá-lo):
+;  puso esto en el sistema y se deja (otros programas pueden usarlo):
+MSG_1127
+(Acrescente SISTEMA à ordem para o remover também.)
+; (Añade SISTEMA a la orden para quitarlo también.)
+MSG_1128
+ pôs isto no sistema:
+;  puso esto en el sistema:
+MSG_1129
+\n\nOutros programas podem usá-lo.
+; \n\nOtros programas pueden usarlo.
+MSG_1130
+_Mantê-lo|_Remover também
+; _Dejarlo|_Quitarlo también
+MSG_1131
+Remover 
+; Quitar 
+MSG_1132
+Remover 
+; Quitar 
+MSG_1133
+Foram instalados para outros programas e nenhum precisa deles agora:
+; Se instalaron para otros programas y ya no los necesita ninguno:
+MSG_1134
+ removido, e 
+;  quitado, y 
+MSG_1135
+ mais que já não eram precisos
+;  más que ya no hacían falta
+MSG_1136
+ removido
+;  quitado
+MSG_1137
+Não foi possível remover 
+; No se pudo quitar 
+MSG_1138
+: está como antes
+; : está como antes
+MSG_1139
+A ver as versões (a verificar assinaturas)...
+; Mirando versiones (comprobando firmas)...
+MSG_1140
+Não se pode atualizar: 
+; No se puede actualizar: 
+MSG_1141
+Atualizar tudo
+; Actualizar todo
+MSG_1142
+Está tudo atualizado
+; Todo está al día
+MSG_1143
+ retido: não vai ser atualizado
+;  retenido: no se actualizará
+MSG_1144
+ volta a ser atualizado
+;  ya se actualiza
+MSG_1145
+A ler as versões de 
+; Leyendo las versiones de 
+MSG_1146
+Sem as versões do servidor (
+; Sin las versiones del servidor (
+MSG_1147
+): só o que está na cache
+; ): solo lo de la caché
+MSG_1148
+Não há nenhuma versão de 
+; No hay ninguna versión de 
+MSG_1149
+ mais antiga do que 
+;  anterior a la 
+MSG_1150
+, nem no servidor nem na cache.
+; , ni en el servidor ni en la caché.
+MSG_1151
+\n(Está na cache: não é preciso rede.)
+; \n(Está en la caché: no hace falta la red.)
+MSG_1152
+Voltar atrás de 
+; ¿Volver de 
+MSG_1153
+Voltar a 
+; Volver a 
+MSG_1154
+Voltar a 
+; Volver a 
+MSG_1155
+ volta a 
+;  vuelve a la 
+MSG_1156
+ (retido)
+;  (retenido)
+MSG_1157
+Não foi possível voltar atrás: está como antes. 
+; No se pudo volver: está como antes. 
+MSG_1158
+A ler as versões de 
+; Leyendo las versiones de 
+MSG_1159
+Erro: 
+; Error: 
+MSG_1160
+O histórico de 
+; El historial de 
+MSG_1161
+ não está assinado pelo Hangar.
+;  no viene firmado por Hangar.
+MSG_1162
+Não há nenhuma versão de 
+; No hay ninguna versión de 
+MSG_1163
+ mais antiga do que 
+;  anterior a la 
+MSG_1164
+\n(Não está na cache: é transferida do seu sítio, se ainda lá estiver.)
+; \n(No está en la caché: se baja de su sitio, si aún está.)
+MSG_1165
+Voltar atrás de 
+; ¿Volver de 
+MSG_1166
+Voltar a 
+; Volver a 
+MSG_1167
+Voltar a 
+; Volver a 
+MSG_1168
+ volta a 
+;  vuelve a la 
+MSG_1169
+ (retido)
+;  (retenido)
+MSG_1170
+Não foi possível voltar atrás: está como antes. 
+; No se pudo volver: está como antes. 
+MSG_1171
+Não sei em que gaveta está o Hangar
+; No sé en qué cajón está Hangar
+MSG_1172
+ instalado: feche-o e abra-o de novo
+;  instalado: ciérralo y vuelve a abrirlo
+MSG_1175
+ é a última versão.
+;  es la última versión.
+MSG_1176
+Há uma versão nova do Hangar: 
+; Hay una versión nueva de Hangar: 
+MSG_1177
+ (tem a 
+;  (tienes la 
+MSG_1178
+).\nInstalá-la agora?
+; ).\n¿La instalo ahora?
+MSG_1179
+_Atualizar|_Mais tarde
+; _Actualizar|_Más tarde
+MSG_1180
+Atualizar (
+; Actualizar (
+MSG_1181
+Atualizar
+; Actualizar
+MSG_1182
+A procurar versões novas...
+; Mirando si hay versiones nuevas...
+MSG_1183
+Não foi possível procurar versões novas: 
+; No se pudo mirar si hay versiones nuevas: 
+MSG_1184
+1 programa tem uma versão nova: carregue em Atualizar
+; 1 programa tiene versión nueva: pulsa Actualizar
+MSG_1185
+ têm uma versão nova: carregue em Atualizar
+;  tienen versión nueva: pulsa Actualizar
+MSG_1186
+O que instalou com o Hangar está atualizado
+; Lo instalado con Hangar está al día
+MSG_1187
+Mudou-o de sítio e registei o novo lugar: 
+; Lo moviste y ya tengo apuntado su sitio nuevo: 
+MSG_1188
+programa mudado
+; programa movido
+MSG_1189
+programas mudados
+; programas movidos
+MSG_1190
+ à mão: registei o novo lugar
+;  a mano: ya tengo apuntado su sitio nuevo
+MSG_1191
+Mudou de sítio programas instalados com o Hangar.\nRegistei o novo lugar:
+; Has movido programas instalados con Hangar.\nYa tengo apuntado su sitio nuevo:
+MSG_1192
+A verificar o que está instalado...
+; Verificando lo instalado...
+MSG_1193
+: a sua ficha na base de dados não coincide e não há uma cópia boa
+; : su ficha en la base no cuadra y no hay copia buena
+MSG_1194
+ fichas da base de dados refeitas a partir da cópia
+;  fichas de la base rehechas desde su copia
+MSG_1195
+programa verificado
+; programa verificado
+MSG_1196
+programas verificados
+; programas verificados
+MSG_1197
+: tudo bem
+; : todo bien
+MSG_1198
+ com 
+;  con 
+MSG_1199
+ em falta ou alterados
+;  que faltan o cambiaron
+MSG_1200
+programa não está
+; programa no está
+MSG_1201
+programas não estão
+; programas no están
+MSG_1202
+ como foram instalados.\nReinstalá-los? O que for substituído pode ser desfeito.
+;  como se instalaron.\n¿Reinstalarlos? Lo que se pise se puede deshacer.
+MSG_1203
+Reparar 
+; Reparar 
+MSG_1204
+Reparar 
+; Reparar 
+MSG_1205
+ já não está no índice assinado: não se pode reparar
+;  ya no está en el índice firmado: no se puede reparar
+MSG_1206
+programa reparado
+; programa reparado
+MSG_1207
+programas reparados
+; programas reparados
+MSG_1208
+Não foi possível reparar: está como antes. 
+; No se pudo reparar: está como antes. 
+MSG_1209
+A cache está vazia
+; La caché está vacía
+MSG_1210
+ficheiro apagado
+; fichero borrado
+MSG_1211
+ficheiros apagados
+; ficheros borrados
+MSG_1212
+ da cache
+;  de la caché
+MSG_1213
+Não há nada para desfazer.
+; No hay nada que deshacer.
+MSG_1214
+Desfazer \"
+; ¿Deshacer \"
+MSG_1215
+\"?\nVolta tudo a estar como antes.
+; \"?\nTodo vuelve a como estaba antes.
+MSG_1216
+Desfeito: 
+; Deshecho: 
+MSG_1217
+Desfeito, mas 
+; Deshecho, pero 
+MSG_1218
+ficheiro não voltou
+; fichero no volvió
+MSG_1219
+ficheiros não voltaram
+; ficheros no volvieron
+MSG_1220
+ ao seu lugar
+;  a su sitio
+MSG_1221
+É uma ordem do Shell: 
+; Es una orden del Shell: 
+MSG_1222
+ é uma ordem do Shell, não tem janela.\nUse-a a partir de um Shell:\n\n  
+;  es una orden del Shell, no tiene ventana.\nÚsala desde un Shell:\n\n  
+MSG_1223
+Não sei qual é o programa: abra-o a partir de 
+; No sé cuál es el programa: ábrelo desde 
+MSG_1224
+Não foi possível abrir 
+; No se pudo abrir 
+MSG_1225
+A abrir 
+; Abriendo 
+MSG_1226
+A ver as versões...
+; Mirando versiones...
+MSG_1227
+programa instalado
+; programa instalado
+MSG_1228
+programas instalados
+; programas instalados
+MSG_1229
+ com o Hangar
+;  con Hangar
+MSG_1230
+programa instalado
+; programa instalado
+MSG_1231
+programas instalados
+; programas instalados
+MSG_1232
+ com o Hangar
+;  con Hangar
+MSG_1233
+A ler os programas do disco...
+; Leyendo los programas del disco...
+MSG_1234
+A ler os programas de Work:...
+; Leyendo los programas de Work:...
+MSG_1235
+A ler os programas de 
+; Leyendo los programas de 
+MSG_1236
+A comparar 
+; Comparando 
+MSG_1237
+ com o catálogo...
+;  con el catálogo...
+MSG_1238
+Erro: 
+; Error: 
+MSG_1239
+O catálogo tem uma versão nova de 
+; En el catálogo hay versión nueva de 
+MSG_1240
+ no disco; 
+;  del disco; 
+MSG_1241
+ficheiro reconhecido
+; fichero reconocido
+MSG_1242
+ficheiros reconhecidos
+; ficheros reconocidos
+MSG_1243
+ no Hangar
+;  en Hangar
+MSG_1244
+ mais
+;  más
+MSG_1245
+programa instalado
+; programa instalado
+MSG_1246
+programas instalados
+; programas instalados
+MSG_1247
+ à mão são do catálogo:
+;  a mano son del catálogo:
+MSG_1248
+\nRegistá-los no Hangar, para os atualizar e remover?
+; \n¿Apuntarlos en Hangar, para actualizarlos y quitarlos?
+MSG_1249
+Registar 
+; Apuntar 
+MSG_1250
+programa instalado
+; programa instalado
+MSG_1251
+programas instalados
+; programas instalados
+MSG_1252
+ à mão
+;  a mano
+MSG_1253
+Registar 
+; Apuntar 
+MSG_1254
+programa instalado
+; programa instalado
+MSG_1255
+programas instalados
+; programas instalados
+MSG_1256
+ à mão
+;  a mano
+MSG_1267
+Não existe: 
+; No existe 
+MSG_1268
+: vai ser criado ao instalar
+; : se creará al instalar
+MSG_1269
+Vai ser instalado em 
+; Se instalará en 
+MSG_1270
+Erro: 
+; Error: 
+MSG_1271
+Erro: 
+; Error: 
+MSG_1272
+Nada encontrado para \"
+; No hay nada con \"
+MSG_1273
+Não há nenhum pacote chamado 
+; No hay ningún paquete que se llame 
+MSG_1274
+ não está instalado com o Hangar
+;  no está instalado con Hangar
+MSG_1275
+ não está instalado com o Hangar
+;  no está instalado con Hangar
+MSG_1276
+ retido
+;  retenido
+MSG_1277
+ volta a ser atualizado
+;  ya se actualiza
+MSG_1278
+ não está instalado com o Hangar
+;  no está instalado con Hangar
+MSG_1279
+Erro: 
+; Error: 
+MSG_1280
+Ordens (também em inglês): BUSCA/SEARCH texto, INSTALA/INSTALL nome, QUITA/REMOVE nome, ACTUALIZA/UPGRADE, LISTA/LIST, VERIFICA/VERIFY, DESHAZ/UNDO, RETEN/HOLD nome, SUELTA/UNHOLD nome, VUELVE/ROLLBACK nome, VERSION
+; Órdenes: BUSCA texto, INSTALA nombre, QUITA nombre, ACTUALIZA, LISTA, VERIFICA, DESHAZ, RETEN nombre, SUELTA nombre, VUELVE nombre, VERSION
+MSG_1281
+Com SI (ou YES) aceita o que perguntaria (sem isso, só mostra); DESTINO=Work: onde instalar.
+; Con SI se acepta lo que se preguntaría (sin él solo se enseña); DESTINO=Work: dónde instalar.
+MSG_1282
+QUITA deixa o que o programa pôs em LIBS:, C:, DEVS:... (outros podem usá-lo); com SISTEMA (ou SYSTEM) remove-o também.
+; QUITA deja lo que el programa puso en LIBS:, C:, DEVS:... (otros pueden usarlo); con SISTEMA lo quita también.
+MSG_1283
+Uma instalação ficou a meio da última vez: foi desfeita.
+; Una instalación se cortó a mitad la última vez: se ha deshecho.
+MSG_1284
+Acerca de...
+; Acerca de...
+MSG_1287
+Desfazer a última...
+; Deshacer la última...
+MSG_1288
+Atualizar tudo...
+; Actualizar todo...
+MSG_1289
+Atualizar o Hangar...
+; Actualizar Hangar...
+MSG_1290
+Verificar o que está instalado...
+; Verificar lo instalado...
+MSG_1291
+Limpar a cache
+; Limpiar la caché
+MSG_1292
+Reter ou soltar o selecionado
+; Retener o soltar el elegido
+MSG_1293
+Voltar à versão anterior...
+; Volver a la versión anterior...
+MSG_1294
+Sair
+; Salir
+MSG_1295
+_Procurar
+; _Buscar
+MSG_1296
+_Novos
+; _Nuevo
+MSG_1297
+_Meus
+; _Míos
+MSG_1298
+_Atualizações
+; Act_ualizar
+MSG_1299
+_Disco
+; _Disco
+MSG_1300
+Mais _resultados
+; _Más resultados
+MSG_1301
+Ficha|Leia-me|Captura
+; Ficha|Léeme|Captura
+MSG_1302
+\33cEste programa não tem captura
+; \33cEste programa no tiene captura
+MSG_1303
+_Instalar
+; _Instalar
+MSG_1304
+_Remover
+; _Quitar
+MSG_1305
+_Executar
+; _Ejecutar
+MSG_1306
+_Web
+; _Web
+MSG_1307
+Es_colher...
+; _Elegir...
+MSG_1308
+Hangar: não foi possível abrir a janela
+; Hangar: no se pudo abrir la ventana
+MSG_1309
+Uma instalação ficou a meio da última vez.\nFoi desfeita: está tudo como antes.
+; Una instalación se cortó a mitad la última vez.\nSe ha deshecho: todo está como antes.
+MSG_1310
+Vejo os programas que já tem no disco?\nAssim o Hangar sabe o que lá está, avisa-o de versões novas\ne pode registar o que instalou à mão. Demora uns segundos.
+; ¿Miro qué programas tienes ya en el disco?\nAsí Hangar sabe lo que hay, te avisa de versiones nuevas\ny puede apuntar lo que instalaste a mano. Tarda unos segundos.
+MSG_1311
+_Ver|_Agora não
+; _Mirar|_Ahora no
+MSG_1312
+Onde instalar?
+; ¿Dónde instalar?
+MSG_1313
+\33cHangar 
+; \33cHangar 
+MSG_1314
+\nProcura, instala e atualiza\nsoftware do Amiga\n\nhttps://hangar.freemem.space
+; \nBusca, instala y pone al día\nel software del Amiga\n\nhttps://hangar.freemem.space
+MSG_1315
+não há Installer neste Amiga
+; no hay Installer en este Amiga
+MSG_1316
+o pacote não traz o seu script 
+; el paquete no trae su guion 
+MSG_1317
+o Installer não arrancou ou não terminou
+; el Installer no se pudo ejecutar o no acabó
+MSG_1318
+não é possível ler 
+; no se puede leer 
+MSG_1319
+sem memória para 
+; no hay memoria para 
+MSG_1320
+não é possível ler 
+; no se puede leer 
+MSG_1321
+cabeçalho de nível 
+; cabecera de nivel 
+MSG_1322
+ não suportado
+;  no soportada
+MSG_1323
+nome perigoso no arquivo: 
+; nombre peligroso en el archivo: 
+MSG_1324
+arquivo cortado: 
+; archivo cortado: 
+MSG_1325
+método 
+; método 
+MSG_1326
+ não suportado (
+;  no soportado (
+MSG_1328
+sem memória para 
+; no hay memoria para 
+MSG_1329
+dados estragados em 
+; datos rotos en 
+MSG_1330
+CRC errado em 
+; CRC malo en 
+MSG_1331
+não é possível escrever 
+; no se puede escribir 
+MSG_1332
+remover 
+; quitar 
+MSG_1333
+ (substituído por outro)
+;  (lo sustituye otro)
+MSG_1334
+manter 
+; se queda 
+MSG_1336
+atualizar 
+; actualizar 
+MSG_1339
+ (necessário)
+;  (lo necesita)
+MSG_1340
+ (recomendado)
+;  (recomendado)
+MSG_1341
+instalar 
+; instalar 
+MSG_1343
+nenhuma variante de 
+; ninguna variante de 
+MSG_1344
+ funciona neste Amiga
+;  vale para este Amiga
+MSG_1345
+falta 
+; falta 
+MSG_1346
+ no pacote
+;  en el paquete
+MSG_1347
+falta 
+; falta 
+MSG_1348
+alterado 
+; cambiado 
+MSG_1349
+placa gráfica
+; tarjeta gráfica
+MSG_1350
+versão do AmigaOS 
+; AmigaOS de la versión 
+MSG_1351
+ de memória chip
+;  de chip
+MSG_1352
+ de memória
+;  de memoria
+MSG_1353
+uma pilha TCP/IP
+; una pila TCP/IP
+MSG_1354
+ ou superior
+;  o mejor
+MSG_1355
+É para 
+; Es para 
+MSG_1358
+: falta\n
+; : falta\n
+MSG_1359
+Precisa de:\n
+; Necesita:\n
+MSG_1360
+(sem versão)
+; (sin versión)
+MSG_1363
+_Continuar|C_ancelar
+; _Seguir|_Cancelar
+MSG_1364
+_OK
+; _Vale
+MSG_1365
+_OK
+; _Vale
+MSG_1366
+_OK
+; _Vale
+MSG_1367
+_OK
+; _Vale
+MSG_1368
+_Remover|_Cancelar
+; _Quitar|_Cancelar
+MSG_1369
+_Removê-los|_Mantê-los
+; _Quitarlos|_Dejarlos
+MSG_1370
+_OK
+; _Vale
+MSG_1371
+_Voltar|_Cancelar
+; _Volver|_Cancelar
+MSG_1372
+_OK
+; _Vale
+MSG_1373
+_OK
+; _Vale
+MSG_1374
+_Voltar|_Cancelar
+; _Volver|_Cancelar
+MSG_1375
+_OK
+; _Vale
+MSG_1376
+_OK
+; _Vale
+MSG_1377
+_Reparar|_Deixar
+; _Reparar|_Dejarlo
+MSG_1378
+_OK
+; _Vale
+MSG_1379
+_Desfazer|_Cancelar
+; _Deshacer|_Cancelar
+MSG_1380
+_OK
+; _Vale
+MSG_1381
+_Registá-los|_Não
+; _Apuntarlos|_No
+MSG_1384
+_OK
+; _Vale
+MSG_1385
+_OK
+; _Vale
+MSG_1387
+ instalado: a abrir de novo...
+;  instalado: se abre de nuevo...
+MSG_1388
+Não é instalado nada.
+; No se instala nada.
+MSG_1389
+_Aminet
+; _Aminet
+MSG_1390
+Do a_utor
+; _De su autor
+MSG_1391
+ está em dois sítios: no Aminet e nos programas que os seus autores publicam no Hangar (verificados).\nDe onde o instalo?
+;  está en dos sitios: en Aminet y entre los programas que publican sus autores en Hangar (verificados).\n¿De dónde lo instalo?
+MSG_1392
+|C_ancelar
+; |_Cancelar

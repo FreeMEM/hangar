@@ -1181,3 +1181,18 @@ _OK
 MSG_1387
  asennettu: avataan uudelleen...
 ;  instalado: se abre de nuevo...
+MSG_1388
+Mitään ei asenneta.
+; No se instala nada.
+MSG_1389
+_Aminet
+; _Aminet
+MSG_1390
+_Tekijältä
+; _De su autor
+MSG_1391
+ löytyy kahdesta paikasta: Aminetista ja tekijöiden Hangariin julkaisemista ohjelmista (varmennetut).\nMistä asennan sen?
+;  está en dos sitios: en Aminet y entre los programas que publican sus autores en Hangar (verificados).\n¿De dónde lo instalo?
+MSG_1392
+|_Peru
+; |_Cancelar

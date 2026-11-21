@@ -1,6 +1,6 @@
 # Hangar: busca, instala y pone al día el software del Amiga. Busca en el catálogo de hangar.freemem.space, enseña la ficha, instala
 # (baja el .lha y lo descomprime, sin C:lha), actualiza, desinstala y ejecuta.
-@version "Hangar 0.16.1"
+@version "Hangar 0.16.2"
 @catalog "Hangar.catalog" 1 "español"
 import "api.dash"
 import "lha.dash"
@@ -14,7 +14,7 @@ import "sistema.dash"
 import "plan2.dash"
 import "instalador.dash"
 
-const VERSION = "0.16.1"
+const VERSION = "0.16.2"
 
 const ID_BUSCAR = 1
 const ID_NOVEDADES = 2
@@ -461,6 +461,11 @@ func instalar_pkg(pedido: String)
         estado(estado_texto)
         return
     end
+    pedido = elegir_origen(pedido)
+    if pedido == ""
+        estado(tr(1388, "No se instala nada."))
+        return
+    end
     estado(tr(1061, "Mirando lo que necesita ") + pedido + tr(1062, " (comprobando firmas)..."))
     if not plan2_instalar(pedido)
         estado_texto = tr(1063, "No se puede instalar ") + pedido + ": " + plan2_error
@@ -480,6 +485,39 @@ func instalar_pkg(pedido: String)
         end
     end
     hacer_plan2(verbo + pedido)
+end
+
+# Contra la suplantación: si el nombre está en Aminet y también entre los programas de autores, se pregunta de dónde
+# (lo instalado sigue en su sitio sin preguntar; y Hangar se pone al día desde el suyo). "" si se cancela.
+func elegir_origen(pedido: String) -> String
+    nom = pedido
+    a = str_find(nom, "@")
+    if a > 0
+        nom = nom[:a]
+    end
+    if nom == "hangar" or recibo_de(nom).repo != ""
+        return pedido
+    end
+    repos = plan2_repos_de(nom)
+    if repos.length < 2
+        return pedido
+    end
+    var botones: [String] = []
+    for r in repos
+        if r == "aminet"
+            botones.push(tr(1389, "_Aminet"))
+        elif r == "main"
+            botones.push(tr(1390, "_De su autor"))
+        else
+            botones.push(r)
+        end
+    end
+    texto = "\33c" + nom + tr(1391, " está en dos sitios: en Aminet y entre los programas que publican sus autores en Hangar (verificados).\n¿De dónde lo instalo?")
+    b = preguntar(texto, str_join(botones, "|") + tr(1392, "|_Cancelar"))
+    if b < 1 or b > repos.length
+        return ""
+    end
+    return nom + "@" + repos[b - 1]
 end
 
 # El volumen de una ruta ("Work:Programas/" -> "Work:"); "" si no tiene
