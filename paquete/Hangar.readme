@@ -3,7 +3,7 @@ Name:         hangar
 Short:        Busca, instala y pone al día programas
 Author:       FreeMEM
 Type:         util/misc
-Version:      0.17.1
+Version:      0.17.2
 Architecture: m68k-amigaos >= 3.0
 Requires:     68020, MUI 3.8, TCP/IP
 Install:      drawer Hangar

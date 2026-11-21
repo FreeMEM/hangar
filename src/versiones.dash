@@ -313,7 +313,22 @@ func version_instalada(r: Recibo) -> String
         return r.version
     end
     if v != r.version
+        # se actualizó solo (con su propio actualizador): el recibo apunta la versión nueva y sus ficheros como han
+        # quedado, para que Verificar no los dé por cambiados ni ofrezca "repararlos" con la versión vieja (los
+        # autores no tienen que hacer nada; lo pidió el usuario por los programas de Francisco Lupa)
         r.version = v
+        i = 0
+        while i < r.ficheros.length
+            if file_exists(r.ficheros[i])
+                if i < r.crcs.length
+                    r.crcs[i] = recibo_crc(r.ficheros[i])
+                end
+                if i < r.tamanos.length
+                    r.tamanos[i] = file_size(r.ficheros[i])
+                end
+            end
+            i = i + 1
+        end
         recibo_guardar(r)
     end
     return v

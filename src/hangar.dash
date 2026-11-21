@@ -1,6 +1,6 @@
 # Hangar: busca, instala y pone al día el software del Amiga. Busca en el catálogo de hangar.freemem.space, enseña la ficha, instala
 # (baja el .lha y lo descomprime, sin C:lha), actualiza, desinstala y ejecuta.
-@version "Hangar 0.17.1"
+@version "Hangar 0.17.2"
 @catalog "Hangar.catalog" 1 "español"
 import "api.dash"
 import "lha.dash"
@@ -14,7 +14,7 @@ import "sistema.dash"
 import "plan2.dash"
 import "instalador.dash"
 
-const VERSION = "0.17.1"
+const VERSION = "0.17.2"
 
 const ID_BUSCAR = 1
 const ID_NOVEDADES = 2
@@ -2884,8 +2884,8 @@ Main
             btodo = mui_button(tr(1407, "_Todo"))
             mui_on_press(btodo, ID_CATEGORIA - 2)
             for k in (0..CATEGORIAS.length - 1)
-                b = mui_button(categoria_titulo(k))
-                mui_on_press(b, ID_CATEGORIA + k)
+                bcat = mui_button(categoria_titulo(k))
+                mui_on_press(bcat, ID_CATEGORIA + k)
             end
         mui_group_end()
         mui_hgroup_begin()

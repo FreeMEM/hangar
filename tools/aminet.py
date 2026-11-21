@@ -45,8 +45,16 @@ What it does:
 - Holds a version, goes back to the previous one, verifies what is
   installed and repairs it.
 - Unpacks .lha archives itself: no LhA needed.
+- Opens with a showcase of the latest programs from their authors, with
+  buttons for news, the whole catalogue and each category; each program's
+  page shows its screenshot, its readme, where it comes from and what the
+  server's antivirus found.
+- On the server, every version an author uploads is checked with an Amiga
+  antivirus, started on an emulated Amiga and reviewed by hand before it is
+  published; authors whose program name already exists are verified first.
 
-The program speaks Spanish for now.
+The program speaks English, Spanish, French, German, Swedish, Finnish and
+Portuguese: it follows your Locale settings.
 
 Requirements:
 - AmigaOS 3.0 or later, a 68020 or better.

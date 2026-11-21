@@ -10,6 +10,7 @@
 # expect-out: mayor v1.3 1.2 si
 # expect-out: al final de 600 KB: Grande 3.4
 # expect-out: instalada 0.9.2 (recibo 0.9.2)
+# expect-out: verificar tras actualizarse solo: 0 cambiados
 # expect-out: sin cambios 1.20
 # expect-out: sin recibo en RAM:Prueba/
 # expect-out: no está []
@@ -60,6 +61,8 @@ Main
     fichero_con_ver("RAM:Prueba/Tachyon/Tachyon", 4000, "Tachyon 0.9.2")
     v = version_instalada(recibo_leer(77))
     Print "instalada #{v} (recibo #{recibo_leer(77).version})"
+    # y Verificar no lo da por cambiado (no ofrece "repararlo" con la versión vieja)
+    Print "verificar tras actualizarse solo: #{recibo_verificar(recibo_leer(77)).length} cambiados"
     # sin tocar desde que lo instaló Hangar: manda el paquete aunque su $VER diga otra (image2icon 1.20 dice 1.19)
     dir_create("RAM:Prueba/Imagen")
     fichero_con_ver("RAM:Prueba/Imagen/Imagen", 4000, "Imagen 1.19")
