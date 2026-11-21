@@ -614,12 +614,6 @@ Jag vet inte i vilken låda Hangar ligger
 MSG_1172
  installerat: stäng det och öppna det igen
 ;  instalado: ciérralo y vuelve a abrirlo
-MSG_1173
- är redan installerat.\nStäng det och öppna det igen för att använda den nya versionen.
-;  ya está instalado.\nCiérralo y vuelve a abrirlo para usar la versión nueva.
-MSG_1174
-_Stäng Hangar|_Fortsätt
-; _Cerrar Hangar|_Seguir
 MSG_1175
  är den senaste versionen.
 ;  es la última versión.
@@ -1184,3 +1178,6 @@ _OK
 MSG_1385
 _OK
 ; _Vale
+MSG_1387
+ installerat: öppnas igen...
+;  instalado: se abre de nuevo...

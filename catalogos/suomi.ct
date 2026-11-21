@@ -614,12 +614,6 @@ En tiedä missä laatikossa Hangar on
 MSG_1172
  asennettu: sulje se ja avaa uudelleen
 ;  instalado: ciérralo y vuelve a abrirlo
-MSG_1173
- on jo asennettu.\nSulje se ja avaa uudelleen käyttääksesi uutta versiota.
-;  ya está instalado.\nCiérralo y vuelve a abrirlo para usar la versión nueva.
-MSG_1174
-_Sulje Hangar|_Jatka
-; _Cerrar Hangar|_Seguir
 MSG_1175
  on uusin versio.
 ;  es la última versión.
@@ -1184,3 +1178,6 @@ _OK
 MSG_1385
 _OK
 ; _Vale
+MSG_1387
+ asennettu: avataan uudelleen...
+;  instalado: se abre de nuevo...

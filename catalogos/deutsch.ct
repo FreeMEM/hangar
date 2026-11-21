@@ -614,12 +614,6 @@ Ich weiß nicht, in welcher Schublade Hangar ist
 MSG_1172
  installiert: schließe es und öffne es neu
 ;  instalado: ciérralo y vuelve a abrirlo
-MSG_1173
- ist schon installiert.\nSchließe es und öffne es neu, um die neue Version zu nutzen.
-;  ya está instalado.\nCiérralo y vuelve a abrirlo para usar la versión nueva.
-MSG_1174
-Hangar _schließen|_Weiter
-; _Cerrar Hangar|_Seguir
 MSG_1175
  ist die neueste Version.
 ;  es la última versión.
@@ -1184,3 +1178,6 @@ _OK
 MSG_1385
 _OK
 ; _Vale
+MSG_1387
+ installiert: wird neu geöffnet...
+;  instalado: se abre de nuevo...

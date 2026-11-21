@@ -1,6 +1,6 @@
 # Hangar: busca, instala y pone al día el software del Amiga. Busca en el catálogo de hangar.freemem.space, enseña la ficha, instala
 # (baja el .lha y lo descomprime, sin C:lha), actualiza, desinstala y ejecuta.
-@version "Hangar 0.16.0"
+@version "Hangar 0.16.1"
 @catalog "Hangar.catalog" 1 "español"
 import "api.dash"
 import "lha.dash"
@@ -14,7 +14,7 @@ import "sistema.dash"
 import "plan2.dash"
 import "instalador.dash"
 
-const VERSION = "0.16.0"
+const VERSION = "0.16.1"
 
 const ID_BUSCAR = 1
 const ID_NOVEDADES = 2
@@ -686,6 +686,9 @@ func hacer_plan2(titulo: String)
                 g = ficha_de_entrada(p.entrada)
                 estado(plan2_texto(p) + "...")
                 hecho = instalar_ficha(g, destino_elegido(), motivo_de(p.motivo))
+                if hecho and str_lower(p.nombre) == "hangar"
+                    hangar_puesto = true
+                end
             end
         end
     end
@@ -705,6 +708,13 @@ func hacer_plan2(titulo: String)
         end
         resultado = tr(1079, "Hecho: ") + hecho_texto
         estado(resultado)
+        # entre lo instalado, el propio Hangar (desde Actualizar (N) o Actualizar todo): se abre otra vez, ya el nuevo,
+        # como Tachyon (el usuario, 2026-11-21). Desde el Shell no: allí se dice y ya
+        if hangar_puesto and not cli and destino_forzado == ""
+            estado("Hangar" + tr(1387, " instalado: se abre de nuevo..."))
+            program_relaunch()
+            cerrar_pedido = true
+        end
     else
         fallos = tr_deshacer(tr_diario())
         if fallos == 0
@@ -1684,15 +1694,20 @@ func actualizar_hangar(v: String)
     instalar_pkg("hangar@main")
     destino_forzado = ""
     if instalado_bien
-        resultado = "Hangar " + v + tr(1172, " instalado: ciérralo y vuelve a abrirlo")
-        estado(resultado)
-        if not cli and preguntar("Hangar " + v + tr(1173, " ya está instalado.\nCiérralo y vuelve a abrirlo para usar la versión nueva."), tr(1174, "_Cerrar Hangar|_Seguir")) == 1
+        if cli
+            resultado = "Hangar " + v + tr(1172, " instalado: ciérralo y vuelve a abrirlo")
+            estado(resultado)
+        else
+            # se abre otra vez él solo, ya la versión nueva, como Tachyon (el usuario, 2026-11-21)
+            estado("Hangar " + v + tr(1387, " instalado: se abre de nuevo..."))
+            program_relaunch()
             cerrar_pedido = true
         end
     end
 end
 
 var cerrar_pedido: Bool = false
+var hangar_puesto: Bool = false     # en esta vuelta se instaló el propio Hangar (se abre de nuevo al acabar)
 
 # Al arrancar (y desde el menú): si hay un Hangar más nuevo, se dice; al arrancar, una vez por versión
 func mirar_hangar(desde_menu: Bool)

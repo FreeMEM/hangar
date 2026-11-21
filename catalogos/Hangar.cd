@@ -408,10 +408,6 @@ MSG_1171 (1171//)
 No sé en qué cajón está Hangar
 MSG_1172 (1172//)
  instalado: ciérralo y vuelve a abrirlo
-MSG_1173 (1173//)
- ya está instalado.\nCiérralo y vuelve a abrirlo para usar la versión nueva.
-MSG_1174 (1174//)
-_Cerrar Hangar|_Seguir
 MSG_1175 (1175//)
  es la última versión.
 MSG_1176 (1176//)
@@ -788,3 +784,5 @@ MSG_1384 (1384//)
 _Vale
 MSG_1385 (1385//)
 _Vale
+MSG_1387 (1387//)
+ instalado: se abre de nuevo...

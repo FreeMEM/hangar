@@ -614,12 +614,6 @@ I don't know which drawer Hangar is in
 MSG_1172
  installed: close it and open it again
 ;  instalado: ciérralo y vuelve a abrirlo
-MSG_1173
- is already installed.\nClose it and open it again to use the new version.
-;  ya está instalado.\nCiérralo y vuelve a abrirlo para usar la versión nueva.
-MSG_1174
-_Close Hangar|_Continue
-; _Cerrar Hangar|_Seguir
 MSG_1175
  is the latest version.
 ;  es la última versión.
@@ -1184,3 +1178,6 @@ _OK
 MSG_1385
 _OK
 ; _Vale
+MSG_1387
+ installed: opening again...
+;  instalado: se abre de nuevo...
