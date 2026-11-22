@@ -83,6 +83,7 @@ struct Ficha
     variantes: [String] = nil  # Variant: un fichero según la máquina
     antivirus: String = ""     # lo que dijo el antivirus del servidor ("limpio (xvs 33.49, 12 ficheros)", "VIRUS ...")
     verificado: Bool = false   # su autor está verificado (otro programa tenía su nombre)
+    descargas: Int = 0         # las veces que se ha bajado desde Hangar, todas sus versiones
 end
 
 struct Comparacion
@@ -283,6 +284,8 @@ func api_leer_ficha(texto: String) -> Ficha
                 f.antivirus = v
             elif k == "verificado"
                 f.verificado = v == "si"
+            elif k == "descargas"
+                f.descargas = Int(v)
             elif k == "pkg"
                 f.pkg2 = v
             elif k == "repo"
@@ -482,6 +485,12 @@ end
 # Una URL de descarga de una ficha (f.descarga puede llevar varias, una por línea)
 func api_url_descarga(f: Ficha, u: String) -> String
     return u
+end
+
+# Avisa al servidor de que se ha bajado un programa, para su contador de descargas (lo de Aminet y GitHub no pasa
+# por Hangar); sin esperar mucho y sin que importe si falla
+func api_avisar_descarga(id: Int, version: String)
+    r = http_get(api_base + "/descargado/" + str_from_int(id, 10) + "?v=" + str_replace(version, " ", "%20"), 5000)
 end
 
 func api_url_miniatura(id: Int) -> String

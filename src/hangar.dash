@@ -1,6 +1,6 @@
 # Hangar: busca, instala y pone al día el software del Amiga. Busca en el catálogo de hangar.freemem.space, enseña la ficha, instala
 # (baja el .lha y lo descomprime, sin C:lha), actualiza, desinstala y ejecuta.
-@version "Hangar 0.17.2"
+@version "Hangar 0.18.0"
 @catalog "Hangar.catalog" 1 "español"
 import "api.dash"
 import "lha.dash"
@@ -14,7 +14,7 @@ import "sistema.dash"
 import "plan2.dash"
 import "instalador.dash"
 
-const VERSION = "0.17.2"
+const VERSION = "0.18.0"
 
 const ID_BUSCAR = 1
 const ID_NOVEDADES = 2
@@ -341,6 +341,9 @@ func ver_ficha(i: Int)
             o = o + "  ·  " + tr(1396, "¡ANTIVIRUS: ") + corta(f.antivirus, 40) + "!"
         elif str_starts(f.antivirus, "limpio")
             o = o + "  ·  " + tr(1397, "antivirus: limpio")
+        end
+        if f.descargas > 0
+            o = o + "  ·  " + str_from_int(f.descargas, 10) + tr(1408, " descargas")
         end
         if o != ""
             d = "\33b" + o + "\33n\n" + d
@@ -930,6 +933,8 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
             estado(estado_texto)
             return false
         end
+        # bajado: al contador de descargas del servidor (el usuario, 2026-11-22)
+        api_avisar_descarga(f.id, f.version)
     end
     # su nota en la caché: el SHA-256 comprobado, el release y el epoch (para volver a esta versión sin red)
     file_write_text(temporal[:temporal.length - 4] + ".sha", f.sha256 + "\n" + str_from_int(f.release, 10) + "\n" + str_from_int(f.epoch, 10) + "\n" + f.version + "\n")
@@ -2891,6 +2896,7 @@ Main
         mui_hgroup_begin()
             mui_vgroup_begin()
                 w_lista = mui_list()
+                mui_list_stripes(w_lista, true)
                 w_mas = mui_button(tr(1300, "_Más resultados"))
             mui_group_end()
             mui_balance()
