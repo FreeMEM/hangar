@@ -1,6 +1,6 @@
 # Hangar: busca, instala y pone al día el software del Amiga. Busca en el catálogo de hangar.freemem.space, enseña la ficha, instala
 # (baja el .lha y lo descomprime, sin C:lha), actualiza, desinstala y ejecuta.
-@version "Hangar 0.19.0"
+@version "Hangar 0.19.1"
 @catalog "Hangar.catalog" 1 "español"
 import "api.dash"
 import "lha.dash"
@@ -15,7 +15,7 @@ import "plan2.dash"
 import "instalador.dash"
 import "elegir.dash"
 
-const VERSION = "0.19.0"
+const VERSION = "0.19.1"
 
 const ID_BUSCAR = 1
 const ID_NOVEDADES = 2

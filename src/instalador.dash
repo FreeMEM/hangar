@@ -117,6 +117,134 @@ func foto_diferencia(antes: [String], despues: [String]) -> [String]
     return r
 end
 
+# La pila que pide el icono del guion (do_StackSize de "Install.info"; 0 si no hay icono o no se lee). Desde el
+# Workbench el Installer corre con ella: LumiGram pide 64 KB y con menos el Installer pisa la memoria y se cae
+# ("Corrupt memory list detected in FreeMem", lo contó el usuario)
+func pila_del_icono(guion: String) -> Int
+    b = buffer_alloc(78)
+    if b == nil
+        return 0
+    end
+    pila = 0
+    f = file_open(guion + ".info", 1005)
+    if f != 0
+        n = file_read(f, b, 78)
+        file_close(f)
+        if n == 78 and buffer_get_word(b, 0) == 58128        # 0xE310, el de los iconos
+            pila = buffer_get_long(b, 74)
+        end
+    end
+    buffer_free(b)
+    return pila
+end
+
+# La pila del Installer: la del icono, y al menos 64 KB (su interprete es recursivo y los guiones con procedimientos
+# la gastan deprisa)
+const PILA_INSTALLER = 65536
+
+func pila_installer(guion: String) -> Int
+    p = pila_del_icono(guion)
+    if p < PILA_INSTALLER or p > 4194304
+        return PILA_INSTALLER
+    end
+    return p
+end
+
+# El final del paréntesis que abre en i (las comillas de los textos no cuentan); -1 si no cierra
+func _cierre(t: String, i: Int) -> Int
+    hondo = 0
+    j = i
+    n = t.length
+    while j < n
+        c = str_code(t, j)
+        if c == 34                                       # "texto": hasta la otra comilla (\" no la cierra)
+            j = j + 1
+            while j < n and str_code(t, j) != 34
+                if str_code(t, j) == 92
+                    j = j + 1
+                end
+                j = j + 1
+            end
+        elif c == 59                                     # ; un comentario, hasta el final de la línea
+            while j < n and str_code(t, j) != 10
+                j = j + 1
+            end
+        elif c == 40
+            hondo = hondo + 1
+        elif c == 41
+            hondo = hondo - 1
+            if hondo == 0
+                return j
+            end
+        end
+        j = j + 1
+    end
+    return -1
+end
+
+# Un (askdir ... (default "Work:") ...) que propone un volumen que no hay en este Amiga (Coffin no tiene Work:) hace
+# que el Installer pida "Inserte volumen Work" y, al cancelar, se cae ("Corrupt memory list detected in FreeMem";
+# LumiGram desde Coffin, lo contó el usuario). Ese texto pasa a ser el destino elegido en Hangar. Devuelve el guion
+# cambiado y cuántos cambió en guion_volumenes_cambiados
+var guion_volumenes_cambiados: Int = 0
+
+func guion_sin_volumenes_ausentes(t: String, destino: String) -> String
+    guion_volumenes_cambiados = 0
+    if destino == ""
+        return t
+    end
+    r = ""
+    desde = 0
+    bajo = str_lower(t)
+    n = t.length
+    j = 0
+    dos_requesters(false)
+    while j < n
+        c = str_code(t, j)
+        if c == 34                                       # un texto: no cuenta lo que haya dentro
+            j = j + 1
+            while j < n and str_code(t, j) != 34
+                if str_code(t, j) == 92
+                    j = j + 1
+                end
+                j = j + 1
+            end
+        elif c == 59                                     # un comentario
+            while j < n and str_code(t, j) != 10
+                j = j + 1
+            end
+        elif c == 40 and str_find_from(bajo, "(askdir", j) == j
+            fin = _cierre(t, j)
+            if fin < 0
+                fin = n
+            end
+            d = str_find_from(bajo, "(default", j)
+            if d > 0 and d < fin
+                k = d + 8
+                while k < fin and (str_code(t, k) == 32 or str_code(t, k) == 9 or str_code(t, k) == 10 or str_code(t, k) == 13)
+                    k = k + 1
+                end
+                if k < fin and str_code(t, k) == 34
+                    e = str_find_from(t, "\"", k + 1)
+                    if e > k and e < fin
+                        valor = t[k + 1:e]
+                        dp = str_find(valor, ":")
+                        if dp > 0 and not file_exists(valor[:dp + 1])
+                            r = r + t[desde:k + 1] + destino
+                            desde = e
+                            guion_volumenes_cambiados = guion_volumenes_cambiados + 1
+                        end
+                    end
+                end
+            end
+            j = fin
+        end
+        j = j + 1
+    end
+    dos_requesters(true)
+    return r + t[desde:]
+end
+
 # Ejecuta un guion de Installer (en su cajón, para sus rutas relativas) y espera a que acabe. false si no se pudo
 # empezar o tardó más de 30 minutos.
 func instalador_ejecutar(instalador: String, guion: String, nombre: String) -> Bool
@@ -129,7 +257,7 @@ func instalador_ejecutar(instalador: String, guion: String, nombre: String) -> B
     marca = "T:hangar_installer_fin"
     file_delete(marca)
     # FailAt: aunque el Installer acabe con error (o lo cancele el usuario), el guion sigue y deja la marca de fin
-    t = "FailAt 1000000\nCD \"" + cajon + "\"\n\"" + instalador + "\" \"" + guion + "\"" + str_replace(instalador_args, "%n", nombre) + "\nEcho >" + marca + " \"fin\"\n"
+    t = "FailAt 1000000\nStack " + str_from_int(pila_installer(guion), 10) + "\nCD \"" + cajon + "\"\n\"" + instalador + "\" \"" + guion + "\"" + str_replace(instalador_args, "%n", nombre) + "\nEcho >" + marca + " \"fin\"\n"
     if not file_write_text("T:hangar_installer", t)
         return false
     end
@@ -338,6 +466,14 @@ func instalar_con_guion(staged: String, guion: String, nombre: String, destino: 
     tr_guardar("S:Startup-Sequence")
     us_antes = _texto_o_nada("S:User-Startup")
     antes = foto_sistema(destino)
+    # (es la copia descomprimida en la caché de Hangar: se puede cambiar)
+    texto = file_read_text(ruta_guion)
+    if texto != nil
+        nuevo = guion_sin_volumenes_ausentes(texto, destino)
+        if guion_volumenes_cambiados > 0
+            file_write_text(ruta_guion, nuevo)
+        end
+    end
     if not instalador_ejecutar(inst, ruta_guion, nombre)
         instalador_error = tr(1317, "el Installer no se pudo ejecutar o no acabó")
         return escritos

@@ -1,0 +1,26 @@
+# Test: un guion de Installer que propone como destino un volumen que no hay (Work: en Coffin) pasa a proponer el
+# destino de Hangar; el que sí hay (RAM:), lo que va entre comillas o en comentarios y el resto no se tocan
+# (src/instalador.dash, guion_sin_volumenes_ausentes; LumiGram se caía en Coffin al cancelar "Inserte volumen Work")
+# expect-out: cambiados 2
+# expect-out: [(set #d (askdir (prompt "Where? (askdir)") (help @askdir-help) (default "Programs:")))]
+# expect-out: [(set #e (askdir (prompt "x") (default "RAM:")))]
+# expect-out: [; (askdir (default "NoHay:"))]
+# expect-out: [(set #f (ASKDIR (default "Programs:") (prompt "y")))]
+# expect-out: sin destino 0
+import "../src/instalador.dash"
+
+Main
+    var l: [String] = []
+    l.push("(set #d (askdir (prompt \"Where? (askdir)\") (help @askdir-help) (default \"Work:\")))")
+    l.push("(set #e (askdir (prompt \"x\") (default \"RAM:\")))")
+    l.push("; (askdir (default \"NoHay:\"))")
+    l.push("(set #f (ASKDIR (default \"NoHayTampoco:Cajon/Otro\") (prompt \"y\")))")
+    t = str_join(l, "\n")
+    r = guion_sin_volumenes_ausentes(t, "Programs:")
+    Print "cambiados " + str_from_int(guion_volumenes_cambiados, 10)
+    for x in str_split(r, "\n")
+        Print "[" + x + "]"
+    end
+    r2 = guion_sin_volumenes_ausentes(t, "")
+    Print "sin destino " + str_from_int(guion_volumenes_cambiados, 10)
+end
