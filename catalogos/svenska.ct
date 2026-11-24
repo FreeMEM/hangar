@@ -1,4 +1,4 @@
-## version $VER: Hangar.catalog 1.0 (21.11.2026)
+## version $VER: Hangar.catalog 1.0 (24.11.2026)
 ## language svenska
 ## codeset 0
 ;
@@ -1244,3 +1244,90 @@ _Alla
 MSG_1408
  nedladdningar
 ;  descargas
+MSG_1409
+  (standard)
+;   (de serie)
+MSG_1410
+  (den du har)
+;   (la que tienes)
+MSG_1411
+ kopierades inte: 
+;  no se copió: 
+MSG_1412
+ står kvar som 
+;  sigue apuntado como 
+MSG_1413
+ (erbjuds igen)
+;  (se volverá a ofrecer)
+MSG_1414
+ är redan den: den blir kvar
+;  ya es esa: se queda
+MSG_1415
+ kopierad till 
+;  copiada a 
+MSG_1416
+en utan version
+; una sin versión
+MSG_1417
+ingen
+; ninguna
+MSG_1418
+ har flera versioner av 
+;  trae varias versiones de 
+MSG_1419
+ för 
+;  para 
+MSG_1420
+ (nu: 
+;  (ahora: 
+MSG_1421
+VARIANT=
+; VARIANTE=
+MSG_1422
+ passar flera: skriv mer (hela sökvägen). Inget kopieras.
+;  vale para varias: escribe más (la ruta entera). No se copia.
+MSG_1423
+Med VARIANT=
+; Con VARIANTE=
+MSG_1424
+Ingen är den från VARIANT=. Inget kopieras.
+; Ninguna es la de VARIANTE=. No se copia.
+MSG_1425
+Kopiera 
+; ¿Copiar 
+MSG_1426
+ till 
+;  a 
+MSG_1427
+? Det som finns där sparas som .old.\n(Med VARIANT=namn väljer du en annan utan att få frågan.)
+; ? Lo que haya se guarda como .old.\n(Con VARIANTE=nombre se elige otra sin preguntar.)
+MSG_1428
+_Kopiera|_Kopiera inte
+; _Copiar|_No copiar
+MSG_1429
+ är redan nyare (
+;  ya es más nueva (
+MSG_1430
+): den blir kvar. VARIANT= byter den.
+; ): se queda. Con VARIANTE= se cambia.
+MSG_1431
+ har flera versioner av 
+;  trae varias versiones de 
+MSG_1432
+Vilken ska till 
+; ¿Cuál va a 
+MSG_1433
+? Den som finns där sparas som .old.\nNu har du: 
+; ? La que hay se guarda como .old.\nAhora tienes: 
+MSG_1434
+_Kopiera den valda
+; _Copiar la elegida
+MSG_1435
+_Kopiera inte
+; _No copiar
+MSG_1436
+Om ett paket har flera versioner av ett bibliotek väljer VARIANT=namn vilken som går till systemet (HB020, eller dess sökväg).
+; Si un paquete trae varias versiones de una librería, VARIANTE=nombre elige cuál va al sistema (HB020, o su ruta).
+MSG_1437
+   i 
+;    en 

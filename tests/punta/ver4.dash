@@ -1,0 +1,41 @@
+# Para tests/punta4.py: "ver4 prep" pone en LIBS: la vprueba.library HB de una compilación anterior (la #9), como
+# quien la tiene renombrada a mano; sin nada, qué hay en LIBS: (su cadena y la de la .old) y qué dice el recibo
+import "../../src/elegir.dash"
+
+func cadena(ruta: String) -> String
+    if not file_exists(ruta)
+        return "-"
+    end
+    for c in id_cadenas(ruta, "vprueba.library")
+        return c
+    end
+    return "?"
+end
+
+Main
+    if arg(0) == "prep"
+        f = file_open("LIBS:vprueba.library", 1006)
+        for b in [0, 0, 3, 243, 0]
+            file_write_byte(f, b)
+        end
+        t = "vprueba 1.0 (1.1.25) #9 HB"
+        i = 0
+        while i < t.length
+            file_write_byte(f, str_code(t, i))
+            i = i + 1
+        end
+        file_write_byte(f, 0)
+        file_close(f)
+        Print "puesta: " + cadena("LIBS:vprueba.library")
+        return
+    end
+    recibos_cajon = "PROGDIR:Base"
+    r = recibo_de("varlib")
+    el = "-"
+    if r.elegidas != nil
+        for x in r.elegidas
+            el = x
+        end
+    end
+    Print "libs [" + cadena("LIBS:vprueba.library") + "] old [" + cadena("LIBS:vprueba.library.old") + "] recibo " + version_ver(r.version) + " [" + el + "]"
+end

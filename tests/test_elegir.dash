@@ -1,0 +1,120 @@
+# Test: Choice (src/elegir.dash), las librerías que un paquete trae en varias versiones (IconLib_46.4, lo contó Oskis
+# R.P): leer sus líneas (del índice y de la ficha), las marcas de las cadenas de versión, qué se propone (lo del
+# recibo, el mismo fichero, la marca HB020 de una versión anterior, o la de serie), lo que pide VARIANTE= desde el
+# Shell y lo elegido en el recibo.
+# expect-out: elecciones 2: LIBS:icon.library [IconLib/Libs/icon.library|IconLib/Libs/68000/icon.library|IconLib/Bonus/icon.library_HB020] DEVS:x.device [x.device.020]
+# expect-out: entrada [LIBS:icon.library = IconLib/Libs/icon.library|LIBS:icon.library = IconLib/Bonus/icon.library_HB020] sin []
+# expect-out: marcas [HB020] [68000] [] [TC020] version 51.4
+# expect-out: cadenas [icon 51.4 (20.11.26) #600 HB020] [icon.library 47.-1.604 (68000)|icon 47.1 (1.1.26) #604 68000]
+# expect-out: propuesta marca 2 [icon.library_HB020  (la que tienes)   en IconLib/Bonus]
+# expect-out: propuesta igual 1
+# expect-out: propuesta recibo 0
+# expect-out: propuesta sin nada 0 []
+# expect-out: propuesta desconocida 0 []
+# expect-out: pedida 2 2 1 -2 0 -1
+# expect-out: recibo [LIBS:icon.library = IconLib/Bonus/icon.library_HB020] IconLib/Bonus/icon.library_HB020 [] suma bien
+import "../src/elegir.dash"
+import "../src/formato.dash"
+
+func barras(l: [String]) -> String
+    t = ""
+    for x in l
+        if t != ""
+            t = t + "|"
+        end
+        t = t + x
+    end
+    return t
+end
+
+# Una librería de mentira: un hunk con sus cadenas de versión dentro (separadas por "|" aquí, por un 0 en el fichero)
+func lib(ruta: String, cadenas: String)
+    f = file_open(ruta, 1006)
+    for b in [0, 0, 3, 243, 114, 0]
+        file_write_byte(f, b)
+    end
+    i = 0
+    while i < cadenas.length
+        c = str_code(cadenas, i)
+        if c == 124
+            c = 0
+        end
+        file_write_byte(f, c)
+        i = i + 1
+    end
+    file_write_byte(f, 0)
+    file_close(f)
+end
+
+Main
+    var ls: [String] = []
+    ls.push("LIBS:icon.library = IconLib/Libs/icon.library")
+    ls.push("LIBS:icon.library=IconLib/Libs/68000/icon.library")
+    ls.push("DEVS:x.device = x.device.020")
+    ls.push("libs:ICON.library = IconLib/Bonus/icon.library_HB020")
+    ls.push("LIBS:icon.library = IconLib/Libs/icon.library")
+    ls.push("sin destino = y")
+    ls.push("LIBS:z.library =")
+    es = elecciones_de(ls)
+    Print "elecciones " + str_from_int(es.length, 10) + ": " + es[0].destino + " [" + barras(es[0].opciones) + "] " + es[1].destino + " [" + barras(es[1].opciones) + "]"
+    # del índice del formato 2: Choice se repite; sin él, nil
+    t = "PKG-RESPONSE 2\nRepository: aminet\n\nName: iconlib_46.4\nVersion: 46.4.605\nChoice: LIBS:icon.library = IconLib/Libs/icon.library\nChoice: LIBS:icon.library = IconLib/Bonus/icon.library_HB020\n\nName: otro\nVersion: 1.0\n"
+    en = formato_entradas(t)
+    sin = "nil"
+    if en[1].elecciones != nil
+        sin = barras(en[1].elecciones)
+    end
+    Print "entrada [" + barras(en[0].elecciones) + "] sin [" + str_replace(sin, "nil", "") + "]"
+    Print "marcas [" + barras(id_marcas("icon 51.4 (20.11.26) #605 HB020")) + "] [" + barras(id_marcas("icon.library 47.-1.604 (68000)")) + "] [" + barras(id_marcas("icon.library 46.4 (1.2.25)")) + "] [" + barras(id_marcas("icon 51.4 (20.11.26) #605 TC020")) + "] version " + id_version("icon 51.4 (20.11.26) #605 HB020")
+    # el paquete descomprimido y lo que hay en el sistema (RAM:S/ hace de LIBS:)
+    dir_create("RAM:P")
+    dir_create("RAM:P/Libs")
+    dir_create("RAM:P/Libs/68000")
+    dir_create("RAM:P/Bonus")
+    dir_create("RAM:S")
+    lib("RAM:P/Libs/icon.library", "icon 51.4 (20.11.26) #605 TC020")
+    lib("RAM:P/Libs/68000/icon.library", "$VER:icon.library 47.-1.604 (68000)|icon 47.1 (1.1.26) #604 68000")
+    lib("RAM:P/Bonus/icon.library_HB020", "icon 51.4 (20.11.26) #605 HB020")
+    # la HB020 de una versión anterior, renombrada a icon.library
+    lib("RAM:S/icon.library", "icon 51.4 (20.11.26) #600 HB020")
+    Print "cadenas [" + barras(id_cadenas("RAM:S/icon.library", "icon.library")) + "] [" + barras(id_cadenas("RAM:P/Libs/68000/icon.library", "icon.library")) + "]"
+    var os: [String] = []
+    os.push("IconLib/Libs/icon.library")
+    os.push("IconLib/Libs/68000/icon.library")
+    os.push("IconLib/Bonus/icon.library_HB020")
+    var fs: [String] = []
+    fs.push("RAM:P/Libs/icon.library")
+    fs.push("RAM:P/Libs/68000/icon.library")
+    fs.push("RAM:P/Bonus/icon.library_HB020")
+    e = Eleccion("RAM:S/icon.library", os, 0, "")
+    proponer(e, fs, "")
+    Print "propuesta " + e.por + " " + str_from_int(e.propuesta, 10) + " [" + linea_de_opcion(e, e.propuesta) + "]"
+    # la misma que una del paquete
+    file_copy("RAM:P/Libs/68000/icon.library", "RAM:S/icon.library")
+    proponer(e, fs, "")
+    Print "propuesta " + e.por + " " + str_from_int(e.propuesta, 10)
+    # lo del recibo manda (si lo que hay es lo que dejó Hangar: lo mira quien llama)
+    proponer(e, fs, "iconlib/libs/icon.library")
+    Print "propuesta " + e.por + " " + str_from_int(e.propuesta, 10)
+    file_delete("RAM:S/icon.library")
+    proponer(e, fs, "")
+    Print "propuesta sin nada " + str_from_int(e.propuesta, 10) + " [" + e.por + "]"
+    # una icon.library de otro (la del sistema): no se reconoce, la de serie
+    lib("RAM:S/icon.library", "icon.library 47.4 (12.3.21)")
+    proponer(e, fs, "")
+    Print "propuesta desconocida " + str_from_int(e.propuesta, 10) + " [" + e.por + "]"
+    Print "pedida " + str_from_int(opcion_pedida(e, "HB020"), 10) + " " + str_from_int(opcion_pedida(e, "icon.library_hb020"), 10) + " " + str_from_int(opcion_pedida(e, "68000/icon.library"), 10) + " " + str_from_int(opcion_pedida(e, "icon.library"), 10) + " " + str_from_int(opcion_pedida(e, "Libs/icon.library"), 10) + " " + str_from_int(opcion_pedida(e, "nada"), 10)
+    # lo elegido, al recibo y de vuelta
+    recibos_cajon = "RAM:BaseEl"
+    var nada: [String] = []
+    r = recibo_nuevo(7, "IconLib_46.4", "46.4.605", "SYS:", nada)
+    var el: [String] = []
+    el.push("LIBS:icon.library = IconLib/Bonus/icon.library_HB020")
+    r.elegidas = el
+    r2 = recibo_leer_texto(recibo_con_suma(recibo_texto(r)))
+    suma = "bien"
+    if r2.en_duda
+        suma = "mal"
+    end
+    Print "recibo [" + barras(r2.elegidas) + "] " + eleccion_del_recibo(r2.elegidas, "libs:icon.library") + " [" + eleccion_del_recibo(r2.elegidas, "LIBS:otra.library") + "] suma " + suma
+end

@@ -1,0 +1,356 @@
+# Choice (docs/FORMATO_PAQUETES.md del servicio): un fichero que va al sistema y que el paquete trae en varias
+# versiones para que el usuario elija. IconLib_46.4 trae cuatro icon.library y veinte con sufijo (icon.library_HB020,
+# la buena para RTG); quien usa una la tiene renombrada a LIBS:icon.library (lo contó Oskis R.P). Al instalar o
+# actualizar se propone la que ya hay, si se reconoce: por el recibo, por ser el mismo fichero o por la marca de su
+# cadena de versión ("icon 51.4 (20.11.26) #605 HB020"); si no, la de serie (la primera).
+
+import "recibos.dash"
+import "versiones.dash"
+
+struct Eleccion
+    destino: String       # "LIBS:icon.library"
+    opciones: [String]    # rutas dentro del paquete, como las da Choice; la primera, la de serie
+    propuesta: Int        # la que se propone (0: la de serie)
+    por: String           # por qué: "recibo", "igual", "marca" o "" (no se reconoce: la de serie)
+end
+
+# Las de unas líneas de Choice ("DESTINO = ORIGEN"), una por destino, con sus opciones en orden (sin repetir)
+func elecciones_de(lineas: [String]) -> [Eleccion]
+    var r: [Eleccion] = []
+    if lineas == nil
+        return r
+    end
+    for l in lineas
+        p = str_find(l, "=")
+        if p > 0
+            d = str_trim(l[:p])
+            o = str_trim(l[p + 1:])
+            if d != "" and o != "" and str_find(d, ":") > 0
+                var e: Eleccion = nil
+                for x in r
+                    if str_lower(x.destino) == str_lower(d)
+                        e = x
+                    end
+                end
+                if e == nil
+                    var os: [String] = []
+                    e = Eleccion(d, os, 0, "")
+                    r.push(e)
+                end
+                ya = false
+                for x in e.opciones
+                    if str_lower(x) == str_lower(o)
+                        ya = true
+                    end
+                end
+                if not ya
+                    e.opciones.push(o)
+                end
+            end
+        end
+    end
+    return r
+end
+
+# Las líneas "E destino = origen" del recibo: lo que se eligió la última vez (o "")
+func eleccion_del_recibo(elegidas: [String], destino: String) -> String
+    if elegidas == nil
+        return ""
+    end
+    for l in elegidas
+        p = str_find(l, "=")
+        if p > 0 and str_lower(str_trim(l[:p])) == str_lower(destino)
+            return str_trim(l[p + 1:])
+        end
+    end
+    return ""
+end
+
+func _es_cifra(c: Int) -> Bool
+    return c >= 48 and c <= 57
+end
+
+# Si un trozo es solo cifras, puntos y guiones, con algún punto (una versión o una fecha: "51.4", "20.11.26")
+func _es_version(t: String) -> Bool
+    punto = false
+    i = 0
+    while i < t.length
+        c = str_code(t, i)
+        if c == 46
+            punto = true
+        elif not _es_cifra(c) and c != 45
+            return false
+        end
+        i = i + 1
+    end
+    return punto
+end
+
+# Las marcas de una cadena de versión: lo que no es el nombre, la versión, la fecha ni el número de compilación.
+# "icon 51.4 (20.11.26) #605 HB020" -> [HB020]; "icon.library 47.-1.604 (68000)" -> [68000]
+func id_marcas(cadena: String) -> [String]
+    var r: [String] = []
+    primera = true
+    for t0 in str_split(str_trim(cadena), " ")
+        if t0 != ""
+            if primera
+                primera = false
+            elif not str_starts(t0, "#")
+                t = t0
+                while t.length > 0 and str_find("()[],;:", t[:1]) >= 0
+                    t = t[1:]
+                end
+                while t.length > 0 and str_find("()[],;:", t[t.length - 1:]) >= 0
+                    t = t[:t.length - 1]
+                end
+                if t != "" and not _es_version(t) and not (t in r)
+                    r.push(t)
+                end
+            end
+        end
+    end
+    return r
+end
+
+# La versión de una cadena ("icon 51.4 (20.11.26) #605 HB020" -> "51.4"), o ""
+func id_version(cadena: String) -> String
+    i = inventario_leer_cadena(cadena, "")
+    return i.version
+end
+
+# Lo que se mira de un fichero: hasta 1 MB (una librería cabe de sobra)
+const _ID_MAX = 1048576
+
+# La cadena del "$VER:" (sin él) desde la posición i del buffer
+func _id_cadena(b: Int, i: Int, n: Int) -> String
+    fin = i
+    while fin < n and fin - i < 120 and buffer_get_byte(b, fin) >= 32 and buffer_get_byte(b, fin) < 127
+        fin = fin + 1
+    end
+    return str_trim(str_from_buffer(b, i, fin - i))
+end
+
+# Las cadenas que identifican una librería: la de su "$VER:" y la de su Resident ("icon 51.4 (20.11.26) #605
+# HB020"), que algunas llevan sin "$VER:". nombre es el de la librería ("icon.library"). Como mucho dos.
+func id_cadenas(ruta: String, nombre: String) -> [String]
+    var r: [String] = []
+    n = file_size(ruta)
+    if n < 8
+        return r
+    end
+    if n > _ID_MAX
+        n = _ID_MAX
+    end
+    b = buffer_alloc(n)
+    if b == nil
+        return r
+    end
+    f = file_open(ruta, 1005)
+    if f == 0
+        buffer_free(b)
+        return r
+    end
+    n = file_read(f, b, n)
+    file_close(f)
+    base = nombre
+    p = str_find(str_lower(base), ".")
+    if p > 0
+        base = base[:p]
+    end
+    ver = ""
+    resid = ""
+    i = buffer_find_byte(b, 0, n - 5, 36)       # "$"
+    while i >= 0 and ver == ""
+        if buffer_equals(b, i, 5, "$VER:")
+            ver = _id_cadena(b, i + 5, n)
+        end
+        i = buffer_find_byte(b, i + 1, n - 5, 36)
+    end
+    # "icon 51.4" o "icon.library 51.4": el nombre, un espacio y una cifra
+    for pre in [base + " ", nombre + " "]
+        primera = str_code(pre, 0)
+        i = buffer_find_byte(b, 0, n - pre.length - 1, primera)
+        while i >= 0 and resid == ""
+            if buffer_equals(b, i, pre.length, pre) and _es_cifra(buffer_get_byte(b, i + pre.length))
+                # que empiece ahí (no en medio de otra palabra)
+                if i == 0 or buffer_get_byte(b, i - 1) < 33 or buffer_get_byte(b, i - 1) > 126
+                    resid = _id_cadena(b, i, n)
+                end
+            end
+            i = buffer_find_byte(b, i + 1, n - pre.length - 1, primera)
+        end
+    end
+    buffer_free(b)
+    if ver != ""
+        r.push(ver)
+    end
+    if resid != "" and resid != ver
+        r.push(resid)
+    end
+    return r
+end
+
+# Las marcas de un fichero: las de todas sus cadenas
+func marcas_de(ruta: String, nombre: String) -> [String]
+    var r: [String] = []
+    for c in id_cadenas(ruta, nombre)
+        for m in id_marcas(c)
+            if not (m in r)
+                r.push(m)
+            end
+        end
+    end
+    return r
+end
+
+# La versión de un fichero por sus cadenas ("" si no se sabe)
+func version_de_libreria(ruta: String, nombre: String) -> String
+    for c in id_cadenas(ruta, nombre)
+        v = id_version(c)
+        if v != ""
+            return v
+        end
+    end
+    return ""
+end
+
+# Si dos ficheros son iguales (tamaño y CRC-32)
+func mismo_fichero(a: String, b: String) -> Bool
+    return file_exists(a) and file_exists(b) and file_size(a) == file_size(b) and recibo_crc(a) == recibo_crc(b)
+end
+
+# Cuál proponer de e: la que ya está en e.destino si se reconoce. ficheros: los de cada opción ya descomprimidos (en
+# su orden; "" si falta). del_recibo: lo que se eligió la vez anterior, si lo que hay es lo que dejó Hangar (o "").
+# Deja e.propuesta y e.por.
+func proponer(e: Eleccion, ficheros: [String], del_recibo: String)
+    e.propuesta = 0
+    e.por = ""
+    if del_recibo != ""
+        k = 0
+        while k < e.opciones.length
+            if str_lower(e.opciones[k]) == str_lower(del_recibo) and ficheros[k] != ""
+                e.propuesta = k
+                e.por = "recibo"
+                return
+            end
+            k = k + 1
+        end
+    end
+    if not file_exists(e.destino)
+        return
+    end
+    k = 0
+    while k < ficheros.length
+        if ficheros[k] != "" and mismo_fichero(e.destino, ficheros[k])
+            e.propuesta = k
+            e.por = "igual"
+            return
+        end
+        k = k + 1
+    end
+    # por las marcas: solo las que distinguen (las que tienen todas las opciones no cuentan)
+    nombre = nombre_de_ruta(e.destino)
+    hay = marcas_de(e.destino, nombre)
+    if hay.length == 0
+        return
+    end
+    # las de cada opción, como "|HB020|68000|"
+    var de_cada: [String] = []
+    for x in ficheros
+        t = "|"
+        if x != ""
+            for m in marcas_de(x, nombre)
+                t = t + m + "|"
+            end
+        end
+        de_cada.push(t)
+    end
+    mejor = -1
+    puntos_mejor = 0
+    k = 0
+    while k < de_cada.length
+        puntos = 0
+        for m in hay
+            if str_find(de_cada[k], "|" + m + "|") >= 0
+                en_todas = true
+                for otras in de_cada
+                    if str_find(otras, "|" + m + "|") < 0
+                        en_todas = false
+                    end
+                end
+                if not en_todas
+                    puntos = puntos + 1
+                end
+            end
+        end
+        if puntos > puntos_mejor
+            mejor = k
+            puntos_mejor = puntos
+        end
+        k = k + 1
+    end
+    if mejor >= 0
+        e.propuesta = mejor
+        e.por = "marca"
+    end
+end
+
+# La opción que dice el usuario desde el Shell (VARIANTE=HB020): la ruta entera, su nombre ("icon.library_HB020"),
+# su sufijo ("HB020") o el final de la ruta ("68000/icon.library"). -1 si ninguna, -2 si vale para varias.
+func opcion_pedida(e: Eleccion, pedida: String) -> Int
+    q = str_lower(str_trim(pedida))
+    if q == ""
+        return -1
+    end
+    # de más exacto a menos: la primera pasada que acierta manda
+    for pasada in [0, 1, 2, 3]
+        hallada = -1
+        varias = false
+        k = 0
+        while k < e.opciones.length
+            o = str_lower(e.opciones[k])
+            nom = str_lower(nombre_de_ruta(e.opciones[k]))
+            vale = false
+            if pasada == 0
+                vale = o == q
+            elif pasada == 1
+                vale = nom == q
+            elif pasada == 2
+                vale = str_ends(nom, "_" + q) or str_ends(nom, "." + q) or str_ends(nom, "-" + q)
+            else
+                vale = str_ends(o, "/" + q)
+            end
+            if vale
+                if hallada >= 0
+                    varias = true
+                end
+                hallada = k
+            end
+            k = k + 1
+        end
+        if varias
+            return -2
+        end
+        if hallada >= 0
+            return hallada
+        end
+    end
+    return -1
+end
+
+# Una línea de la lista para enseñar: el nombre, si es la de serie o la que hay, y su cajón en el paquete
+# ("icon.library_HB020  (la que tienes)   en IconLib_46.4/Bonus/Libraries/ARGB-TrueColor")
+func linea_de_opcion(e: Eleccion, k: Int) -> String
+    o = e.opciones[k]
+    t = nombre_de_ruta(o)
+    if k == 0
+        t = t + tr(1409, "  (de serie)")
+    end
+    if k == e.propuesta and e.por != ""
+        t = t + tr(1410, "  (la que tienes)")
+    end
+    if o.length > nombre_de_ruta(o).length
+        t = t + tr(1437, "   en ") + o[:o.length - nombre_de_ruta(o).length - 1]
+    end
+    return t
+end

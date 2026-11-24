@@ -43,6 +43,7 @@ struct Recibo
     epoch: Int = 0
     repo: String = ""             # de qué repositorio vino (formato 2)
     en_duda: Bool = false         # su línea Sum no cuadra: el .pkg se cambió o se cortó a medias
+    elegidas: [String] = nil      # lo elegido de su Choice: "LIBS:icon.library = IconLib_46.4/Libs/icon.library"
 end
 
 # El nombre del fichero de un paquete en la base: su nombre en minúsculas, sin lo que no vale en un nombre
@@ -209,6 +210,12 @@ func recibo_texto(r: Recibo) -> String
     if r.bloque
         t = t + "S " + recibo_clave(r.nombre) + "\n"
     end
+    # lo elegido de su Choice (src/elegir.dash): las versiones anteriores no conocen "E" y la saltan
+    if r.elegidas != nil
+        for e in r.elegidas
+            t = t + "E " + e + "\n"
+        end
+    end
     return t
 end
 
@@ -340,6 +347,12 @@ func recibo_leer_texto(t: String) -> Recibo
             r.config.push(linea[2:])
         elif str_starts(linea, "S ")
             r.bloque = true
+        elif str_starts(linea, "E ")
+            if r.elegidas == nil
+                var es: [String] = []
+                r.elegidas = es
+            end
+            r.elegidas.push(linea[2:])
         else
             p = str_find(linea, ": ")
             if p > 0

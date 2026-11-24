@@ -81,6 +81,7 @@ struct Ficha
     repo: String = ""          # su repositorio ("aminet", "main")
     epoch: Int = 0
     variantes: [String] = nil  # Variant: un fichero según la máquina
+    elecciones: [String] = nil # Choice: un fichero del sistema que se elige entre varios del paquete (src/elegir.dash)
     antivirus: String = ""     # lo que dijo el antivirus del servidor ("limpio (xvs 33.49, 12 ficheros)", "VIRUS ...")
     verificado: Bool = false   # su autor está verificado (otro programa tenía su nombre)
     descargas: Int = 0         # las veces que se ha bajado desde Hangar, todas sus versiones
@@ -243,6 +244,12 @@ func api_leer_ficha(texto: String) -> Ficha
                 f.requiere = v
             elif k == "instala"
                 f.instala = v
+            elif k == "elige"
+                if f.elecciones == nil
+                    var l: [String] = []
+                    f.elecciones = l
+                end
+                f.elecciones.push(v)
             elif k == "ejecuta"
                 f.ejecuta = v
             elif k == "paquete"

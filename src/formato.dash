@@ -452,6 +452,7 @@ struct Entrada
     variantes: [String]
     tamano_instalado: Int     # Installed-Size: lo que ocupa descomprimido (0 si no se sabe)
     declarado: Bool = true    # Declared: no = sus requisitos los adivinó el repositorio: avisan, no bloquean
+    elecciones: [String] = nil  # Choice: un fichero del sistema a elegir entre varios ("LIBS:x.library = Libs/x.library")
 end
 
 # La cabecera de un índice o de una respuesta firmada
@@ -546,6 +547,12 @@ func _poner(e: Entrada, c: String, v: String)
         e.uploader = v
     elif c == "variant"
         e.variantes.push(v)
+    elif c == "choice"
+        if e.elecciones == nil
+            var l: [String] = []
+            e.elecciones = l
+        end
+        e.elecciones.push(v)
     end
 end
 

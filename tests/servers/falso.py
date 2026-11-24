@@ -147,6 +147,16 @@ _punta2("8017", "main", "conlib2", "1.0", [("CL2/CL2", b"cl2"), ("CL2/hangarprue
         "Install: system LIBS:hangarprueba.library\n")
 _punta2("8018", "main", "conlib3", "1.0", [("CL3/CL3", b"cl3"), ("CL3/hangarprueba3.library", b"lib de conlib3")],
         "Install: system LIBS:hangarprueba3.library\n")
+# Una librería en varias versiones para elegir (Choice, tests/punta4.py; como IconLib, lo contó Oskis R.P): la de
+# serie, la de 68000 y una con sufijo en Bonus; la 1.1 llega por "updates"
+def _varlib(compilacion):
+    lib = lambda marca: b"\0\0\x03\xf3libreria\0" + f"vprueba 1.0 (1.1.26) #{compilacion} {marca}".encode() + b"\0"
+    return [("VL/VL", b"programa"), ("VL/Libs/vprueba.library", lib("STD")), ("VL/Libs/68000/vprueba.library", lib("K68")),
+            ("VL/Bonus/vprueba.library_HB", lib("HB"))]
+_VARLIB = ("Choice: LIBS:vprueba.library = VL/Libs/vprueba.library\nChoice: LIBS:vprueba.library = VL/Libs/68000/vprueba.library\n"
+           "Choice: LIBS:vprueba.library = VL/Bonus/vprueba.library_HB\n")
+_punta2("8019", "main", "varlib", "1.0", _varlib(10), _VARLIB)
+_punta2("8020", "main", "varlib", "1.1", _varlib(11), _VARLIB, nueva=True)
 
 
 def respuesta2(ruta, cuerpo_post=None):

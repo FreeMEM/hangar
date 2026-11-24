@@ -1,4 +1,4 @@
-## version $VER: Hangar.catalog 1.0 (21.11.2026)
+## version $VER: Hangar.catalog 1.0 (24.11.2026)
 ## language português
 ## codeset 0
 ;
@@ -1244,3 +1244,90 @@ _Tudo
 MSG_1408
  transferências
 ;  descargas
+MSG_1409
+  (de origem)
+;   (de serie)
+MSG_1410
+  (a que tens)
+;   (la que tienes)
+MSG_1411
+ não foi copiada: 
+;  no se copió: 
+MSG_1412
+ continua registado como 
+;  sigue apuntado como 
+MSG_1413
+ (será oferecido de novo)
+;  (se volverá a ofrecer)
+MSG_1414
+ já é essa: fica
+;  ya es esa: se queda
+MSG_1415
+ copiada para 
+;  copiada a 
+MSG_1416
+uma sem versão
+; una sin versión
+MSG_1417
+nenhuma
+; ninguna
+MSG_1418
+ traz várias versões de 
+;  trae varias versiones de 
+MSG_1419
+ para 
+;  para 
+MSG_1420
+ (agora: 
+;  (ahora: 
+MSG_1421
+VARIANTE=
+; VARIANTE=
+MSG_1422
+ serve para várias: escreve mais (o caminho inteiro). Não se copia.
+;  vale para varias: escribe más (la ruta entera). No se copia.
+MSG_1423
+Com VARIANTE=
+; Con VARIANTE=
+MSG_1424
+Nenhuma é a de VARIANTE=. Não se copia.
+; Ninguna es la de VARIANTE=. No se copia.
+MSG_1425
+Copiar 
+; ¿Copiar 
+MSG_1426
+ para 
+;  a 
+MSG_1427
+? O que lá estiver fica como .old.\n(Com VARIANTE=nome escolhes outra sem pergunta.)
+; ? Lo que haya se guarda como .old.\n(Con VARIANTE=nombre se elige otra sin preguntar.)
+MSG_1428
+_Copiar|_Não copiar
+; _Copiar|_No copiar
+MSG_1429
+ já é mais recente (
+;  ya es más nueva (
+MSG_1430
+): fica. Com VARIANTE= muda-se.
+; ): se queda. Con VARIANTE= se cambia.
+MSG_1431
+ traz várias versões de 
+;  trae varias versiones de 
+MSG_1432
+Qual vai para 
+; ¿Cuál va a 
+MSG_1433
+? A que lá está fica como .old.\nAgora tens: 
+; ? La que hay se guarda como .old.\nAhora tienes: 
+MSG_1434
+_Copiar a escolhida
+; _Copiar la elegida
+MSG_1435
+_Não copiar
+; _No copiar
+MSG_1436
+Se um pacote traz várias versões de uma biblioteca, VARIANTE=nome escolhe a que vai para o sistema (HB020, ou o caminho).
+; Si un paquete trae varias versiones de una librería, VARIANTE=nombre elige cuál va al sistema (HB020, o su ruta).
+MSG_1437
+   em 
+;    en 

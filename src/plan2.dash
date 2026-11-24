@@ -281,6 +281,7 @@ func ficha_de_entrada(x: EntradaRepo) -> Ficha
     f.firma = 1
     f.config = e.config
     f.variantes = e.variantes
+    f.elecciones = e.elecciones
     f.epoch = e.epoch
     f.repo = x.repo
     return f

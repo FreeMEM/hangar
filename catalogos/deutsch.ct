@@ -1,4 +1,4 @@
-## version $VER: Hangar.catalog 1.0 (21.11.2026)
+## version $VER: Hangar.catalog 1.0 (24.11.2026)
 ## language deutsch
 ## codeset 0
 ;
@@ -1244,3 +1244,90 @@ _Alle
 MSG_1408
  Downloads
 ;  descargas
+MSG_1409
+  (Standard)
+;   (de serie)
+MSG_1410
+  (die du hast)
+;   (la que tienes)
+MSG_1411
+ wurde nicht kopiert: 
+;  no se copió: 
+MSG_1412
+ bleibt eingetragen als 
+;  sigue apuntado como 
+MSG_1413
+ (wird wieder angeboten)
+;  (se volverá a ofrecer)
+MSG_1414
+ ist schon diese: bleibt
+;  ya es esa: se queda
+MSG_1415
+ kopiert nach 
+;  copiada a 
+MSG_1416
+eine ohne Version
+; una sin versión
+MSG_1417
+keine
+; ninguna
+MSG_1418
+ bringt mehrere Versionen von 
+;  trae varias versiones de 
+MSG_1419
+ für 
+;  para 
+MSG_1420
+ (jetzt: 
+;  (ahora: 
+MSG_1421
+VARIANT=
+; VARIANTE=
+MSG_1422
+ passt auf mehrere: schreib mehr (den ganzen Pfad). Nichts wird kopiert.
+;  vale para varias: escribe más (la ruta entera). No se copia.
+MSG_1423
+Mit VARIANT=
+; Con VARIANTE=
+MSG_1424
+Keine ist die von VARIANT=. Nichts wird kopiert.
+; Ninguna es la de VARIANTE=. No se copia.
+MSG_1425
+Soll 
+; ¿Copiar 
+MSG_1426
+ nach 
+;  a 
+MSG_1427
+ kopiert werden? Was dort ist, bleibt als .old.\n(Mit VARIANT=Name wählst du ohne Rückfrage eine andere.)
+; ? Lo que haya se guarda como .old.\n(Con VARIANTE=nombre se elige otra sin preguntar.)
+MSG_1428
+_Kopieren|_Nicht kopieren
+; _Copiar|_No copiar
+MSG_1429
+ ist schon neuer (
+;  ya es más nueva (
+MSG_1430
+): bleibt. Mit VARIANT= wird gewechselt.
+; ): se queda. Con VARIANTE= se cambia.
+MSG_1431
+ bringt mehrere Versionen von 
+;  trae varias versiones de 
+MSG_1432
+Welche kommt nach 
+; ¿Cuál va a 
+MSG_1433
+? Die dortige bleibt als .old.\nJetzt hast du: 
+; ? La que hay se guarda como .old.\nAhora tienes: 
+MSG_1434
+_Gewählte kopieren
+; _Copiar la elegida
+MSG_1435
+_Nicht kopieren
+; _No copiar
+MSG_1436
+Bringt ein Paket mehrere Versionen einer Library, wählt VARIANT=Name die für das System (HB020 oder ihr Pfad).
+; Si un paquete trae varias versiones de una librería, VARIANTE=nombre elige cuál va al sistema (HB020, o su ruta).
+MSG_1437
+   in 
+;    en 

@@ -828,3 +828,61 @@ MSG_1407 (1407//)
 _Todo
 MSG_1408 (1408//)
  descargas
+MSG_1409 (1409//)
+  (de serie)
+MSG_1410 (1410//)
+  (la que tienes)
+MSG_1411 (1411//)
+ no se copió: 
+MSG_1412 (1412//)
+ sigue apuntado como 
+MSG_1413 (1413//)
+ (se volverá a ofrecer)
+MSG_1414 (1414//)
+ ya es esa: se queda
+MSG_1415 (1415//)
+ copiada a 
+MSG_1416 (1416//)
+una sin versión
+MSG_1417 (1417//)
+ninguna
+MSG_1418 (1418//)
+ trae varias versiones de 
+MSG_1419 (1419//)
+ para 
+MSG_1420 (1420//)
+ (ahora: 
+MSG_1421 (1421//)
+VARIANTE=
+MSG_1422 (1422//)
+ vale para varias: escribe más (la ruta entera). No se copia.
+MSG_1423 (1423//)
+Con VARIANTE=
+MSG_1424 (1424//)
+Ninguna es la de VARIANTE=. No se copia.
+MSG_1425 (1425//)
+¿Copiar 
+MSG_1426 (1426//)
+ a 
+MSG_1427 (1427//)
+? Lo que haya se guarda como .old.\n(Con VARIANTE=nombre se elige otra sin preguntar.)
+MSG_1428 (1428//)
+_Copiar|_No copiar
+MSG_1429 (1429//)
+ ya es más nueva (
+MSG_1430 (1430//)
+): se queda. Con VARIANTE= se cambia.
+MSG_1431 (1431//)
+ trae varias versiones de 
+MSG_1432 (1432//)
+¿Cuál va a 
+MSG_1433 (1433//)
+? La que hay se guarda como .old.\nAhora tienes: 
+MSG_1434 (1434//)
+_Copiar la elegida
+MSG_1435 (1435//)
+_No copiar
+MSG_1436 (1436//)
+Si un paquete trae varias versiones de una librería, VARIANTE=nombre elige cuál va al sistema (HB020, o su ruta).
+MSG_1437 (1437//)
+   en 

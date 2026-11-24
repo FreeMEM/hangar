@@ -1,4 +1,4 @@
-## version $VER: Hangar.catalog 1.0 (21.11.2026)
+## version $VER: Hangar.catalog 1.0 (24.11.2026)
 ## language suomi
 ## codeset 0
 ;
@@ -1244,3 +1244,90 @@ _Kaikki
 MSG_1408
  latausta
 ;  descargas
+MSG_1409
+  (oletus)
+;   (de serie)
+MSG_1410
+  (sinulla oleva)
+;   (la que tienes)
+MSG_1411
+ ei kopioitu: 
+;  no se copió: 
+MSG_1412
+ on yhä merkitty versioksi 
+;  sigue apuntado como 
+MSG_1413
+ (tarjotaan uudelleen)
+;  (se volverá a ofrecer)
+MSG_1414
+ on jo se: jää paikalleen
+;  ya es esa: se queda
+MSG_1415
+ kopioitu kohteeseen 
+;  copiada a 
+MSG_1416
+versioton
+; una sin versión
+MSG_1417
+ei mitään
+; ninguna
+MSG_1418
+ sisältää useita versioita kirjastosta 
+;  trae varias versiones de 
+MSG_1419
+ kohteeseen 
+;  para 
+MSG_1420
+ (nyt: 
+;  (ahora: 
+MSG_1421
+VARIANT=
+; VARIANTE=
+MSG_1422
+ sopii useaan: kirjoita enemmän (koko polku). Mitään ei kopioida.
+;  vale para varias: escribe más (la ruta entera). No se copia.
+MSG_1423
+VARIANT=
+; Con VARIANTE=
+MSG_1424
+Mikään ei ole VARIANT=:n mukainen. Mitään ei kopioida.
+; Ninguna es la de VARIANTE=. No se copia.
+MSG_1425
+Kopioidaanko 
+; ¿Copiar 
+MSG_1426
+ kohteeseen 
+;  a 
+MSG_1427
+? Siellä oleva säilytetään .old-tiedostona.\n(VARIANT=nimi valitsee toisen kysymättä.)
+; ? Lo que haya se guarda como .old.\n(Con VARIANTE=nombre se elige otra sin preguntar.)
+MSG_1428
+_Kopioi|_Älä kopioi
+; _Copiar|_No copiar
+MSG_1429
+ on jo uudempi (
+;  ya es más nueva (
+MSG_1430
+): jää paikalleen. VARIANT= vaihtaa sen.
+; ): se queda. Con VARIANTE= se cambia.
+MSG_1431
+ sisältää useita versioita kirjastosta 
+;  trae varias versiones de 
+MSG_1432
+Mikä menee kohteeseen 
+; ¿Cuál va a 
+MSG_1433
+? Siellä oleva säilytetään .old-tiedostona.\nNyt sinulla on: 
+; ? La que hay se guarda como .old.\nAhora tienes: 
+MSG_1434
+_Kopioi valittu
+; _Copiar la elegida
+MSG_1435
+_Älä kopioi
+; _No copiar
+MSG_1436
+Jos paketissa on useita versioita kirjastosta, VARIANT=nimi valitsee järjestelmään menevän (HB020 tai sen polku).
+; Si un paquete trae varias versiones de una librería, VARIANTE=nombre elige cuál va al sistema (HB020, o su ruta).
+MSG_1437
+   kansiossa 
+;    en 

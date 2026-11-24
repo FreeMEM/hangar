@@ -1,6 +1,6 @@
 # Hangar: busca, instala y pone al día el software del Amiga. Busca en el catálogo de hangar.freemem.space, enseña la ficha, instala
 # (baja el .lha y lo descomprime, sin C:lha), actualiza, desinstala y ejecuta.
-@version "Hangar 0.18.0"
+@version "Hangar 0.19.0"
 @catalog "Hangar.catalog" 1 "español"
 import "api.dash"
 import "lha.dash"
@@ -13,8 +13,9 @@ import "dependencias.dash"
 import "sistema.dash"
 import "plan2.dash"
 import "instalador.dash"
+import "elegir.dash"
 
-const VERSION = "0.18.0"
+const VERSION = "0.19.0"
 
 const ID_BUSCAR = 1
 const ID_NOVEDADES = 2
@@ -40,6 +41,8 @@ const ID_MIRAR = 24
 const ID_ELEGIR = 25
 const ID_CONTAR = 26          # tras una acción: el número de Actualizar (N), otra vez
 const ID_HANGAR = 27          # menú: Actualizar Hangar
+const ID_VARIANTE_SI = 30     # la ventana de elegir una variante (Choice): Copiar la elegida
+const ID_VARIANTE_NO = 31     # y No copiar
 const ID_CATEGORIA = 40       # los botones de categorías: 40 en adelante, en el orden de CATEGORIAS
 
 # Lo que se baja: aquí se queda cada versión (para volver a ella) y aquí se descomprime antes de ponerla en su sitio
@@ -90,6 +93,7 @@ var ficha_junta: Bool = true     # la ficha sin pestañas (pantallas de 480 o m�
 var cli: Bool = false
 var cli_si: Bool = false        # la palabra SI: se acepta lo que se preguntaría
 var cli_sistema: Bool = false   # la palabra SISTEMA: QUITA quita también lo suyo de LIBS:, C:, DEVS:...
+var cli_variantes: [String] = []  # VARIANTE=HB020: la versión de una librería que el paquete trae en varias (Choice)
 # Al quitar un programa, lo que no se toca (en minúsculas): lo suyo en los cajones del sistema (es_del_sistema)
 var quitar_dejar: [String] = []
 var cli_ultimo: String = ""
@@ -1112,7 +1116,9 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
         end
     end
     borrar_arbol(nuevo_dir[:nuevo_dir.length - 1])
-    # lo de la versión anterior que ya no viene (solo lo que trajo el paquete: sus ajustes se quedan)
+    # lo de la versión anterior que ya no viene (solo lo que trajo el paquete: sus ajustes se quedan). Lo suyo en
+    # LIBS:, C:... no: se mira abajo, al copiar al sistema (antes se borraba aquí, y si no se copiaba la nueva, el
+    # sistema se quedaba sin la librería)
     if anterior.id != 0
         for viejo in anterior.ficheros
             sigue = false
@@ -1121,15 +1127,41 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
                     sigue = true
                 end
             end
-            if not sigue
+            if not sigue and not es_del_sistema(viejo)
                 tr_borrar(viejo)
             end
         end
     end
-    # Install: system (el manifiesto): lo que va a LIBS:, C:..., pidiendo permiso; también al recibo
-    if str_starts(str_lower(f.instala), "system ") and not con_guion     # con su guion, lo copia el guion
-        for x in copiar_al_sistema(f, escritos)
+    # Install: system y Choice (el manifiesto): lo que va a LIBS:, C:..., pidiendo permiso; también al recibo
+    var nada_pendiente: [String] = []
+    var nada_elegido: [String] = []
+    sistema_pendiente = nada_pendiente
+    sistema_elegidas = nada_elegido
+    con_elecciones = false
+    if f.elecciones != nil
+        con_elecciones = f.elecciones.length > 0
+    end
+    if (str_starts(str_lower(f.instala), "system ") or con_elecciones) and not con_guion     # con su guion, lo copia el guion
+        for x in copiar_al_sistema(f, escritos, destino + prefijo, anterior)
             escritos.push(x)
+        end
+    end
+    # lo de la versión anterior en el sistema que no se ha vuelto a poner se queda (otros programas pueden usarlo) y,
+    # si sigue como lo dejó Hangar, en el recibo (para quitarlo con SISTEMA y para reconocerlo la próxima vez)
+    if anterior.id != 0
+        i = 0
+        while i < anterior.ficheros.length
+            viejo = anterior.ficheros[i]
+            sigue = false
+            for d in escritos
+                if str_lower(d) == str_lower(viejo)
+                    sigue = true
+                end
+            end
+            if es_del_sistema(viejo) and not sigue and file_exists(viejo) and i < anterior.crcs.length and recibo_crc(viejo) == anterior.crcs[i]
+                escritos.push(viejo)
+            end
+            i = i + 1
         end
     end
     # sus asignaciones y lo que arranca con el sistema: su bloque en S:User-Startup
@@ -1162,6 +1194,30 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
     r.provee = f.provee
     r.bloque = hay_bloque
     r.config = configs
+    if sistema_elegidas.length > 0
+        r.elegidas = sistema_elegidas
+    end
+    # lo que debía ir al sistema y no se copió: el paquete no queda como al día (lo contó Oskis R.P: el recibo daba
+    # IconLib 46.4.605 por instalada y LIBS:icon.library seguía igual). Sigue con la versión de antes, o sin versión si
+    # no la había, y la actualización se vuelve a ofrecer
+    a_medias = ""
+    if sistema_pendiente.length > 0
+        for x in sistema_pendiente
+            if a_medias != ""
+                a_medias = a_medias + ", "
+            end
+            a_medias = a_medias + x
+        end
+        if anterior.id != 0
+            r.version = anterior.version
+            r.lanzamiento = anterior.lanzamiento
+            r.epoch = anterior.epoch
+        else
+            r.version = "0"
+            r.lanzamiento = 1
+            r.epoch = 0
+        end
+    end
     k = 0
     while k < guardados.length
         i = 0
@@ -1182,7 +1238,10 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
         estado_texto = tr(1112, "No se pudo guardar en la base")
         return false
     end
-    if nuevos_config > 0
+    if a_medias != ""
+        estado_texto = a_medias + tr(1411, " no se copió: ") + f.nombre + tr(1412, " sigue apuntado como ") + version_ver(r.version) + tr(1413, " (se volverá a ofrecer)")
+        estado(estado_texto)
+    elif nuevos_config > 0
         estado_texto = str_from_int(nuevos_config, 10) + tr(1113, " ajustes tuyos se quedan; los nuevos están al lado (.new)")
         estado(f.nombre + " " + f.version + tr(1114, " instalado. ") + estado_texto)
     else
@@ -1196,37 +1255,121 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
     return true
 end
 
-# Install: system LIBS:x.library, C:y (el manifiesto): esos ficheros del paquete, a su sitio en el sistema. Se pide
-# permiso; lo que hubiera se guarda como ".old" (vuelve al desinstalar) y una versión más nueva no se pisa.
-# Devuelve lo copiado, para el recibo.
-func copiar_al_sistema(f: Ficha, escritos: [String]) -> [String]
+var sistema_pendiente: [String] = []   # lo que la última instalación debía llevar al sistema y no llevó
+var sistema_elegidas: [String] = []    # lo que eligió de su Choice ("LIBS:icon.library = ruta en el paquete")
+
+# El fichero puesto (de escritos) de una ruta del paquete, ya en raiz ("Work:IconLib_46.4/"); "" si no está
+func puesto_de(escritos: [String], raiz: String, rel: String) -> String
+    q = str_lower(raiz + rel)
+    for x in escritos
+        if str_lower(x) == q and file_exists(x)
+            return x
+        end
+    end
+    return ""
+end
+
+# Copia origen a d guardando lo que hubiera como d.old (vuelve al desinstalar). false si no se pudo
+func poner_en_sistema(origen: String, d: String) -> Bool
+    if file_exists(d)
+        tr_guardar(d + ".old")
+        tr_guardar(d)
+        file_delete(d + ".old")
+        file_rename(d, d + ".old")
+    end
+    return tr_poner(origen, d)
+end
+
+# Install: system LIBS:x.library, C:y (el manifiesto): esos ficheros del paquete, a su sitio en el sistema (el del
+# mismo nombre, o "Libs/x.library -> LIBS:x.library"). Se pide permiso; lo que hubiera se guarda como ".old" (vuelve
+# al desinstalar) y una versión más nueva no se pisa. Y Choice: de lo que trae en varias versiones, la que elija el
+# usuario (src/elegir.dash). raiz: donde quedó el paquete ("Work:IconLib_46.4/"). Devuelve lo copiado, para el
+# recibo; lo que no se copió y debía, en sistema_pendiente; lo elegido, en sistema_elegidas.
+func copiar_al_sistema(f: Ficha, escritos: [String], raiz: String, anterior: Recibo) -> [String]
     var hechos: [String] = []
+    for e in elecciones_de(f.elecciones)
+        var fs: [String] = []
+        for o in e.opciones
+            fs.push(puesto_de(escritos, raiz, o))
+        end
+        # lo elegido la vez anterior vale si lo que hay es lo que dejó Hangar
+        del_recibo = ""
+        if anterior.id != 0
+            del_recibo = eleccion_del_recibo(anterior.elegidas, e.destino)
+            i = 0
+            igual = false
+            while i < anterior.ficheros.length
+                if str_lower(anterior.ficheros[i]) == str_lower(e.destino) and i < anterior.crcs.length and recibo_crc(e.destino) == anterior.crcs[i]
+                    igual = true
+                end
+                i = i + 1
+            end
+            if not igual
+                del_recibo = ""
+            end
+        end
+        proponer(e, fs, del_recibo)
+        k = elegir_variante(f, e, fs)
+        if k >= 0
+            sistema_elegidas.push(e.destino + " = " + e.opciones[k])
+            if mismo_fichero(e.destino, fs[k])
+                estado(e.destino + tr(1414, " ya es esa: se queda"))
+            elif poner_en_sistema(fs[k], e.destino)
+                hechos.push(e.destino)
+                estado(e.opciones[k] + tr(1415, " copiada a ") + e.destino)
+            else
+                sistema_pendiente.push(e.destino)
+            end
+        elif k == -1 and e.por != "igual"
+            # no se copia (y lo que hay no es de esta versión)
+            sistema_pendiente.push(e.destino)
+        end
+    end
     var lista: [String] = []
+    var de_donde: [String] = []
     texto = ""
-    for it in str_split(str_trim(f.instala[7:]), ",")
-        d = str_trim(it)
-        if d != "" and str_find(d, ":") > 0
-            lista.push(d)
-            texto = texto + "\n  " + d
+    if str_starts(str_lower(f.instala), "system ")
+        for it in str_split(str_trim(f.instala[7:]), ",")
+            d = str_trim(it)
+            o = ""
+            p = str_find(d, "->")
+            if p > 0
+                o = str_trim(d[:p])
+                d = str_trim(d[p + 2:])
+            end
+            if d != "" and str_find(d, ":") > 0
+                lista.push(d)
+                de_donde.push(o)
+                texto = texto + "\n  " + d
+            end
         end
     end
     if lista.length == 0
         return hechos
     end
-    if preguntar(f.nombre + tr(1116, " quiere copiar a tu sistema:") + texto + tr(1117, "\nLo que haya ahí se guarda como .old. Al quitarlo, esto se deja\n(otros programas pueden usarlo), salvo que digas quitarlo."), tr(1118, "_Copiar|_No copiar")) != 1
-        return hechos
-    end
-    for d in lista
-        base = str_lower(nombre_de_ruta(d))
+    copiar_si = preguntar(f.nombre + tr(1116, " quiere copiar a tu sistema:") + texto + tr(1117, "\nLo que haya ahí se guarda como .old. Al quitarlo, esto se deja\n(otros programas pueden usarlo), salvo que digas quitarlo."), tr(1118, "_Copiar|_No copiar")) == 1
+    j = 0
+    while j < lista.length
+        d = lista[j]
         origen = ""
-        for x in escritos
-            if str_lower(nombre_de_ruta(x)) == base
-                origen = x
+        if de_donde[j] != ""
+            origen = puesto_de(escritos, raiz, de_donde[j])
+        else
+            base = str_lower(nombre_de_ruta(d))
+            for x in escritos
+                if str_lower(nombre_de_ruta(x)) == base
+                    origen = x
+                end
             end
         end
         if origen != ""
-            copiar = true
-            if file_exists(d)
+            copiar = copiar_si
+            if not copiar_si
+                # sin permiso: queda pendiente, salvo que lo que hay sea ya ese mismo fichero
+                if not mismo_fichero(d, origen)
+                    sistema_pendiente.push(d)
+                end
+            elif file_exists(d)
                 ya = inventario_version(d).version
                 nueva = inventario_version(origen).version
                 # solo se pisa con una claramente más nueva: si es la misma, más vieja o no se sabe, se queda la que
@@ -1234,19 +1377,158 @@ func copiar_al_sistema(f: Ficha, escritos: [String]) -> [String]
                 if ya == "" or nueva == "" or not version_mayor(nueva, ya)
                     copiar = false
                     estado(d + tr(1119, " ya está (") + version_ver(ya) + tr(1120, "): se queda"))
-                else
-                    tr_guardar(d + ".old")
-                    tr_guardar(d)
-                    file_delete(d + ".old")
-                    file_rename(d, d + ".old")
                 end
             end
-            if copiar and tr_poner(origen, d)
-                hechos.push(d)
+            if copiar
+                if poner_en_sistema(origen, d)
+                    hechos.push(d)
+                else
+                    sistema_pendiente.push(d)
+                end
             end
         end
+        j = j + 1
     end
     return hechos
+end
+
+# Qué opción de e copiar a su destino: su número, -1 si no se copia (el usuario no quiere), -3 si se queda la que
+# hay sin preguntar (más nueva). fs: el fichero de cada opción ("" si falta). Desde el Shell, la de VARIANTE= o, con
+# SI, la propuesta; en la ventana, una lista.
+func elegir_variante(f: Ficha, e: Eleccion, fs: [String]) -> Int
+    # la propuesta tiene que estar en el paquete; si no hay ninguna, no hay nada que copiar
+    if fs[e.propuesta] == ""
+        e.propuesta = -1
+        k = 0
+        while k < fs.length
+            if e.propuesta < 0 and fs[k] != ""
+                e.propuesta = k
+            end
+            k = k + 1
+        end
+        if e.propuesta < 0
+            e.propuesta = 0
+            return -3
+        end
+    end
+    nombre = nombre_de_ruta(e.destino)
+    hay = ""
+    if file_exists(e.destino)
+        for c in id_cadenas(e.destino, nombre)
+            if hay == ""
+                hay = c
+            end
+        end
+        if hay == ""
+            hay = tr(1416, "una sin versión")
+        end
+    else
+        hay = tr(1417, "ninguna")
+    end
+    if cli
+        Print f.nombre + tr(1418, " trae varias versiones de ") + nombre + tr(1419, " para ") + e.destino + tr(1420, " (ahora: ") + hay + "):"
+        k = 0
+        while k < e.opciones.length
+            if fs[k] != ""
+                marca = "   "
+                if k == e.propuesta
+                    marca = " * "
+                end
+                Print marca + linea_de_opcion(e, k)
+            end
+            k = k + 1
+        end
+        if cli_variantes.length > 0
+            for v in cli_variantes
+                n = opcion_pedida(e, v)
+                if n == -2
+                    Print tr(1421, "VARIANTE=") + v + tr(1422, " vale para varias: escribe más (la ruta entera). No se copia.")
+                    return -1
+                end
+                if n >= 0 and fs[n] != ""
+                    Print tr(1423, "Con VARIANTE=") + v + ": " + e.opciones[n]
+                    return n
+                end
+            end
+            Print tr(1424, "Ninguna es la de VARIANTE=. No se copia.")
+            return -1
+        end
+        if preguntar(tr(1425, "¿Copiar ") + e.opciones[e.propuesta] + tr(1426, " a ") + e.destino + tr(1427, "? Lo que haya se guarda como .old.\n(Con VARIANTE=nombre se elige otra sin preguntar.)"), tr(1428, "_Copiar|_No copiar")) != 1
+            return -1
+        end
+        # una más vieja que la que hay no se pone sin decirlo (con VARIANTE= sí)
+        ya = version_de_libreria(e.destino, nombre)
+        nueva = version_de_libreria(fs[e.propuesta], nombre)
+        if ya != "" and nueva != "" and version_mayor(ya, nueva)
+            Print e.destino + tr(1429, " ya es más nueva (") + ya + tr(1430, "): se queda. Con VARIANTE= se cambia.")
+            return -3
+        end
+        return e.propuesta
+    end
+    return ventana_variante(f, e, fs, hay)
+end
+
+# La ventana para elegir: la lista de opciones (la propuesta, elegida), Copiar la elegida y No copiar. Mientras está
+# abierta, la principal duerme; los eventos que no son suyos se vuelven a mandar al cerrarla.
+func ventana_variante(f: Ficha, e: Eleccion, fs: [String], hay: String) -> Int
+    var cual: [Int] = []
+    k = 0
+    while k < e.opciones.length
+        if fs[k] != ""
+            cual.push(k)
+        end
+        k = k + 1
+    end
+    nombre = nombre_de_ruta(e.destino)
+    w = mui_window_begin("Hangar: " + f.nombre, 0)
+        mui_text("\33b" + f.nombre + "\33n" + tr(1431, " trae varias versiones de ") + nombre + ".\n" + tr(1432, "¿Cuál va a ") + e.destino + tr(1433, "? La que hay se guarda como .old.\nAhora tienes: ") + hay)
+        l = mui_list()
+        mui_hgroup_begin()
+            bs = mui_button(tr(1434, "_Copiar la elegida"))
+            bn = mui_button(tr(1435, "_No copiar"))
+        mui_group_end()
+    mui_window_end()
+    elegida = 0
+    i = 0
+    while i < cual.length
+        mui_list_add(l, linea_de_opcion(e, cual[i]))
+        if cual[i] == e.propuesta
+            elegida = i
+        end
+        i = i + 1
+    end
+    mui_on_press(bs, ID_VARIANTE_SI)
+    mui_on_double(l, ID_VARIANTE_SI)
+    mui_on_press(bn, ID_VARIANTE_NO)
+    mui_on_close(w, ID_VARIANTE_NO)
+    # ancha: las rutas de IconLib son largas
+    mui_window_size(w, 60, 50)
+    mui_window_modal(w)
+    mui_window_open(w)
+    # la propuesta, elegida y a la vista (con la ventana ya abierta, la lista la enseña)
+    mui_set_value(l, elegida)
+    var otros: [Int] = []
+    r = -2
+    while r == -2
+        ev = mui_wait_event()
+        if ev == ID_VARIANTE_SI
+            v = mui_get_value(l)
+            if v >= 0 and v < cual.length
+                r = cual[v]
+            end
+        elif ev == ID_VARIANTE_NO
+            r = -1
+        elif ev == -1
+            r = -1
+        elif ev > 0
+            otros.push(ev)
+        end
+    end
+    mui_window_dispose(w)
+    for x in otros
+        mui_post_event(x)
+    end
+    return r
 end
 
 func desinstalar()
@@ -2649,6 +2931,10 @@ func orden(palabras: [String]) -> Int
             cli_sistema = true
         elif str_starts(str_upper(p), "DESTINO=")
             cli_destino = p[8:]
+        elif str_starts(str_upper(p), "VARIANTE=")
+            cli_variantes.push(p[9:])
+        elif str_starts(str_upper(p), "VARIANT=")
+            cli_variantes.push(p[8:])
         elif str_starts(str_upper(p), "CORTE=") or str_starts(str_upper(p), "CORTE_DESHAZ=") or str_starts(str_upper(p), "ESPACIO=")
             i = i      # ganchos de la prueba de cortes, ya leídos al empezar
         else
@@ -2759,6 +3045,7 @@ func orden(palabras: [String]) -> Int
     Print tr(1280, "Órdenes: BUSCA texto, INSTALA nombre, QUITA nombre, ACTUALIZA, LISTA, VERIFICA, DESHAZ, RETEN nombre, SUELTA nombre, VUELVE nombre, VERSION")
     Print tr(1281, "Con SI se acepta lo que se preguntaría (sin él solo se enseña); DESTINO=Work: dónde instalar.")
     Print tr(1282, "QUITA deja lo que el programa puso en LIBS:, C:, DEVS:... (otros pueden usarlo); con SISTEMA lo quita también.")
+    Print tr(1436, "Si un paquete trae varias versiones de una librería, VARIANTE=nombre elige cuál va al sistema (HB020, o su ruta).")
     return 5
 end
 
@@ -3022,6 +3309,8 @@ Main
                 cli_si = false
                 cli_sistema = false
                 cli_destino = ""
+                var sin_variantes: [String] = []
+                cli_variantes = sin_variantes
                 rc = orden(partir(o))
                 cli = false
                 rexx_reply(rc, cli_ultimo)

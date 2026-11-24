@@ -1,4 +1,4 @@
-## version $VER: Hangar.catalog 1.0 (21.11.2026)
+## version $VER: Hangar.catalog 1.0 (24.11.2026)
 ## language français
 ## codeset 0
 ;
@@ -1244,3 +1244,90 @@ _Tout
 MSG_1408
  téléchargements
 ;  descargas
+MSG_1409
+  (par défaut)
+;   (de serie)
+MSG_1410
+  (celle que tu as)
+;   (la que tienes)
+MSG_1411
+ n'a pas été copiée : 
+;  no se copió: 
+MSG_1412
+ reste noté comme 
+;  sigue apuntado como 
+MSG_1413
+ (ce sera proposé à nouveau)
+;  (se volverá a ofrecer)
+MSG_1414
+ est déjà celle-là : elle reste
+;  ya es esa: se queda
+MSG_1415
+ copiée vers 
+;  copiada a 
+MSG_1416
+une sans version
+; una sin versión
+MSG_1417
+aucune
+; ninguna
+MSG_1418
+ apporte plusieurs versions de 
+;  trae varias versiones de 
+MSG_1419
+ pour 
+;  para 
+MSG_1420
+ (maintenant : 
+;  (ahora: 
+MSG_1421
+VARIANT=
+; VARIANTE=
+MSG_1422
+ correspond à plusieurs : écris plus (le chemin entier). Rien n'est copié.
+;  vale para varias: escribe más (la ruta entera). No se copia.
+MSG_1423
+Avec VARIANT=
+; Con VARIANTE=
+MSG_1424
+Aucune n'est celle de VARIANT=. Rien n'est copié.
+; Ninguna es la de VARIANTE=. No se copia.
+MSG_1425
+Copier 
+; ¿Copiar 
+MSG_1426
+ vers 
+;  a 
+MSG_1427
+ ? Ce qui s'y trouve est gardé en .old.\n(Avec VARIANT=nom tu en choisis une autre sans question.)
+; ? Lo que haya se guarda como .old.\n(Con VARIANTE=nombre se elige otra sin preguntar.)
+MSG_1428
+_Copier|_Ne pas copier
+; _Copiar|_No copiar
+MSG_1429
+ est déjà plus récente (
+;  ya es más nueva (
+MSG_1430
+) : elle reste. VARIANT= la change.
+; ): se queda. Con VARIANTE= se cambia.
+MSG_1431
+ apporte plusieurs versions de 
+;  trae varias versiones de 
+MSG_1432
+Laquelle va dans 
+; ¿Cuál va a 
+MSG_1433
+ ? Celle qui y est est gardée en .old.\nTu as maintenant : 
+; ? La que hay se guarda como .old.\nAhora tienes: 
+MSG_1434
+_Copier la choisie
+; _Copiar la elegida
+MSG_1435
+_Ne pas copier
+; _No copiar
+MSG_1436
+Si un paquet apporte plusieurs versions d'une bibliothèque, VARIANT=nom choisit celle qui va au système (HB020, ou son chemin).
+; Si un paquete trae varias versiones de una librería, VARIANTE=nombre elige cuál va al sistema (HB020, o su ruta).
+MSG_1437
+   dans 
+;    en 
