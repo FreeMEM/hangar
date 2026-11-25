@@ -1,4 +1,4 @@
-## version $VER: Hangar.catalog 1.0 (24.11.2026)
+## version $VER: Hangar.catalog 1.0 (25.11.2026)
 ## language suomi
 ## codeset 0
 ;
@@ -1331,3 +1331,87 @@ Jos paketissa on useita versioita kirjastosta, VARIANT=nimi valitsee järjestelm
 MSG_1437
    kansiossa 
 ;    en 
+MSG_1438
+Palvelin
+; Servidor
+MSG_1439
+Kenelle
+; Para
+MSG_1440
+Myöntäjä
+; Emitido por
+MSG_1441
+Alkaen
+; Desde
+MSG_1442
+Asti
+; Hasta
+MSG_1443
+SHA-256-sormenjälki
+; Huella SHA-256
+MSG_1444
+Syy
+; Motivo
+MSG_1445
+Ei voida tarkistaa, että palvelin\n%1\non se, joka se sanoo olevansa: %2.
+; No se puede comprobar que el servidor\n%1\nsea quien dice ser: %2.
+MSG_1446
+Jos hyväksyt sen ja joku esiintyy sinä,\nhän voi nähdä tai muuttaa sen, mitä lähetetään.
+; Si lo aceptas y alguien se está haciendo pasar\npor él, podría ver o cambiar lo que se envía.
+MSG_1447
+Hangarin asentamaa ei voi muuttaa näin:\nse tarkistaa jokaisen tiedon allekirjoituksen\nja jokaisen paketin SHA-256:n.
+; Lo que instala Hangar no se puede cambiar así:\ncomprueba la firma de cada ficha\ny el SHA-256 de cada paquete.
+MSG_1448
+%1: %2
+; %1: %2
+MSG_1449
+palvelimen %1 varmennetta ei voi tarkistaa: %2
+; no se puede comprobar el certificado de %1: %2
+MSG_1450
+(Sen voi hyväksyä Hangarin ikkunassa: avaa se ja tee sama uudelleen.)
+; (Se acepta desde la ventana de Hangar: ábrelo y repite lo mismo.)
+MSG_1451
+Hangar: varmenne
+; Hangar: certificado
+MSG_1453
+palvelimen %1 varmennetta ei voitu hyväksyä
+; no se pudo aceptar el certificado de %1
+MSG_1454
+Hyväksytyt varmenteet...
+; Certificados aceptados...
+MSG_1455
+Hangar: hyväksytyt varmenteet
+; Hangar: certificados aceptados
+MSG_1456
+Varmenteet, jotka hyväksyit, vaikka niitä ei\nvoitu tarkistaa. Jos unohdat jonkin, Hangar\nvaroittaa taas, kun se näkee sen seuraavan kerran.
+; Los certificados que aceptaste aunque no se\npodían comprobar. Si olvidas uno, Hangar\nvuelve a avisar la próxima vez que lo vea.
+MSG_1457
+_Unohda valittu
+; _Olvidar el elegido
+MSG_1458
+Unohda _kaikki
+; Olvidar _todos
+MSG_1459
+_Sulje
+; _Cerrar
+MSG_1460
+Varmenne unohdettu: 
+; Certificado olvidado: 
+MSG_1461
+Unohdetaanko kaikki hyväksytyt varmenteet?
+; ¿Olvidar todos los certificados aceptados?
+MSG_1462
+_Unohda ne|*_Peru
+; _Olvidarlos|*_Cancelar
+MSG_1463
+Varmenteet unohdettu
+; Certificados olvidados
+MSG_1464
+(ei yhtään)
+; (ninguno)
+MSG_1465
+_Hyväksy tämä varmenne
+; _Aceptar este certificado
+MSG_1466
+_Peru
+; _Cancelar

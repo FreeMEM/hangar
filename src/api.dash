@@ -10,7 +10,7 @@
 #   end
 #   f = api_ficha(l.paquetes[0].id)
 #   Print f.descarga
-import "../lib/tachyon/http.dash"
+import "certificados.dash"
 
 const API_ESPERA_MS = 20000
 
@@ -150,7 +150,7 @@ func api_leer_lista(texto: String) -> Lista
 end
 
 func _api_lista(ruta: String) -> Lista
-    r = http_get(api_base + ruta, API_ESPERA_MS)
+    r = cert_get(api_base + ruta, API_ESPERA_MS)
     e = _api_error(r)
     if e != ""
         return _lista_vacia(e)
@@ -183,7 +183,7 @@ end
 # Las categorías: "cajón TAB paquetes" por elemento
 func api_categorias() -> [String]
     var r: [String] = []
-    resp = http_get(api_base + "/categorias", API_ESPERA_MS)
+    resp = cert_get(api_base + "/categorias", API_ESPERA_MS)
     if _api_error(resp) != ""
         return r
     end
@@ -304,7 +304,7 @@ func api_leer_ficha(texto: String) -> Ficha
 end
 
 func api_ficha(id: Int) -> Ficha
-    r = http_get(api_base + "/ficha/" + str_from_int(id, 10), API_ESPERA_MS)
+    r = cert_get(api_base + "/ficha/" + str_from_int(id, 10), API_ESPERA_MS)
     e = _api_error(r)
     if e != ""
         return _ficha_vacia(e)
@@ -338,7 +338,7 @@ end
 # La ficha de lo instalado por su nombre del formato 2 y su repositorio (GET /ficha-pkg/REPO/NOMBRE): el número de
 # un recibo hecho con el formato 2 es el de la entrada del índice, no el del catálogo
 func api_ficha_pkg(repo: String, nombre: String) -> Ficha
-    r = http_get(api_base + "/ficha-pkg/" + repo + "/" + nombre, API_ESPERA_MS)
+    r = cert_get(api_base + "/ficha-pkg/" + repo + "/" + nombre, API_ESPERA_MS)
     e = _api_error(r)
     if e != ""
         return _ficha_vacia(e)
@@ -347,7 +347,7 @@ func api_ficha_pkg(repo: String, nombre: String) -> Ficha
 end
 
 func api_ficha_firmada(id: Int) -> Ficha
-    r = http_get(api_base + "/ficha/" + str_from_int(id, 10), API_ESPERA_MS)
+    r = cert_get(api_base + "/ficha/" + str_from_int(id, 10), API_ESPERA_MS)
     e = _api_error(r)
     if e != ""
         return _ficha_vacia(e)
@@ -376,7 +376,7 @@ end
 func api_historial(id: Int) -> Historial
     var vs: [VersionVieja] = []
     h = Historial(vs, 0, "")
-    r = http_get(api_base + "/historial/" + str_from_int(id, 10), API_ESPERA_MS)
+    r = cert_get(api_base + "/historial/" + str_from_int(id, 10), API_ESPERA_MS)
     e = _api_error(r)
     if e != ""
         h.error = e
@@ -416,11 +416,7 @@ end
 func api_versiones(inventario: String) -> Versiones
     var cs: [Comparacion] = []
     v = Versiones(cs, "")
-    c = http_empezar_post(api_base + "/versiones", inventario, "text/plain; charset=iso-8859-1", API_ESPERA_MS)
-    while not http_avanzar(c)
-        time_delay(1)
-    end
-    r = c.respuesta
+    r = cert_post(api_base + "/versiones", inventario, "text/plain; charset=iso-8859-1", API_ESPERA_MS)
     e = _api_error(r)
     if e != ""
         v.error = e
@@ -460,11 +456,7 @@ end
 func api_reconocer(inventario: String) -> Reconocidos
     var rs: [Reconocido] = []
     v = Reconocidos(rs, "")
-    c = http_empezar_post(api_base + "/reconocer", inventario, "text/plain; charset=iso-8859-1", API_ESPERA_MS)
-    while not http_avanzar(c)
-        time_delay(1)
-    end
-    r = c.respuesta
+    r = cert_post(api_base + "/reconocer", inventario, "text/plain; charset=iso-8859-1", API_ESPERA_MS)
     e = _api_error(r)
     if e != ""
         v.error = e
@@ -497,7 +489,7 @@ end
 # Avisa al servidor de que se ha bajado un programa, para su contador de descargas (lo de Aminet y GitHub no pasa
 # por Hangar); sin esperar mucho y sin que importe si falla
 func api_avisar_descarga(id: Int, version: String)
-    r = http_get(api_base + "/descargado/" + str_from_int(id, 10) + "?v=" + str_replace(version, " ", "%20"), 5000)
+    r = cert_get(api_base + "/descargado/" + str_from_int(id, 10) + "?v=" + str_replace(version, " ", "%20"), 5000)
 end
 
 func api_url_miniatura(id: Int) -> String

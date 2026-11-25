@@ -1,0 +1,288 @@
+# Certificados que no se pueden comprobar (lo pidió el usuario, 2026-11-24): si una conexión segura falla por el
+# certificado del servidor (autofirmado, caducado, de otro nombre...), se avisa con sus datos y se pregunta si se
+# acepta. Aceptado: tls_trust de Dash con su huella, se guarda en los ajustes (ENVARC:Hangar/certificados, una línea
+# por certificado: "huella servidor fecha") y se repite la petición. Al arrancar, cert_cargar los vuelve a aceptar.
+#
+#   r = cert_get(url, espera_ms)            # http_get que pregunta y repite
+#   if cert_repetir(c.respuesta)            # tras una carga sin esperar: true, aceptado (hay que repetirla)
+#
+# Con cert_ventana a 0 (desde el Shell o ARexx) no se acepta nada: se dice el motivo, los datos y que se acepta desde
+# la ventana de Hangar. Un error de una conexión segura dice siempre el servidor.
+
+import "../lib/tachyon/http.dash"
+
+const CERT_AJUSTES = "Hangar/certificados"
+
+# La ventana principal, si la hay: entonces se pregunta en una ventana (0: desde el Shell o ARexx, no se pregunta)
+var cert_ventana: Int = 0
+# Las huellas que el usuario no quiso aceptar en esta acción: no se le vuelve a preguntar por cada petición que
+# siga (cert_nueva_accion las olvida)
+var cert_rechazadas: [String] = []
+# Las huellas aceptadas en esta ejecución (si aun así falla, no se pregunta otra vez: no se repite sin fin)
+var cert_aceptadas: [String] = []
+
+# Al arrancar: acepta otra vez los certificados guardados
+func cert_cargar()
+    for l in cert_guardados()
+        tls_trust(cert_campo(l, 0))
+    end
+end
+
+# Las líneas guardadas ("huella servidor fecha")
+func cert_guardados() -> [String]
+    var ls: [String] = []
+    for l in str_split(env_get_text(CERT_AJUSTES), "\n")
+        t = str_trim(l)
+        if t != ""
+            ls.push(t)
+        end
+    end
+    return ls
+end
+
+# El campo n de una línea guardada (0 huella, 1 servidor, 2 fecha)
+func cert_campo(l: String, n: Int) -> String
+    var ps: [String] = []
+    for p in str_split(l, " ")
+        if p != ""
+            ps.push(p)
+        end
+    end
+    if n >= ps.length
+        return ""
+    end
+    if n == 2
+        return str_join(ps[2:], " ")
+    end
+    return ps[n]
+end
+
+func _cert_escribir(ls: [String])
+    t = ""
+    for l in ls
+        t = t + l + "\n"
+    end
+    dir_create("ENV:Hangar")
+    dir_create("ENVARC:Hangar")
+    env_set(CERT_AJUSTES, t, true)
+end
+
+# Acepta un certificado desde ahora y para siempre
+func cert_aceptar(huella: String, servidor: String) -> Bool
+    if not tls_trust(huella)
+        return false
+    end
+    var ls: [String] = []
+    for l in cert_guardados()
+        if str_upper(cert_campo(l, 0)) != str_upper(huella)
+            ls.push(l)
+        end
+    end
+    ls.push(huella + " " + servidor + " " + date_text("%Y-%m-%d %H:%M"))
+    _cert_escribir(ls)
+    cert_aceptadas.push(str_upper(huella))
+    return true
+end
+
+# Deja de aceptarlo
+func cert_olvidar(huella: String)
+    tls_untrust(huella)
+    var ls: [String] = []
+    for l in cert_guardados()
+        if str_upper(cert_campo(l, 0)) != str_upper(huella)
+            ls.push(l)
+        end
+    end
+    _cert_escribir(ls)
+    var nada: [String] = []
+    for a in cert_aceptadas
+        if a != str_upper(huella)
+            nada.push(a)
+        end
+    end
+    cert_aceptadas = nada
+end
+
+func cert_olvidar_todos()
+    tls_trust_clear()
+    var nada: [String] = []
+    _cert_escribir(nada)
+    var otra: [String] = []
+    cert_aceptadas = otra
+end
+
+# Una acción nueva del usuario: se puede volver a preguntar por lo que no quiso aceptar
+func cert_nueva_accion()
+    var nada: [String] = []
+    cert_rechazadas = nada
+end
+
+# El valor de "Etiqueta: valor"
+func _cert_valor(l: String) -> String
+    p = str_find(l, ": ")
+    if p < 0
+        return ""
+    end
+    return l[p + 2:]
+end
+
+# Los datos de tls_last_cert, con las etiquetas en el idioma del usuario
+func cert_datos(cert: String) -> String
+    etiquetas = ["Servidor", "Para", "Emitido por", "Desde", "Hasta", "Huella SHA-256", "Motivo"]
+    textos = [tr(1438, "Servidor"), tr(1439, "Para"), tr(1440, "Emitido por"), tr(1441, "Desde"), tr(1442, "Hasta"), tr(1443, "Huella SHA-256"), tr(1444, "Motivo")]
+    t = ""
+    for l in str_split(cert, "\n")
+        if l != ""
+            linea = l
+            p = str_find(l, ": ")
+            if p > 0
+                e = l[:p]
+                v = l[p + 2:]
+                for i in (0..etiquetas.length - 1)
+                    if e == etiquetas[i]
+                        e = textos[i]
+                    end
+                end
+                # la huella, en dos líneas: entera no cabe en una pantalla de 640
+                if l[:p] == "Huella SHA-256" and v.length > 60
+                    v = v[:48] + "\n" + v[48:]
+                end
+                linea = e + ": " + v
+            end
+            if t != ""
+                t = t + "\n"
+            end
+            t = t + linea
+        end
+    end
+    return t
+end
+
+# El aviso, en líneas cortas (cabe en una pantalla de 640 x 256)
+func cert_texto_aviso(servidor: String, motivo: String) -> String
+    t = hueco2(tr(1445, "No se puede comprobar que el servidor\n%1\nsea quien dice ser: %2."), servidor, motivo)
+    t = t + "\n" + tr(1446, "Si lo aceptas y alguien se está haciendo pasar\npor él, podría ver o cambiar lo que se envía.")
+    return t + "\n" + tr(1447, "Lo que instala Hangar no se puede cambiar así:\ncomprueba la firma de cada ficha\ny el SHA-256 de cada paquete.")
+end
+
+# El aviso con los datos del certificado (desde el Shell)
+func cert_aviso(servidor: String, motivo: String, cert: String) -> String
+    return cert_texto_aviso(servidor, motivo) + "\n\n" + cert_datos(cert)
+end
+
+const CERT_ID_ACEPTAR = 950
+const CERT_ID_CANCELAR = 951
+
+# La ventana del aviso: el texto, los datos del certificado en una lista y dos botones. Cancelar es el elegido: Return
+# no lo acepta (y Esc tampoco); cerrarla es cancelar. Mientras está abierta, las demás duermen; los eventos que no son
+# suyos se vuelven a mandar al cerrarla. (Con mui_request no cabe todo en una pantalla de 640 x 256: MUI no la
+# dibuja.) true si se acepta.
+func cert_preguntar(servidor: String, motivo: String, cert: String) -> Bool
+    w = mui_window_begin(tr(1451, "Hangar: certificado"), 0)
+        mui_text(cert_texto_aviso(servidor, motivo))
+        l = mui_list()
+        mui_hgroup_begin()
+            bs = mui_button(tr(1465, "_Aceptar este certificado"))
+            bn = mui_button(tr(1466, "_Cancelar"))
+        mui_group_end()
+    mui_window_end()
+    for d in str_split(cert_datos(cert), "\n")
+        mui_list_add(l, d)
+    end
+    mui_on_press(bs, CERT_ID_ACEPTAR)
+    mui_on_press(bn, CERT_ID_CANCELAR)
+    mui_on_close(w, CERT_ID_CANCELAR)
+    mui_window_size(w, 75, 85)
+    mui_window_modal(w)
+    mui_window_open(w)
+    mui_set_active(w, bn)
+    var otros: [Int] = []
+    r = 0
+    while r == 0
+        ev = mui_wait_event()
+        if ev == CERT_ID_ACEPTAR
+            r = 1
+        elif ev == CERT_ID_CANCELAR or ev == -1
+            r = -1
+        elif ev > 0
+            otros.push(ev)
+        end
+    end
+    mui_window_dispose(w)
+    for x in otros
+        mui_post_event(x)
+    end
+    return r == 1
+end
+
+# Tras una petición: si falló por un certificado que no se puede comprobar, avisa y pregunta si se acepta. true: se
+# aceptó y hay que repetirla. Si no, el error de r dice el servidor y el motivo.
+func cert_repetir(r: Respuesta) -> Bool
+    if r.error == "" or r.estado != 0
+        return false
+    end
+    u = url_parse(r.url)
+    if u.esquema != "https"
+        return false
+    end
+    servidor = u.host
+    cert = tls_last_cert(servidor)
+    huella = tls_last_fingerprint(servidor)
+    motivo = ""
+    for l in str_split(cert, "\n")
+        if str_starts(l, "Motivo: ")
+            motivo = _cert_valor(l)
+        end
+    end
+    # otro fallo (el certificado que se ve es de otra vez): el motivo real y el servidor
+    if huella == "" or motivo == "" or str_find(r.error, motivo) < 0
+        r.error = hueco2(tr(1448, "%1: %2"), servidor, r.error)
+        return false
+    end
+    r.error = hueco2(tr(1449, "no se puede comprobar el certificado de %1: %2"), servidor, motivo)
+    clave = str_upper(huella)
+    if clave in cert_rechazadas or clave in cert_aceptadas
+        return false
+    end
+    if cert_ventana == 0
+        Print cert_aviso(servidor, motivo, cert)
+        Print tr(1450, "(Se acepta desde la ventana de Hangar: ábrelo y repite lo mismo.)")
+        cert_rechazadas.push(clave)
+        return false
+    end
+    if not cert_preguntar(servidor, motivo, cert)
+        cert_rechazadas.push(clave)
+        return false
+    end
+    if not cert_aceptar(huella, servidor)
+        r.error = hueco(tr(1453, "no se pudo aceptar el certificado de %1"), servidor)
+        return false
+    end
+    return true
+end
+
+# http_get que pregunta por un certificado que no se puede comprobar y repite si se acepta
+func cert_get(direccion: String, espera_ms: Int) -> Respuesta
+    r = http_get(direccion, espera_ms)
+    while cert_repetir(r)
+        r = http_get(direccion, espera_ms)
+    end
+    return r
+end
+
+# Lo mismo con un POST (sin esperar por dentro)
+func cert_post(direccion: String, cuerpo: String, tipo: String, espera_ms: Int) -> Respuesta
+    r = _cert_post(direccion, cuerpo, tipo, espera_ms)
+    while cert_repetir(r)
+        r = _cert_post(direccion, cuerpo, tipo, espera_ms)
+    end
+    return r
+end
+
+func _cert_post(direccion: String, cuerpo: String, tipo: String, espera_ms: Int) -> Respuesta
+    c = http_empezar_post(direccion, cuerpo, tipo, espera_ms)
+    while not http_avanzar(c)
+        time_delay(1)
+    end
+    return c.respuesta
+end

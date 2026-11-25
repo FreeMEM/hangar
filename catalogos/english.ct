@@ -1,4 +1,4 @@
-## version $VER: Hangar.catalog 1.0 (24.11.2026)
+## version $VER: Hangar.catalog 1.0 (25.11.2026)
 ## language english
 ## codeset 0
 ;
@@ -1331,3 +1331,87 @@ If a package comes with several versions of a library, VARIANT=name picks the on
 MSG_1437
    in 
 ;    en 
+MSG_1438
+Server
+; Servidor
+MSG_1439
+For
+; Para
+MSG_1440
+Issued by
+; Emitido por
+MSG_1441
+From
+; Desde
+MSG_1442
+Until
+; Hasta
+MSG_1443
+SHA-256 fingerprint
+; Huella SHA-256
+MSG_1444
+Reason
+; Motivo
+MSG_1445
+Can't check that the server\n%1\nis who it says it is: %2.
+; No se puede comprobar que el servidor\n%1\nsea quien dice ser: %2.
+MSG_1446
+If you accept it and someone is impersonating it,\nthey could see or change what is sent.
+; Si lo aceptas y alguien se está haciendo pasar\npor él, podría ver o cambiar lo que se envía.
+MSG_1447
+What Hangar installs can't be changed this way:\nit checks the signature of each entry\nand the SHA-256 of each package.
+; Lo que instala Hangar no se puede cambiar así:\ncomprueba la firma de cada ficha\ny el SHA-256 de cada paquete.
+MSG_1448
+%1: %2
+; %1: %2
+MSG_1449
+can't check the certificate of %1: %2
+; no se puede comprobar el certificado de %1: %2
+MSG_1450
+(It is accepted from Hangar's window: open it and do the same again.)
+; (Se acepta desde la ventana de Hangar: ábrelo y repite lo mismo.)
+MSG_1451
+Hangar: certificate
+; Hangar: certificado
+MSG_1453
+couldn't accept the certificate of %1
+; no se pudo aceptar el certificado de %1
+MSG_1454
+Accepted certificates...
+; Certificados aceptados...
+MSG_1455
+Hangar: accepted certificates
+; Hangar: certificados aceptados
+MSG_1456
+The certificates you accepted although they\ncouldn't be checked. If you forget one, Hangar\nwarns again the next time it sees it.
+; Los certificados que aceptaste aunque no se\npodían comprobar. Si olvidas uno, Hangar\nvuelve a avisar la próxima vez que lo vea.
+MSG_1457
+_Forget the chosen one
+; _Olvidar el elegido
+MSG_1458
+Forget _all
+; Olvidar _todos
+MSG_1459
+_Close
+; _Cerrar
+MSG_1460
+Certificate forgotten: 
+; Certificado olvidado: 
+MSG_1461
+Forget all the accepted certificates?
+; ¿Olvidar todos los certificados aceptados?
+MSG_1462
+_Forget them|*_Cancel
+; _Olvidarlos|*_Cancelar
+MSG_1463
+Certificates forgotten
+; Certificados olvidados
+MSG_1464
+(none)
+; (ninguno)
+MSG_1465
+_Accept this certificate
+; _Aceptar este certificado
+MSG_1466
+_Cancel
+; _Cancelar

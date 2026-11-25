@@ -1,0 +1,74 @@
+# Test: un certificado que no se puede comprobar (src/certificados.dash; lo pidió el usuario). El servidor HTTPS de
+# tests/servers/tls.py tiene uno autofirmado: sin ventana (desde el Shell) no se acepta, se dice el motivo real, el
+# servidor y los datos, y una vez por acción. Aceptado, conecta y queda en los ajustes (ENV:Hangar/certificados);
+# al arrancar otra vez (tls_trust_clear y cert_cargar) sigue aceptado. Olvidado, vuelve a fallar. Otro fallo de una
+# conexión segura (nadie escucha) dice el servidor.
+# emu-server: tls.py 47140
+# emu-needs: amisslmaster.library
+# expect-out: No se puede comprobar que el servidor
+# expect-out: 127.0.0.1
+# expect-out: sea quien dice ser: self-signed certificate.
+# expect-out: Si lo aceptas y alguien se está haciendo pasar
+# expect-out: por él, podría ver o cambiar lo que se envía.
+# expect-out: Lo que instala Hangar no se puede cambiar así:
+# expect-out: comprueba la firma de cada ficha
+# expect-out: y el SHA-256 de cada paquete.
+# expect-out:
+# expect-out: Servidor: 127.0.0.1
+# expect-out: Para: localhost (Hangar pruebas)
+# expect-out: Emitido por: localhost (Hangar pruebas)
+# expect-out: Desde: 2026-01-01 00:00 UTC
+# expect-out: Hasta: 2126-01-01 00:00 UTC
+# expect-out: Huella SHA-256: 5F:F9:F5:BE:FC:27:F3:58:A8:49:F5:91:C6:3D:AA:3C:
+# expect-out: 8A:00:9E:BB:5D:1C:8B:92:F4:4B:1B:CD:9E:C5:63:1B
+# expect-out: Motivo: self-signed certificate
+# expect-out: (Se acepta desde la ventana de Hangar: ábrelo y repite lo mismo.)
+# expect-out: sin aceptar: 0 [no se puede comprobar el certificado de 127.0.0.1: self-signed certificate]
+# expect-out: otra vez: 0 [no se puede comprobar el certificado de 127.0.0.1: self-signed certificate]
+# expect-out: acepta: true
+# expect-out: aceptado: 200 hola
+# expect-out: guardados: 1 127.0.0.1 5F:F9:F5:BE:FC:27:F3:58:A8:49:F5:91:C6:3D:AA:3C:8A:00:9E:BB:5D:1C:8B:92:F4:4B:1B:CD:9E:C5:63:1B
+# expect-out: fecha: true
+# expect-out: tras arrancar: 200 hola
+# expect-out: olvidado: 0
+# expect-out: tras olvidar: 0 [no se puede comprobar el certificado de 127.0.0.1: self-signed certificate]
+# expect-out: nadie: [127.0.0.1: connection refused]
+# expect-out: por http: [connection refused]
+import "../src/certificados.dash"
+
+const URL = "https://127.0.0.1:47140/hola"
+
+func cuerpo(r: Respuesta) -> String
+    return str_trim(http_texto(r))
+end
+
+Main
+    cert_olvidar_todos()
+    r = cert_get(URL, 10000)
+    Print "sin aceptar: #{r.estado} [" + r.error + "]"
+    # en la misma acción no se vuelve a avisar
+    r = cert_get(URL, 10000)
+    Print "otra vez: #{r.estado} [" + r.error + "]"
+    huella = tls_last_fingerprint("127.0.0.1")
+    Print "acepta: #{cert_aceptar(huella, "127.0.0.1")}"
+    r = cert_get(URL, 10000)
+    Print "aceptado: #{r.estado} " + cuerpo(r)
+    ls = cert_guardados()
+    Print "guardados: #{ls.length} " + cert_campo(ls[0], 1) + " " + cert_campo(ls[0], 0)
+    Print "fecha: #{cert_campo(ls[0], 2) != ""}"
+    # como al arrancar otra vez: lo de esta ejecución se va, lo guardado se carga
+    tls_trust_clear()
+    var nada: [String] = []
+    cert_aceptadas = nada
+    cert_cargar()
+    r = cert_get(URL, 10000)
+    Print "tras arrancar: #{r.estado} " + cuerpo(r)
+    cert_olvidar(huella)
+    Print "olvidado: #{cert_guardados().length}"
+    r = cert_get(URL, 10000)
+    Print "tras olvidar: #{r.estado} [" + r.error + "]"
+    r = cert_get("https://127.0.0.1:47141/hola", 10000)
+    Print "nadie: [" + r.error + "]"
+    r = cert_get("http://127.0.0.1:47141/hola", 10000)
+    Print "por http: [" + r.error + "]"
+end

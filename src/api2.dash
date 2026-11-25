@@ -365,13 +365,13 @@ func api2_keys_traer(repo: RepoConf) -> String
         return tr(1016, "no sé dónde está el keys de ") + repo.nombre
     end
     base = repo.url[:p] + "/repo/" + repo.nombre + "/keys"
-    r = http_get(base, API_ESPERA_MS)
+    r = cert_get(base, API_ESPERA_MS)
     e = api_error(r)
     if e != ""
         return e
     end
     texto = r.cuerpo
-    s = http_get(base + ".sig", API_ESPERA_MS)
+    s = cert_get(base + ".sig", API_ESPERA_MS)
     e = api_error(s)
     if e != ""
         return e
@@ -423,13 +423,9 @@ func api2_pedir(repo: RepoConf, ruta: String, cuerpo: String) -> Respuesta2
     url = repo.url + "/" + api2_arquitectura + "/" + ruta + sep + "nonce=" + nonce
     var r: Respuesta = nil
     if cuerpo == ""
-        r = http_get(url, API_ESPERA_MS)
+        r = cert_get(url, API_ESPERA_MS)
     else
-        c = http_empezar_post(url, cuerpo, "text/plain; charset=iso-8859-1", API_ESPERA_MS)
-        while not http_avanzar(c)
-            time_delay(1)
-        end
-        r = c.respuesta
+        r = cert_post(url, cuerpo, "text/plain; charset=iso-8859-1", API_ESPERA_MS)
     end
     e = api_error(r)
     if e != ""

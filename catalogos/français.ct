@@ -1,4 +1,4 @@
-## version $VER: Hangar.catalog 1.0 (24.11.2026)
+## version $VER: Hangar.catalog 1.0 (25.11.2026)
 ## language français
 ## codeset 0
 ;
@@ -1331,3 +1331,87 @@ Si un paquet apporte plusieurs versions d'une bibliothèque, VARIANT=nom choisit
 MSG_1437
    dans 
 ;    en 
+MSG_1438
+Serveur
+; Servidor
+MSG_1439
+Pour
+; Para
+MSG_1440
+Émis par
+; Emitido por
+MSG_1441
+Depuis
+; Desde
+MSG_1442
+Jusqu'à
+; Hasta
+MSG_1443
+Empreinte SHA-256
+; Huella SHA-256
+MSG_1444
+Raison
+; Motivo
+MSG_1445
+Impossible de vérifier que le serveur\n%1\nest bien celui qu'il prétend être : %2.
+; No se puede comprobar que el servidor\n%1\nsea quien dice ser: %2.
+MSG_1446
+Si tu l'acceptes et que quelqu'un se fait passer pour lui,\nil pourrait voir ou modifier ce qui est envoyé.
+; Si lo aceptas y alguien se está haciendo pasar\npor él, podría ver o cambiar lo que se envía.
+MSG_1447
+Ce qu'installe Hangar ne peut pas être modifié ainsi :\nil vérifie la signature de chaque fiche\net le SHA-256 de chaque paquet.
+; Lo que instala Hangar no se puede cambiar así:\ncomprueba la firma de cada ficha\ny el SHA-256 de cada paquete.
+MSG_1448
+%1 : %2
+; %1: %2
+MSG_1449
+impossible de vérifier le certificat de %1 : %2
+; no se puede comprobar el certificado de %1: %2
+MSG_1450
+(On l'accepte depuis la fenêtre de Hangar : ouvre-la et refais la même chose.)
+; (Se acepta desde la ventana de Hangar: ábrelo y repite lo mismo.)
+MSG_1451
+Hangar : certificat
+; Hangar: certificado
+MSG_1453
+impossible d'accepter le certificat de %1
+; no se pudo aceptar el certificado de %1
+MSG_1454
+Certificats acceptés...
+; Certificados aceptados...
+MSG_1455
+Hangar : certificats acceptés
+; Hangar: certificados aceptados
+MSG_1456
+Les certificats que tu as acceptés bien qu'ils\nn'aient pas pu être vérifiés. Si tu en oublies un,\nHangar préviendra de nouveau la prochaine fois.
+; Los certificados que aceptaste aunque no se\npodían comprobar. Si olvidas uno, Hangar\nvuelve a avisar la próxima vez que lo vea.
+MSG_1457
+_Oublier celui choisi
+; _Olvidar el elegido
+MSG_1458
+Oublier _tous
+; Olvidar _todos
+MSG_1459
+_Fermer
+; _Cerrar
+MSG_1460
+Certificat oublié : 
+; Certificado olvidado: 
+MSG_1461
+Oublier tous les certificats acceptés ?
+; ¿Olvidar todos los certificados aceptados?
+MSG_1462
+_Les oublier|*A_nnuler
+; _Olvidarlos|*_Cancelar
+MSG_1463
+Certificats oubliés
+; Certificados olvidados
+MSG_1464
+(aucun)
+; (ninguno)
+MSG_1465
+_Accepter ce certificat
+; _Aceptar este certificado
+MSG_1466
+A_nnuler
+; _Cancelar

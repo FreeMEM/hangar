@@ -1,4 +1,4 @@
-## version $VER: Hangar.catalog 1.0 (24.11.2026)
+## version $VER: Hangar.catalog 1.0 (25.11.2026)
 ## language deutsch
 ## codeset 0
 ;
@@ -1331,3 +1331,87 @@ Bringt ein Paket mehrere Versionen einer Library, wählt VARIANT=Name die für d
 MSG_1437
    in 
 ;    en 
+MSG_1438
+Server
+; Servidor
+MSG_1439
+Für
+; Para
+MSG_1440
+Ausgestellt von
+; Emitido por
+MSG_1441
+Gültig ab
+; Desde
+MSG_1442
+Gültig bis
+; Hasta
+MSG_1443
+SHA-256-Fingerabdruck
+; Huella SHA-256
+MSG_1444
+Grund
+; Motivo
+MSG_1445
+Es lässt sich nicht prüfen, ob der Server\n%1\nder ist, der er vorgibt zu sein: %2.
+; No se puede comprobar que el servidor\n%1\nsea quien dice ser: %2.
+MSG_1446
+Wenn du es annimmst und sich jemand als er ausgibt,\nkönnte er sehen oder ändern, was gesendet wird.
+; Si lo aceptas y alguien se está haciendo pasar\npor él, podría ver o cambiar lo que se envía.
+MSG_1447
+Was Hangar installiert, lässt sich so nicht ändern:\nes prüft die Signatur jedes Eintrags\nund die SHA-256 jedes Pakets.
+; Lo que instala Hangar no se puede cambiar así:\ncomprueba la firma de cada ficha\ny el SHA-256 de cada paquete.
+MSG_1448
+%1: %2
+; %1: %2
+MSG_1449
+das Zertifikat von %1 lässt sich nicht prüfen: %2
+; no se puede comprobar el certificado de %1: %2
+MSG_1450
+(Annehmen geht im Fenster von Hangar: öffne es und mach dasselbe noch einmal.)
+; (Se acepta desde la ventana de Hangar: ábrelo y repite lo mismo.)
+MSG_1451
+Hangar: Zertifikat
+; Hangar: certificado
+MSG_1453
+das Zertifikat von %1 ließ sich nicht annehmen
+; no se pudo aceptar el certificado de %1
+MSG_1454
+Angenommene Zertifikate...
+; Certificados aceptados...
+MSG_1455
+Hangar: angenommene Zertifikate
+; Hangar: certificados aceptados
+MSG_1456
+Die Zertifikate, die du angenommen hast, obwohl\nsie sich nicht prüfen ließen. Vergisst du eins,\nwarnt Hangar wieder, wenn es ihm erneut begegnet.
+; Los certificados que aceptaste aunque no se\npodían comprobar. Si olvidas uno, Hangar\nvuelve a avisar la próxima vez que lo vea.
+MSG_1457
+Das gewählte _vergessen
+; _Olvidar el elegido
+MSG_1458
+_Alle vergessen
+; Olvidar _todos
+MSG_1459
+_Schließen
+; _Cerrar
+MSG_1460
+Zertifikat vergessen: 
+; Certificado olvidado: 
+MSG_1461
+Alle angenommenen Zertifikate vergessen?
+; ¿Olvidar todos los certificados aceptados?
+MSG_1462
+_Vergessen|*_Abbrechen
+; _Olvidarlos|*_Cancelar
+MSG_1463
+Zertifikate vergessen
+; Certificados olvidados
+MSG_1464
+(keins)
+; (ninguno)
+MSG_1465
+Dieses Zertifikat _annehmen
+; _Aceptar este certificado
+MSG_1466
+A_bbrechen
+; _Cancelar

@@ -1,6 +1,6 @@
 # Hangar: busca, instala y pone al día el software del Amiga. Busca en el catálogo de hangar.freemem.space, enseña la ficha, instala
 # (baja el .lha y lo descomprime, sin C:lha), actualiza, desinstala y ejecuta.
-@version "Hangar 0.19.1"
+@version "Hangar 0.20.0"
 @catalog "Hangar.catalog" 1 "español"
 import "api.dash"
 import "lha.dash"
@@ -15,7 +15,7 @@ import "plan2.dash"
 import "instalador.dash"
 import "elegir.dash"
 
-const VERSION = "0.19.1"
+const VERSION = "0.20.0"
 
 const ID_BUSCAR = 1
 const ID_NOVEDADES = 2
@@ -41,8 +41,12 @@ const ID_MIRAR = 24
 const ID_ELEGIR = 25
 const ID_CONTAR = 26          # tras una acción: el número de Actualizar (N), otra vez
 const ID_HANGAR = 27          # menú: Actualizar Hangar
+const ID_CERTIFICADOS = 28    # menú: Certificados aceptados
 const ID_VARIANTE_SI = 30     # la ventana de elegir una variante (Choice): Copiar la elegida
 const ID_VARIANTE_NO = 31     # y No copiar
+const ID_CERT_OLVIDAR = 32    # la ventana de los certificados aceptados: Olvidar el elegido
+const ID_CERT_TODOS = 33      # Olvidarlos todos
+const ID_CERT_CERRAR = 34     # y Cerrar
 const ID_CATEGORIA = 40       # los botones de categorías: 40 en adelante, en el orden de CATEGORIAS
 
 # Lo que se baja: aquí se queda cada versión (para volver a ella) y aquí se descomprime antes de ponerla en su sitio
@@ -419,24 +423,30 @@ func ver_ficha(i: Int)
 end
 
 # Baja una URL a un fichero con la barra de progreso, sin congelar la ventana. "" si fue bien
+# (un certificado que no se puede comprobar: se pregunta y, si se acepta, se baja otra vez)
 func bajar(url: String, fichero: String) -> String
-    c = http_volcar(http_empezar_a_fichero(url, fichero, 30000))
-    while not http_avanzar(c)
-        t = http_total(c)
-        if t > 0
-            progreso(http_recibidos(c) * 100 / t)
-        end
-        if not cli
-            ev = mui_poll_event()
-            if ev == -1
-                http_cancelar(c)
-                return "cancelado"
+    var r: Respuesta = nil
+    otra = true
+    while otra
+        c = http_volcar(http_empezar_a_fichero(url, fichero, 30000))
+        while not http_avanzar(c)
+            t = http_total(c)
+            if t > 0
+                progreso(http_recibidos(c) * 100 / t)
             end
+            if not cli
+                ev = mui_poll_event()
+                if ev == -1
+                    http_cancelar(c)
+                    return "cancelado"
+                end
+            end
+            time_delay(1)
         end
-        time_delay(1)
+        r = c.respuesta
+        otra = cert_repetir(r)
     end
     progreso(100)
-    r = c.respuesta
     if r.error != ""
         return r.error
     end
@@ -2301,6 +2311,68 @@ func limpiar_cache()
     estado(cuantos(borrados, tr(1210, "fichero borrado"), tr(1211, "ficheros borrados")) + tr(1212, " de la caché"))
 end
 
+# Los certificados aceptados (src/certificados.dash): cuáles son, olvidar uno u olvidarlos todos. Como la de elegir
+# la variante: modal, y los eventos que no son suyos se vuelven a mandar al cerrarla.
+func ventana_certificados()
+    w = mui_window_begin(tr(1455, "Hangar: certificados aceptados"), 0)
+        mui_text(tr(1456, "Los certificados que aceptaste aunque no se\npodían comprobar. Si olvidas uno, Hangar\nvuelve a avisar la próxima vez que lo vea."))
+        l = mui_list()
+        mui_hgroup_begin()
+            bo = mui_button(tr(1457, "_Olvidar el elegido"))
+            bt = mui_button(tr(1458, "Olvidar _todos"))
+            bc = mui_button(tr(1459, "_Cerrar"))
+        mui_group_end()
+    mui_window_end()
+    certs_a_lista(l)
+    mui_on_press(bo, ID_CERT_OLVIDAR)
+    mui_on_press(bt, ID_CERT_TODOS)
+    mui_on_press(bc, ID_CERT_CERRAR)
+    mui_on_close(w, ID_CERT_CERRAR)
+    # (con 40 % de alto, en una pantalla de 256 no se veían los botones)
+    mui_window_size(w, 90, 75)
+    mui_window_modal(w)
+    mui_window_open(w)
+    var otros: [Int] = []
+    sigue = true
+    while sigue
+        ev = mui_wait_event()
+        if ev == ID_CERT_OLVIDAR
+            v = mui_get_value(l)
+            ls = cert_guardados()
+            if v >= 0 and v < ls.length
+                cert_olvidar(cert_campo(ls[v], 0))
+                certs_a_lista(l)
+                estado(tr(1460, "Certificado olvidado: ") + cert_campo(ls[v], 1))
+            end
+        elif ev == ID_CERT_TODOS
+            if cert_guardados().length > 0 and mui_request(w, "Hangar", tr(1461, "¿Olvidar todos los certificados aceptados?"), tr(1462, "_Olvidarlos|*_Cancelar")) == 1
+                cert_olvidar_todos()
+                certs_a_lista(l)
+                estado(tr(1463, "Certificados olvidados"))
+            end
+        elif ev == ID_CERT_CERRAR or ev == -1
+            sigue = false
+        elif ev > 0
+            otros.push(ev)
+        end
+    end
+    mui_window_dispose(w)
+    for x in otros
+        mui_post_event(x)
+    end
+end
+
+# Una línea por certificado guardado: el servidor, cuándo se aceptó y su huella
+func certs_a_lista(l: Int)
+    mui_list_clear(l)
+    for c in cert_guardados()
+        mui_list_add(l, cert_campo(c, 1) + "   " + cert_campo(c, 2) + "   " + cert_campo(c, 0))
+    end
+    if mui_list_count(l) == 0
+        mui_list_add(l, tr(1464, "(ninguno)"))
+    end
+end
+
 # Deshace la última instalación, actualización o desinstalación que acabó bien
 func deshacer_ultima()
     que = tr_ultima()
@@ -3101,6 +3173,8 @@ Main
             r.clave_id = api2_clave_id(clave2)
         end
     end
+    # los certificados que el usuario aceptó (ENVARC:Hangar/certificados), antes de nada que vaya por la red
+    cert_cargar()
     # otra raíz de confianza para los keys (la del servidor de pruebas, tests/punta2.py)
     kr = str_trim(env_get("Hangar/raiz"))
     if kr.length == 64
@@ -3152,6 +3226,7 @@ Main
             mui_menu_item(tr(1289, "Actualizar Hangar..."), "", ID_HANGAR)
             mui_menu_item(tr(1290, "Verificar lo instalado..."), "K", ID_VERIFICAR)
             mui_menu_item(tr(1291, "Limpiar la caché"), "L", ID_LIMPIAR)
+            mui_menu_item(tr(1454, "Certificados aceptados..."), "", ID_CERTIFICADOS)
             mui_menu_separator()
             # lo del programa elegido, aparte: "Retener" pegado a "Actualizar todo" se elegía sin querer
             mui_menu_item(tr(1292, "Retener o soltar el elegido"), "R", ID_RETENER)
@@ -3271,6 +3346,7 @@ Main
     if not abierta
         Print tr(1308, "Hangar: no se pudo abrir la ventana")
     else
+        cert_ventana = w_ventana
         mui_set_active(w_ventana, w_buscar)
         if cortada >= 0
             preguntar(tr(1309, "Una instalación se cortó a mitad la última vez.\nSe ha deshecho: todo está como antes."), tr(1384, "_Vale"))
@@ -3301,11 +3377,17 @@ Main
         else
             ev = mui_wait_event()
         end
+        # algo que pide el usuario: se puede volver a preguntar por un certificado que no quiso aceptar (lo que hace
+        # Hangar solo, como mirar las versiones al arrancar, no vuelve a preguntar)
+        if ev > 0 and ev != ID_MIRAR and ev != ID_CONTAR
+            cert_nueva_accion()
+        end
         if ev == 0 and arexx
             o = rexx_get()
             while o != ""
                 # sin ventana para preguntar: lo que diría va al título; con SI se acepta
                 cli = true
+                cert_ventana = 0
                 cli_si = false
                 cli_sistema = false
                 cli_destino = ""
@@ -3313,6 +3395,7 @@ Main
                 cli_variantes = sin_variantes
                 rc = orden(partir(o))
                 cli = false
+                cert_ventana = w_ventana
                 rexx_reply(rc, cli_ultimo)
                 refrescar()
                 o = rexx_get()
@@ -3398,6 +3481,8 @@ Main
             volver_atras()
         elif ev == ID_LIMPIAR
             limpiar_cache()
+        elif ev == ID_CERTIFICADOS
+            ventana_certificados()
         elif ev == ID_VERIFICAR
             verificar()
         elif ev == ID_ACERCA

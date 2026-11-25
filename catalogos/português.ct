@@ -1,4 +1,4 @@
-## version $VER: Hangar.catalog 1.0 (24.11.2026)
+## version $VER: Hangar.catalog 1.0 (25.11.2026)
 ## language português
 ## codeset 0
 ;
@@ -1331,3 +1331,87 @@ Se um pacote traz várias versões de uma biblioteca, VARIANTE=nome escolhe a qu
 MSG_1437
    em 
 ;    en 
+MSG_1438
+Servidor
+; Servidor
+MSG_1439
+Para
+; Para
+MSG_1440
+Emitido por
+; Emitido por
+MSG_1441
+Desde
+; Desde
+MSG_1442
+Até
+; Hasta
+MSG_1443
+Impressão digital SHA-256
+; Huella SHA-256
+MSG_1444
+Motivo
+; Motivo
+MSG_1445
+Não é possível verificar que o servidor\n%1\né quem diz ser: %2.
+; No se puede comprobar que el servidor\n%1\nsea quien dice ser: %2.
+MSG_1446
+Se o aceitares e alguém se estiver a fazer passar por ele,\npoderia ver ou alterar o que se envia.
+; Si lo aceptas y alguien se está haciendo pasar\npor él, podría ver o cambiar lo que se envía.
+MSG_1447
+O que o Hangar instala não pode ser alterado assim:\nverifica a assinatura de cada ficha\ne o SHA-256 de cada pacote.
+; Lo que instala Hangar no se puede cambiar así:\ncomprueba la firma de cada ficha\ny el SHA-256 de cada paquete.
+MSG_1448
+%1: %2
+; %1: %2
+MSG_1449
+não é possível verificar o certificado de %1: %2
+; no se puede comprobar el certificado de %1: %2
+MSG_1450
+(Aceita-se a partir da janela do Hangar: abre-a e repete o mesmo.)
+; (Se acepta desde la ventana de Hangar: ábrelo y repite lo mismo.)
+MSG_1451
+Hangar: certificado
+; Hangar: certificado
+MSG_1453
+não foi possível aceitar o certificado de %1
+; no se pudo aceptar el certificado de %1
+MSG_1454
+Certificados aceites...
+; Certificados aceptados...
+MSG_1455
+Hangar: certificados aceites
+; Hangar: certificados aceptados
+MSG_1456
+Os certificados que aceitaste embora não\npudessem ser verificados. Se esqueceres um, o\nHangar volta a avisar da próxima vez que o vir.
+; Los certificados que aceptaste aunque no se\npodían comprobar. Si olvidas uno, Hangar\nvuelve a avisar la próxima vez que lo vea.
+MSG_1457
+_Esquecer o escolhido
+; _Olvidar el elegido
+MSG_1458
+Esquecer _todos
+; Olvidar _todos
+MSG_1459
+_Fechar
+; _Cerrar
+MSG_1460
+Certificado esquecido: 
+; Certificado olvidado: 
+MSG_1461
+Esquecer todos os certificados aceites?
+; ¿Olvidar todos los certificados aceptados?
+MSG_1462
+_Esquecê-los|*_Cancelar
+; _Olvidarlos|*_Cancelar
+MSG_1463
+Certificados esquecidos
+; Certificados olvidados
+MSG_1464
+(nenhum)
+; (ninguno)
+MSG_1465
+_Aceitar este certificado
+; _Aceptar este certificado
+MSG_1466
+_Cancelar
+; _Cancelar
