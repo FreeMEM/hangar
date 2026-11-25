@@ -791,9 +791,6 @@ MSG_1232
 MSG_1233
 Luetaan levyn ohjelmia...
 ; Leyendo los programas del disco...
-MSG_1234
-Luetaan Work:n ohjelmia...
-; Leyendo los programas de Work:...
 MSG_1235
 Luetaan ohjelmia: 
 ; Leyendo los programas de 
@@ -1415,3 +1412,93 @@ _Hyväksy tämä varmenne
 MSG_1466
 _Peru
 ; _Cancelar
+MSG_1467
+  (ja sen laatikko: 
+;   (y su cajón en 
+MSG_1468
+Valitse ensin ohjelma luettelosta
+; Elige antes un programa de la lista
+MSG_1469
+ ei ole asennettu Hangarilla.
+;  no está instalado con Hangar.
+MSG_1470
+_OK
+; _Vale
+MSG_1471
+\n\nJärjestelmässä (tämä on käytössä):
+; \n\nEn el sistema (lo que cuenta):
+MSG_1472
+\n\nHangariin merkitty sijainti:\n  
+; \n\nApuntado en Hangar en:\n  
+MSG_1473
+\nSen ohjelma:\n  
+; \nSu programa:\n  
+MSG_1474
+\n(Asennettu käsin; Hangar merkitsi sen levyä tutkiessaan.)
+; \n(Lo instalaste a mano y Hangar lo apuntó al mirar el disco.)
+MSG_1475
+\n\nSe on kohteessa 
+; \n\nEstá en 
+MSG_1476
+, mutta ei Hangarissa.
+; , sin apuntar en Hangar.
+MSG_1477
+_Avaa laatikko|_OK
+; _Abrir el cajón|_Vale
+MSG_1478
+Missä valittu on...
+; Dónde está el elegido...
+MSG_1479
+Käynnistä
+; Ejecutar
+MSG_1480
+Hangar: mistä levyltä etsitään
+; Hangar: dónde mirar el disco
+MSG_1481
+Kun painat Levy, Hangar etsii näistä paikoista\n(SYS: on C:, LIBS:, SYS:Utilities, SYS:Tools...):
+; Al pulsar Disco, Hangar mira estos sitios\n(SYS: es C:, LIBS:, SYS:Utilities, SYS:Tools...):
+MSG_1482
+_Lisää...
+; _Añadir...
+MSG_1483
+_Poista
+; _Quitar
+MSG_1484
+_Tavalliset
+; _Los de siempre
+MSG_1485
+Ja ohittaa nämä laatikot:
+; Y se salta estos cajones:
+MSG_1486
+Lis_ää...
+; Aña_dir...
+MSG_1487
+Po_ista
+; Q_uitar
+MSG_1488
+_Tallenna
+; _Guardar
+MSG_1489
+Tallenna ja _etsi nyt
+; Guardar y _mirar ahora
+MSG_1490
+_Peru
+; _Cancelar
+MSG_1491
+Mistä muualta etsin?
+; ¿Dónde más miro?
+MSG_1492
+Minkä laatikon ohitan?
+; ¿Qué cajón me salto?
+MSG_1493
+Tallennettu, mistä levyltä etsitään: 
+; Guardado dónde mirar el disco: 
+MSG_1494
+Mistä levyltä etsitään...
+; Dónde mirar el disco...
+MSG_1495
+\n\nEtsin paikoista: 
+; \n\nMiraré en: 
+MSG_1496
+\n(Voit muuttaa sen valikosta, Mistä levyltä etsitään...)
+; \n(Se cambia en el menú, Dónde mirar el disco...)

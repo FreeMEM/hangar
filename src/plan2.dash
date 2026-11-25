@@ -400,3 +400,62 @@ func plan2_ficha(repo: String, nombre: String, version: String) -> Ficha
     end
     return nil
 end
+
+# Un autor para compararlo: sin lo que va entre <> o () (el correo) y sin mayúsculas
+func autor_limpio(a: String) -> String
+    t = a
+    for c in ["<", "(", ","]
+        k = str_find(t, c)
+        if k >= 0
+            t = t[:k]
+        end
+    end
+    return str_lower(str_trim(t))
+end
+
+# Lo apuntado desde Aminet que su autor publica también en Hangar con el mismo nombre (Trasfondo, de FreeMEM): pasa
+# a su repositorio, y así la ficha de Míos es la suya (no la vieja de Aminet), la lista lo marca con "*" y las
+# versiones nuevas llegan de allí (lo contó Ferrán García). Contra la suplantación, solo si su autor está
+# verificado y es el mismo que firma lo de Aminet. Una pregunta firmada por repositorio con todos los nombres (la
+# versión 0: da lo que tenga); solo los que están piden sus dos fichas. Una vez por nombre en cada vuelta
+var autores_mirados: [String] = []
+
+func recibos_al_autor() -> Int
+    var cuales: [Recibo] = []
+    lista = ""
+    for r in recibos_todos()
+        n = recibo_clave(r.nombre)
+        if r.repo == "aminet" and r.id > 0 and not (n in autores_mirados)
+            autores_mirados.push(n)
+            cuales.push(r)
+            lista = lista + n + " 0 0\n"
+        end
+    end
+    if cuales.length == 0
+        return 0
+    end
+    hechos = 0
+    for rp in api2_repos
+        if rp.nombre != "aminet"
+            x = api2_actualizaciones(rp, lista)
+            if x.error == ""
+                for e in x.entradas
+                    for r in cuales
+                        if r.repo == "aminet" and recibo_clave(r.nombre) == e.nombre and e.id > 0
+                            suya = api_ficha(e.id)
+                            de_aminet = api_ficha(r.id)
+                            if suya.error == "" and de_aminet.error == "" and suya.verificado and autor_limpio(suya.autor) != "" and autor_limpio(suya.autor) == autor_limpio(de_aminet.autor)
+                                r.repo = rp.nombre
+                                r.id = e.id
+                                if recibo_guardar(r)
+                                    hechos = hechos + 1
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return hechos
+end

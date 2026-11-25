@@ -791,9 +791,6 @@ MSG_1232
 MSG_1233
 Lese die Programme auf der Platte...
 ; Leyendo los programas del disco...
-MSG_1234
-Lese die Programme in Work:...
-; Leyendo los programas de Work:...
 MSG_1235
 Lese die Programme in 
 ; Leyendo los programas de 
@@ -1415,3 +1412,93 @@ Dieses Zertifikat _annehmen
 MSG_1466
 A_bbrechen
 ; _Cancelar
+MSG_1467
+  (und seine Schublade in 
+;   (y su cajón en 
+MSG_1468
+Wähle zuerst ein Programm aus der Liste
+; Elige antes un programa de la lista
+MSG_1469
+ ist nicht mit Hangar installiert.
+;  no está instalado con Hangar.
+MSG_1470
+_OK
+; _Vale
+MSG_1471
+\n\nIm System (das zählt):
+; \n\nEn el sistema (lo que cuenta):
+MSG_1472
+\n\nIn Hangar vermerkt in:\n  
+; \n\nApuntado en Hangar en:\n  
+MSG_1473
+\nSein Programm:\n  
+; \nSu programa:\n  
+MSG_1474
+\n(Von Hand installiert; Hangar hat es beim Durchsuchen der Festplatte vermerkt.)
+; \n(Lo instalaste a mano y Hangar lo apuntó al mirar el disco.)
+MSG_1475
+\n\nEs liegt in 
+; \n\nEstá en 
+MSG_1476
+, nicht in Hangar vermerkt.
+; , sin apuntar en Hangar.
+MSG_1477
+Schublade ö_ffnen|_OK
+; _Abrir el cajón|_Vale
+MSG_1478
+Wo ist das Gewählte...
+; Dónde está el elegido...
+MSG_1479
+Starten
+; Ejecutar
+MSG_1480
+Hangar: wo auf der Festplatte suchen
+; Hangar: dónde mirar el disco
+MSG_1481
+Mit Festplatte sucht Hangar an diesen Orten\n(SYS: ist C:, LIBS:, SYS:Utilities, SYS:Tools...):
+; Al pulsar Disco, Hangar mira estos sitios\n(SYS: es C:, LIBS:, SYS:Utilities, SYS:Tools...):
+MSG_1482
+_Hinzufügen...
+; _Añadir...
+MSG_1483
+_Entfernen
+; _Quitar
+MSG_1484
+_Die üblichen
+; _Los de siempre
+MSG_1485
+Und überspringt diese Schubladen:
+; Y se salta estos cajones:
+MSG_1486
+Hin_zufügen...
+; Aña_dir...
+MSG_1487
+Ent_fernen
+; Q_uitar
+MSG_1488
+_Speichern
+; _Guardar
+MSG_1489
+Speichern und _jetzt suchen
+; Guardar y _mirar ahora
+MSG_1490
+_Abbrechen
+; _Cancelar
+MSG_1491
+Wo soll ich noch suchen?
+; ¿Dónde más miro?
+MSG_1492
+Welche Schublade soll ich überspringen?
+; ¿Qué cajón me salto?
+MSG_1493
+Gespeichert, wo gesucht wird: 
+; Guardado dónde mirar el disco: 
+MSG_1494
+Wo auf der Festplatte suchen...
+; Dónde mirar el disco...
+MSG_1495
+\n\nIch suche in: 
+; \n\nMiraré en: 
+MSG_1496
+\n(Änderbar im Menü, Wo auf der Festplatte suchen...)
+; \n(Se cambia en el menú, Dónde mirar el disco...)

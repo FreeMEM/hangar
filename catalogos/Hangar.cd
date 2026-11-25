@@ -526,8 +526,6 @@ MSG_1232 (1232//)
  con Hangar
 MSG_1233 (1233//)
 Leyendo los programas del disco...
-MSG_1234 (1234//)
-Leyendo los programas de Work:...
 MSG_1235 (1235//)
 Leyendo los programas de 
 MSG_1236 (1236//)
@@ -942,3 +940,63 @@ MSG_1465 (1465//)
 _Aceptar este certificado
 MSG_1466 (1466//)
 _Cancelar
+MSG_1467 (1467//)
+  (y su cajón en 
+MSG_1468 (1468//)
+Elige antes un programa de la lista
+MSG_1469 (1469//)
+ no está instalado con Hangar.
+MSG_1470 (1470//)
+_Vale
+MSG_1471 (1471//)
+\n\nEn el sistema (lo que cuenta):
+MSG_1472 (1472//)
+\n\nApuntado en Hangar en:\n  
+MSG_1473 (1473//)
+\nSu programa:\n  
+MSG_1474 (1474//)
+\n(Lo instalaste a mano y Hangar lo apuntó al mirar el disco.)
+MSG_1475 (1475//)
+\n\nEstá en 
+MSG_1476 (1476//)
+, sin apuntar en Hangar.
+MSG_1477 (1477//)
+_Abrir el cajón|_Vale
+MSG_1478 (1478//)
+Dónde está el elegido...
+MSG_1479 (1479//)
+Ejecutar
+MSG_1480 (1480//)
+Hangar: dónde mirar el disco
+MSG_1481 (1481//)
+Al pulsar Disco, Hangar mira estos sitios\n(SYS: es C:, LIBS:, SYS:Utilities, SYS:Tools...):
+MSG_1482 (1482//)
+_Añadir...
+MSG_1483 (1483//)
+_Quitar
+MSG_1484 (1484//)
+_Los de siempre
+MSG_1485 (1485//)
+Y se salta estos cajones:
+MSG_1486 (1486//)
+Aña_dir...
+MSG_1487 (1487//)
+Q_uitar
+MSG_1488 (1488//)
+_Guardar
+MSG_1489 (1489//)
+Guardar y _mirar ahora
+MSG_1490 (1490//)
+_Cancelar
+MSG_1491 (1491//)
+¿Dónde más miro?
+MSG_1492 (1492//)
+¿Qué cajón me salto?
+MSG_1493 (1493//)
+Guardado dónde mirar el disco: 
+MSG_1494 (1494//)
+Dónde mirar el disco...
+MSG_1495 (1495//)
+\n\nMiraré en: 
+MSG_1496 (1496//)
+\n(Se cambia en el menú, Dónde mirar el disco...)

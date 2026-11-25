@@ -791,9 +791,6 @@ MSG_1232
 MSG_1233
 A ler os programas do disco...
 ; Leyendo los programas del disco...
-MSG_1234
-A ler os programas de Work:...
-; Leyendo los programas de Work:...
 MSG_1235
 A ler os programas de 
 ; Leyendo los programas de 
@@ -1415,3 +1412,93 @@ _Aceitar este certificado
 MSG_1466
 _Cancelar
 ; _Cancelar
+MSG_1467
+  (e a sua gaveta em 
+;   (y su cajón en 
+MSG_1468
+Escolhe primeiro um programa da lista
+; Elige antes un programa de la lista
+MSG_1469
+ não está instalado com o Hangar.
+;  no está instalado con Hangar.
+MSG_1470
+_OK
+; _Vale
+MSG_1471
+\n\nNo sistema (o que conta):
+; \n\nEn el sistema (lo que cuenta):
+MSG_1472
+\n\nRegistado no Hangar em:\n  
+; \n\nApuntado en Hangar en:\n  
+MSG_1473
+\nO seu programa:\n  
+; \nSu programa:\n  
+MSG_1474
+\n(Instalado à mão; o Hangar registou-o ao ver o disco.)
+; \n(Lo instalaste a mano y Hangar lo apuntó al mirar el disco.)
+MSG_1475
+\n\nEstá em 
+; \n\nEstá en 
+MSG_1476
+, sem registo no Hangar.
+; , sin apuntar en Hangar.
+MSG_1477
+_Abrir a gaveta|_OK
+; _Abrir el cajón|_Vale
+MSG_1478
+Onde está o escolhido...
+; Dónde está el elegido...
+MSG_1479
+Executar
+; Ejecutar
+MSG_1480
+Hangar: onde procurar no disco
+; Hangar: dónde mirar el disco
+MSG_1481
+Ao carregar em Disco, o Hangar procura nestes sítios\n(SYS: é C:, LIBS:, SYS:Utilities, SYS:Tools...):
+; Al pulsar Disco, Hangar mira estos sitios\n(SYS: es C:, LIBS:, SYS:Utilities, SYS:Tools...):
+MSG_1482
+_Adicionar...
+; _Añadir...
+MSG_1483
+_Tirar
+; _Quitar
+MSG_1484
+_Os de sempre
+; _Los de siempre
+MSG_1485
+E salta estas gavetas:
+; Y se salta estos cajones:
+MSG_1486
+Adi_cionar...
+; Aña_dir...
+MSG_1487
+Ti_rar
+; Q_uitar
+MSG_1488
+_Guardar
+; _Guardar
+MSG_1489
+Guardar e _procurar já
+; Guardar y _mirar ahora
+MSG_1490
+_Cancelar
+; _Cancelar
+MSG_1491
+Onde mais procuro?
+; ¿Dónde más miro?
+MSG_1492
+Que gaveta salto?
+; ¿Qué cajón me salto?
+MSG_1493
+Guardado onde procurar no disco: 
+; Guardado dónde mirar el disco: 
+MSG_1494
+Onde procurar no disco...
+; Dónde mirar el disco...
+MSG_1495
+\n\nVou procurar em: 
+; \n\nMiraré en: 
+MSG_1496
+\n(Muda-se no menu, Onde procurar no disco...)
+; \n(Se cambia en el menú, Dónde mirar el disco...)

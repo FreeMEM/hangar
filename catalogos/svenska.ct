@@ -791,9 +791,6 @@ MSG_1232
 MSG_1233
 Läser programmen på disken...
 ; Leyendo los programas del disco...
-MSG_1234
-Läser programmen i Work:...
-; Leyendo los programas de Work:...
 MSG_1235
 Läser programmen i 
 ; Leyendo los programas de 
@@ -1415,3 +1412,93 @@ _Godkänn det här certifikatet
 MSG_1466
 _Avbryt
 ; _Cancelar
+MSG_1467
+  (och dess låda i 
+;   (y su cajón en 
+MSG_1468
+Välj först ett program i listan
+; Elige antes un programa de la lista
+MSG_1469
+ är inte installerat med Hangar.
+;  no está instalado con Hangar.
+MSG_1470
+_OK
+; _Vale
+MSG_1471
+\n\nI systemet (det som gäller):
+; \n\nEn el sistema (lo que cuenta):
+MSG_1472
+\n\nAntecknat i Hangar i:\n  
+; \n\nApuntado en Hangar en:\n  
+MSG_1473
+\nDess program:\n  
+; \nSu programa:\n  
+MSG_1474
+\n(Installerat för hand; Hangar antecknade det när disken genomsöktes.)
+; \n(Lo instalaste a mano y Hangar lo apuntó al mirar el disco.)
+MSG_1475
+\n\nDet finns i 
+; \n\nEstá en 
+MSG_1476
+, utan att vara antecknat i Hangar.
+; , sin apuntar en Hangar.
+MSG_1477
+Ö_ppna lådan|_OK
+; _Abrir el cajón|_Vale
+MSG_1478
+Var finns det valda...
+; Dónde está el elegido...
+MSG_1479
+Kör
+; Ejecutar
+MSG_1480
+Hangar: var på disken ska jag leta
+; Hangar: dónde mirar el disco
+MSG_1481
+När du trycker på Disk letar Hangar på dessa ställen\n(SYS: är C:, LIBS:, SYS:Utilities, SYS:Tools...):
+; Al pulsar Disco, Hangar mira estos sitios\n(SYS: es C:, LIBS:, SYS:Utilities, SYS:Tools...):
+MSG_1482
+_Lägg till...
+; _Añadir...
+MSG_1483
+_Ta bort
+; _Quitar
+MSG_1484
+_De vanliga
+; _Los de siempre
+MSG_1485
+Och hoppar över dessa lådor:
+; Y se salta estos cajones:
+MSG_1486
+Lägg _till...
+; Aña_dir...
+MSG_1487
+Ta _bort
+; Q_uitar
+MSG_1488
+_Spara
+; _Guardar
+MSG_1489
+Spara och _leta nu
+; Guardar y _mirar ahora
+MSG_1490
+_Avbryt
+; _Cancelar
+MSG_1491
+Var mer ska jag leta?
+; ¿Dónde más miro?
+MSG_1492
+Vilken låda ska jag hoppa över?
+; ¿Qué cajón me salto?
+MSG_1493
+Sparat var på disken jag letar: 
+; Guardado dónde mirar el disco: 
+MSG_1494
+Var på disken ska jag leta...
+; Dónde mirar el disco...
+MSG_1495
+\n\nJag letar i: 
+; \n\nMiraré en: 
+MSG_1496
+\n(Ändras i menyn, Var på disken ska jag leta...)
+; \n(Se cambia en el menú, Dónde mirar el disco...)

@@ -1,6 +1,6 @@
 # Hangar: busca, instala y pone al día el software del Amiga. Busca en el catálogo de hangar.freemem.space, enseña la ficha, instala
 # (baja el .lha y lo descomprime, sin C:lha), actualiza, desinstala y ejecuta.
-@version "Hangar 0.20.0"
+@version "Hangar 0.21.0"
 @catalog "Hangar.catalog" 1 "español"
 import "api.dash"
 import "lha.dash"
@@ -15,7 +15,7 @@ import "plan2.dash"
 import "instalador.dash"
 import "elegir.dash"
 
-const VERSION = "0.20.0"
+const VERSION = "0.21.0"
 
 const ID_BUSCAR = 1
 const ID_NOVEDADES = 2
@@ -47,6 +47,16 @@ const ID_VARIANTE_NO = 31     # y No copiar
 const ID_CERT_OLVIDAR = 32    # la ventana de los certificados aceptados: Olvidar el elegido
 const ID_CERT_TODOS = 33      # Olvidarlos todos
 const ID_CERT_CERRAR = 34     # y Cerrar
+const ID_DONDE = 35           # menú y botón derecho de la lista: Dónde está el elegido
+const ID_DISCO = 36           # menú: Dónde mirar el disco, y los botones de su ventana
+const ID_DISCO_MAS = 50
+const ID_DISCO_MENOS = 51
+const ID_DISCO_FABRICA = 52
+const ID_DISCO_MAS2 = 53
+const ID_DISCO_MENOS2 = 54
+const ID_DISCO_GUARDAR = 55
+const ID_DISCO_MIRAR = 56
+const ID_DISCO_CANCELAR = 57
 const ID_CATEGORIA = 40       # los botones de categorías: 40 en adelante, en el orden de CATEGORIAS
 
 # Lo que se baja: aquí se queda cada versión (para volver a ella) y aquí se descomprime antes de ponerla en su sitio
@@ -90,6 +100,9 @@ var w_ventana: Int = 0
 var w_imagen: Int = 0
 var w_pestanas: Int = 0
 var ficha_junta: Bool = true     # la ficha sin pestañas (pantallas de 480 o más de alto)
+var botones_lista: [Int] = []     # los botones de las listas (Buscar, Míos... Novedades, Todo, Juegos...)
+var consultas_lista: [String] = []   # la consulta de cada uno ("b:", "i:", "k:game"...)
+var lista_hundida: Int = -1
 
 
 # El estado va en el título de la ventana: no ocupa sitio en una pantalla de 640 x 256
@@ -166,6 +179,39 @@ func cuantos(n: Int, uno: String, varios: String) -> String
         return "1 " + uno
     end
     return str_from_int(n, 10) + " " + varios
+end
+
+# El botón de la lista que se ve se queda hundido, y los demás no (Ferrán García no sabía qué lista miraba). Por la
+# consulta de ahora: "b:texto" es Buscar, "k:game" Juegos... (Dash: mui_set_value en un botón, desde la 2.22)
+func marcar_lista()
+    if cli
+        return
+    end
+    que = consulta
+    if str_starts(que, "b:")
+        que = "b:"
+    end
+    k = -1
+    i = 0
+    while i < botones_lista.length
+        if consultas_lista[i] == que
+            k = i
+        end
+        i = i + 1
+    end
+    if lista_hundida >= 0 and lista_hundida != k
+        mui_set_value(botones_lista[lista_hundida], 0)
+    end
+    # el de ahora, siempre: al pulsarlo otra vez, MUI lo suelta
+    if k >= 0
+        mui_set_value(botones_lista[k], 1)
+    end
+    lista_hundida = k
+end
+
+func _boton_lista(b: Int, que: String)
+    botones_lista.push(b)
+    consultas_lista.push(que)
 end
 
 # Tras una acción (instalar, quitar, deshacer...): la ficha al día, y en el título sigue lo que dijo la acción
@@ -383,7 +429,15 @@ func ver_ficha(i: Int)
         sin_recibo = instalado_sin_recibo(f.nombre, [mui_get_text(w_destino), "SYS:", "Work:"])
     end
     if r.id != 0
-        d = d + corta(tr(1045, "Instalado: ") + version_ver(instalada) + " en " + r.destino, a)
+        # lo que va al sistema (LIBS:icon.library de IconLib) es lo que cuenta: su sitio, antes que el cajón donde se
+        # descomprimió (lo contó Ferrán García)
+        sis = en_el_sistema(f)
+        if sis.length > 0 and str_lower(cajon_de(sis[0])) != str_lower(r.destino)
+            d = d + corta(tr(1045, "Instalado: ") + version_ver(instalada) + " en " + cajon_de(sis[0]), a) + "\n"
+            d = d + corta(tr(1467, "  (y su cajón en ") + r.destino + ")", a)
+        else
+            d = d + corta(tr(1045, "Instalado: ") + version_ver(instalada) + " en " + r.destino, a)
+        end
     elif sin_recibo != ""
         d = d + corta(tr(1046, "Ya está en ") + sin_recibo, a)
     end
@@ -1661,6 +1715,108 @@ func actualizar_todo() -> Bool
     return true
 end
 
+# Lo que un paquete pone en el sistema (Install: system y Choice): sus destinos ("LIBS:icon.library"), sin repetir
+func sistema_de_ficha(f: Ficha) -> [String]
+    var r: [String] = []
+    for e in elecciones_de(f.elecciones)
+        if not (e.destino in r)
+            r.push(e.destino)
+        end
+    end
+    if str_starts(str_lower(f.instala), "system ")
+        for it in str_split(str_trim(f.instala[7:]), ",")
+            d = str_trim(it)
+            p = str_find(d, "->")
+            if p > 0
+                d = str_trim(d[p + 2:])
+            end
+            if d != "" and str_find(d, ":") > 0 and not (d in r)
+                r.push(d)
+            end
+        end
+    end
+    return r
+end
+
+# De eso, lo que está de verdad en este Amiga
+func en_el_sistema(f: Ficha) -> [String]
+    var r: [String] = []
+    dos_requesters(false)
+    for d in sistema_de_ficha(f)
+        if file_exists(d)
+            r.push(d)
+        end
+    end
+    dos_requesters(true)
+    return r
+end
+
+# El cajón de una ruta ("LIBS:icon.library" -> "LIBS:", "Work:A/B" -> "Work:A/")
+func cajon_de(ruta: String) -> String
+    i = ruta.length - 1
+    while i >= 0 and str_code(ruta, i) != 47 and str_code(ruta, i) != 58     # "/" y ":"
+        i = i - 1
+    end
+    return ruta[:i + 1]
+end
+
+# Dónde está el programa elegido (lo contó Ferrán García: la ventana de información no lo daba): lo que puso en el
+# sistema, con su versión, el cajón donde lo tiene apuntado Hangar y su programa; y se puede abrir ese cajón
+func donde_esta()
+    if ficha_actual == nil
+        estado(tr(1468, "Elige antes un programa de la lista"))
+        return
+    end
+    f = ficha_actual
+    r = recibo_de_ficha(f)
+    sin_recibo = ""
+    if r.id == 0
+        sin_recibo = instalado_sin_recibo(f.nombre, [mui_get_text(w_destino), "SYS:", "Work:"])
+    end
+    if r.id == 0 and sin_recibo == ""
+        preguntar(f.nombre + tr(1469, " no está instalado con Hangar."), tr(1470, "_Vale"))
+        return
+    end
+    t = f.nombre
+    if r.id != 0
+        t = t + " " + version_ver(version_instalada(r))
+    end
+    sis = en_el_sistema(f)
+    if sis.length > 0
+        t = t + tr(1471, "\n\nEn el sistema (lo que cuenta):")
+        for x in sis
+            v = version_de_libreria(x, nombre_de_ruta(x))
+            if v == ""
+                v = inventario_version(x).version
+            end
+            t = t + "\n  " + x
+            if v != ""
+                t = t + "  " + v
+            end
+        end
+    end
+    cajon = sin_recibo
+    if r.id != 0
+        cajon = r.destino
+        p = principal(r)
+        t = t + tr(1472, "\n\nApuntado en Hangar en:\n  ") + r.destino + "  (" + cuantos(r.ficheros.length, "fichero", "ficheros") + ")"
+        if p != ""
+            t = t + tr(1473, "\nSu programa:\n  ") + p
+            cajon = cajon_de(p)
+        end
+        if r.motivo == "adoptado"
+            t = t + tr(1474, "\n(Lo instalaste a mano y Hangar lo apuntó al mirar el disco.)")
+        end
+    else
+        t = t + tr(1475, "\n\nEstá en ") + sin_recibo + tr(1476, ", sin apuntar en Hangar.")
+    end
+    if preguntar(t, tr(1477, "_Abrir el cajón|_Vale")) == 1
+        if not wb_open(cajon)
+            estado(tr(1224, "No se pudo abrir ") + cajon)
+        end
+    end
+end
+
 func retener()
     if ficha_actual == nil
         return
@@ -2127,6 +2283,7 @@ func contar_versiones(callado: Bool)
             recibo_guardar(r)
         end
     end
+    recibos_al_autor()
     n = 0
     if not plan2_actualizar()
         if not callado
@@ -2216,6 +2373,9 @@ func verificar()
         estado(str_from_int(rehechos, 10) + tr(1194, " fichas de la base rehechas desde su copia"))
     end
     for r in todos
+        # lo que se actualizó solo (Trasfondo con Hangar abierto) no está roto: el recibo pasa a su versión nueva
+        # antes de comparar (lo contó Ferrán García)
+        version_instalada(r)
         mal = recibo_verificar(r)
         if mal.length > 0
             rotos.push(r)
@@ -2658,6 +2818,9 @@ end
 
 func instalados()
     movido = movidos_al_dia()
+    if not cli
+        recibos_al_autor()
+    end
     rs = recibos_todos()
     lista_quieta(true)
     lista_vaciar()
@@ -2680,7 +2843,8 @@ func instalados()
         if not cli
             n_ver = nombre_ver(r)
         end
-        lista_poner(marca + n_ver + " " + version_ver(r.version) + "  -  " + r.destino)
+        # la versión del disco, no la apuntada: lo que se actualiza solo (Trasfondo, Tachyon) deja viejo el recibo
+        lista_poner(marca + n_ver + " " + version_ver(version_instalada(r)) + "  -  " + r.destino)
     end
     lista_quieta(false)
     mas_apagado()
@@ -2694,17 +2858,18 @@ end
 # El disco entero (C:, LIBS:, Utilities..., y Work: con sus subcajones) contra el catálogo: cada programa o librería
 # se reconoce por su fichero (nombre y tamaño) o por su $VER:, y sale una vez lo que tiene versión nueva
 func inventario()
-    estado(tr(1233, "Leyendo los programas del disco..."))
-    inv = inventario_recorrer(["C:", "LIBS:", "DEVS:", "SYS:Utilities", "SYS:Tools", "SYS:System", "SYS:Prefs"], 1)
-    estado(tr(1234, "Leyendo los programas de Work:..."))
-    for f in inventario_recorrer(["Work:"], 3)
-        inv.push(f)
-    end
-    # y los otros sitios de programas de este Amiga (en Coffin, Programs:)
-    for d in destinos_posibles()
-        if d != "Work:" and d != "SYS:" and d != "SYS:Utilities/" and d != "SYS:Tools/"
+    inventario_excluir = disco_excluidos()
+    var inv: [FicheroDisco] = []
+    # los sitios elegidos (menú "Dónde mirar el disco..."): SYS: es lo del sistema; lo demás, hasta 3 cajones de hondo
+    for d in disco_sitios()
+        if str_lower(d) == "sys:"
+            estado(tr(1233, "Leyendo los programas del disco..."))
+            for f in inventario_recorrer(["C:", "LIBS:", "DEVS:", "SYS:Utilities", "SYS:Tools", "SYS:System", "SYS:Prefs"], 1)
+                inv.push(f)
+            end
+        else
             estado(tr(1235, "Leyendo los programas de ") + d + "...")
-            for f in inventario_recorrer([d], 1)
+            for f in inventario_recorrer([d], 3)
                 inv.push(f)
             end
         end
@@ -2757,6 +2922,194 @@ func inventario()
     if not cli
         mui_set_value(w_lista, -1)
     end
+end
+
+# Dónde se mira el disco (lo pidió Ferrán García: su primer escaneo se saltó Stuff: y no sabía dónde se decide).
+# ENVARC:Hangar/disco_sitios, separados por "|"; sin elegir, los de fábrica: SYS: y todos los volúmenes montados
+# (menos RAM:, el del sistema y los disquetes), y los sitios de programas que no están dentro de uno de ellos
+# (en Coffin, Programs:)
+func disco_sitios() -> [String]
+    e = str_trim(env_get("Hangar/disco_sitios"))
+    if e == ""
+        return disco_sitios_de_fabrica()
+    end
+    return _partir_barras(e)
+end
+
+func _partir_barras(t: String) -> [String]
+    var r: [String] = []
+    for x in str_split(t, "|")
+        y = str_trim(x)
+        if y != "" and not (y in r)
+            r.push(y)
+        end
+    end
+    return r
+end
+
+func _unir_barras(l: [String]) -> String
+    t = ""
+    for x in l
+        if t != ""
+            t = t + "|"
+        end
+        t = t + x
+    end
+    return t
+end
+
+func disco_sitios_de_fabrica() -> [String]
+    var r: [String] = ["SYS:"]
+    del_sistema = str_lower(file_real_path("SYS:"))
+    k = str_find(del_sistema, ":")
+    if k >= 0
+        del_sistema = del_sistema[:k + 1]
+    end
+    n = disks_read(3000)
+    i = 0
+    while i < n
+        v = disk_name(i) + ":"
+        # (un disquete, 880 KB: no es un sitio de programas)
+        if str_lower(v) != "ram disk:" and str_lower(v) != del_sistema and (disk_kb(i) < 0 or disk_kb(i) > 4096) and not (v in r)
+            r.push(v)
+        end
+        i = i + 1
+    end
+    dos_requesters(false)
+    for d in destinos_posibles()
+        real = str_lower(file_real_path(d))
+        dentro = str_starts(str_lower(d), "sys:")
+        for x in r
+            if str_lower(x) != "sys:" and str_starts(real, str_lower(x))
+                dentro = true
+            end
+        end
+        if not dentro and not (d in r)
+            r.push(d)
+        end
+    end
+    dos_requesters(true)
+    return r
+end
+
+# Los cajones que no se miran (ENVARC:Hangar/disco_excluir), como los compara inventario_excluido
+func disco_excluidos() -> [String]
+    var r: [String] = []
+    for x in _partir_barras(env_get("Hangar/disco_excluir"))
+        r.push(inventario_normal(x))
+    end
+    return r
+end
+
+# La ventana de dónde mirar el disco: los sitios donde mira y los cajones que se salta, añadir y quitar, y guardarlo
+# (ENVARC). Modal, como la de los certificados
+func ventana_disco()
+    sitios = disco_sitios()
+    fuera = _partir_barras(env_get("Hangar/disco_excluir"))
+    w = mui_window_begin(tr(1480, "Hangar: dónde mirar el disco"), 0)
+        mui_text(tr(1481, "Al pulsar Disco, Hangar mira estos sitios\n(SYS: es C:, LIBS:, SYS:Utilities, SYS:Tools...):"))
+        l_sitios = mui_list()
+        mui_hgroup_begin()
+            b_mas = mui_button(tr(1482, "_Añadir..."))
+            b_menos = mui_button(tr(1483, "_Quitar"))
+            b_fabrica = mui_button(tr(1484, "_Los de siempre"))
+        mui_group_end()
+        mui_text(tr(1485, "Y se salta estos cajones:"))
+        l_fuera = mui_list()
+        mui_hgroup_begin()
+            b_mas2 = mui_button(tr(1486, "Aña_dir..."))
+            b_menos2 = mui_button(tr(1487, "Q_uitar"))
+        mui_group_end()
+        mui_hgroup_begin()
+            b_guardar = mui_button(tr(1488, "_Guardar"))
+            b_mirar = mui_button(tr(1489, "Guardar y _mirar ahora"))
+            b_cancelar = mui_button(tr(1490, "_Cancelar"))
+        mui_group_end()
+    mui_window_end()
+    mui_on_press(b_mas, ID_DISCO_MAS)
+    mui_on_press(b_menos, ID_DISCO_MENOS)
+    mui_on_press(b_fabrica, ID_DISCO_FABRICA)
+    mui_on_press(b_mas2, ID_DISCO_MAS2)
+    mui_on_press(b_menos2, ID_DISCO_MENOS2)
+    mui_on_press(b_guardar, ID_DISCO_GUARDAR)
+    mui_on_press(b_mirar, ID_DISCO_MIRAR)
+    mui_on_press(b_cancelar, ID_DISCO_CANCELAR)
+    mui_on_close(w, ID_DISCO_CANCELAR)
+    _a_lista(l_sitios, sitios)
+    _a_lista(l_fuera, fuera)
+    mui_window_size(w, 70, 90)
+    mui_window_modal(w)
+    mui_window_open(w)
+    var otros: [Int] = []
+    mirar = false
+    sigue = true
+    while sigue
+        ev = mui_wait_event()
+        if ev == ID_DISCO_MAS
+            c = dialog_drawer(tr(1491, "¿Dónde más miro?"), "Work:")
+            if c != "" and not (c in sitios)
+                sitios.push(c)
+                _a_lista(l_sitios, sitios)
+            end
+        elif ev == ID_DISCO_MENOS
+            sitios = _sin(sitios, mui_get_value(l_sitios))
+            _a_lista(l_sitios, sitios)
+        elif ev == ID_DISCO_FABRICA
+            sitios = disco_sitios_de_fabrica()
+            _a_lista(l_sitios, sitios)
+        elif ev == ID_DISCO_MAS2
+            c = dialog_drawer(tr(1492, "¿Qué cajón me salto?"), "Work:")
+            if c != "" and not (c in fuera)
+                fuera.push(c)
+                _a_lista(l_fuera, fuera)
+            end
+        elif ev == ID_DISCO_MENOS2
+            fuera = _sin(fuera, mui_get_value(l_fuera))
+            _a_lista(l_fuera, fuera)
+        elif ev == ID_DISCO_GUARDAR or ev == ID_DISCO_MIRAR
+            # los de fábrica no se guardan: así siguen al día si se monta otro volumen
+            if _unir_barras(sitios) == _unir_barras(disco_sitios_de_fabrica())
+                env_set("Hangar/disco_sitios", "", true)
+            else
+                env_set("Hangar/disco_sitios", _unir_barras(sitios), true)
+            end
+            env_set("Hangar/disco_excluir", _unir_barras(fuera), true)
+            estado(tr(1493, "Guardado dónde mirar el disco: ") + _unir_barras(sitios))
+            mirar = ev == ID_DISCO_MIRAR
+            sigue = false
+        elif ev == ID_DISCO_CANCELAR or ev == -1
+            sigue = false
+        elif ev > 0
+            otros.push(ev)
+        end
+    end
+    mui_window_dispose(w)
+    for x in otros
+        mui_post_event(x)
+    end
+    if mirar
+        consulta = "d:"
+        inventario()
+    end
+end
+
+func _a_lista(l: Int, cosas: [String])
+    mui_list_clear(l)
+    for x in cosas
+        mui_list_add(l, x)
+    end
+end
+
+func _sin(l: [String], k: Int) -> [String]
+    var r: [String] = []
+    i = 0
+    while i < l.length
+        if i != k
+            r.push(l[i])
+        end
+        i = i + 1
+    end
+    return r
 end
 
 # De los ficheros del disco que son el mismo programa del catálogo, el que lleva su nombre (trasfondo, no
@@ -3215,6 +3568,7 @@ Main
     end
     # la ficha con la captura y el léeme juntos si la pantalla es alta (las capturas llegan hasta 256 de alto)
     ficha_junta = screen_height() >= 480
+    estrecha = screen_width() < 800
     mui_app_begin("Hangar", "HANGAR")
     w_ventana = mui_window_begin("Hangar " + VERSION, 1)
         mui_menu_begin("Hangar")
@@ -3225,12 +3579,14 @@ Main
             mui_menu_item(tr(1288, "Actualizar todo..."), "U", ID_ACTUALIZAR_TODO)
             mui_menu_item(tr(1289, "Actualizar Hangar..."), "", ID_HANGAR)
             mui_menu_item(tr(1290, "Verificar lo instalado..."), "K", ID_VERIFICAR)
+            mui_menu_item(tr(1494, "Dónde mirar el disco..."), "D", ID_DISCO)
             mui_menu_item(tr(1291, "Limpiar la caché"), "L", ID_LIMPIAR)
             mui_menu_item(tr(1454, "Certificados aceptados..."), "", ID_CERTIFICADOS)
             mui_menu_separator()
             # lo del programa elegido, aparte: "Retener" pegado a "Actualizar todo" se elegía sin querer
             mui_menu_item(tr(1292, "Retener o soltar el elegido"), "R", ID_RETENER)
             mui_menu_item(tr(1293, "Volver a la versión anterior..."), "V", ID_VOLVER)
+            mui_menu_item(tr(1478, "Dónde está el elegido..."), "W", ID_DONDE)
             mui_menu_separator()
             mui_menu_item(tr(1294, "Salir"), "Q", ID_SALIR)
         mui_menu_end()
@@ -3241,18 +3597,32 @@ Main
             ba = mui_button(tr(1298, "Act_ualizar"))
             w_act = ba
             bv = mui_button(tr(1299, "_Disco"))
+            _boton_lista(bb, "b:")
+            _boton_lista(bi, "i:")
+            _boton_lista(ba, "u:")
+            _boton_lista(bv, "d:")
         mui_group_end()
         # las categorías, a un clic (el escaparate del boceto B)
         mui_hgroup_begin()
             mui_label(tr(1398, "Ver:"))
             bn = mui_button(tr(1296, "_Novedades"))
+            _boton_lista(bn, "n:")
             bdest = mui_button(tr(1399, "De los autores"))
             mui_on_press(bdest, ID_CATEGORIA - 1)
+            _boton_lista(bdest, "a:")
             btodo = mui_button(tr(1407, "_Todo"))
             mui_on_press(btodo, ID_CATEGORIA - 2)
+            _boton_lista(btodo, "t:")
             for k in (0..CATEGORIAS.length - 1)
+                # en una pantalla de 640 no caben los diez en una fila (la ventana salía cortada): las categorías,
+                # de la tercera en adelante, en otra
+                if k == 2 and estrecha
+                    mui_group_end()
+                    mui_hgroup_begin()
+                end
                 bcat = mui_button(categoria_titulo(k))
                 mui_on_press(bcat, ID_CATEGORIA + k)
+                _boton_lista(bcat, "k:" + CATEGORIAS[k])
             end
         mui_group_end()
         mui_hgroup_begin()
@@ -3313,6 +3683,13 @@ Main
             mui_group_end()
         mui_group_end()
     mui_window_end()
+    # el botón derecho en la lista: lo del elegido (Ferrán García buscaba dónde estaba instalado)
+    menu_lista = mui_context_menu_begin("Hangar")
+        mui_menu_item(tr(1478, "Dónde está el elegido..."), "", ID_DONDE)
+        mui_menu_item(tr(1479, "Ejecutar"), "", ID_EJECUTAR)
+        mui_menu_item(tr(1292, "Retener o soltar el elegido"), "", ID_RETENER)
+    mui_menu_end()
+    mui_set_context_menu(w_lista, menu_lista)
 
     mui_on_ack(w_buscar, ID_BUSCAR)
     mui_on_ack(w_destino, ID_DESTINO)
@@ -3354,6 +3731,7 @@ Main
         consulta = "a:"
         pagina = 0
         cargar(false)
+        marcar_lista()
         # al abrir, el escaparate: lo último de los autores, con el primero ya en la ficha
         if actuales.length > 0
             mui_set_value(w_lista, 0)
@@ -3362,7 +3740,9 @@ Main
         avisar_movidos()
         if env_get("Hangar/escaneado") == ""
             env_set("Hangar/escaneado", "si", true)
-            if preguntar(tr(1310, "¿Miro qué programas tienes ya en el disco?\nAsí Hangar sabe lo que hay, te avisa de versiones nuevas\ny puede apuntar lo que instalaste a mano. Tarda unos segundos."), tr(1311, "_Mirar|_Ahora no")) == 1
+            # dónde va a mirar, a la vista, y dónde se cambia (Ferrán García no sabía por qué se saltó Stuff:)
+            donde = tr(1495, "\n\nMiraré en: ") + str_replace(_unir_barras(disco_sitios()), "|", ", ") + tr(1496, "\n(Se cambia en el menú, Dónde mirar el disco...)")
+            if preguntar(tr(1310, "¿Miro qué programas tienes ya en el disco?\nAsí Hangar sabe lo que hay, te avisa de versiones nuevas\ny puede apuntar lo que instalaste a mano. Tarda unos segundos.") + donde, tr(1311, "_Mirar|_Ahora no")) == 1
                 inventario()
                 mirar_callado = true       # el título sigue con lo del disco; el número, en el botón
             end
@@ -3479,15 +3859,21 @@ Main
             retener()
         elif ev == ID_VOLVER
             volver_atras()
+        elif ev == ID_DONDE
+            donde_esta()
+        elif ev == ID_DISCO
+            ventana_disco()
         elif ev == ID_LIMPIAR
             limpiar_cache()
         elif ev == ID_CERTIFICADOS
             ventana_certificados()
         elif ev == ID_VERIFICAR
+            consulta = "v:"
             verificar()
         elif ev == ID_ACERCA
             preguntar(tr(1313, "\33cHangar ") + VERSION + tr(1314, "\nBusca, instala y pone al día\nel software del Amiga\n\nhttps://hangar.freemem.space"), tr(1385, "_Vale"))
         end
+        marcar_lista()
         if cerrar_pedido
             abierta = false
         end

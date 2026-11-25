@@ -1,0 +1,44 @@
+# Test: lo apuntado desde Aminet que su autor publica también en Hangar (src/plan2.dash, recibos_al_autor; lo contó
+# Ferrán García): Trasfondo, del mismo autor y verificado, pasa a su repositorio (main) con su número; MCP no (en main
+# es de otro autor, el juego de Aminet no es la commodity) ni Fantasma (su autor no está verificado). La segunda vez
+# no se pregunta nada.
+# emu-server: falso.py 47131
+# expect-out: autor: freemem | jorg sixt
+# expect-out: pasados 1
+# expect-out: trasfondo main 6102
+# expect-out: mcp aminet 6103
+# expect-out: fantasma aminet 6105
+# expect-out: otra vez 0
+import "../src/plan2.dash"
+
+func apuntar(id: Int, nombre: String)
+    var fs: [String] = []
+    r = recibo_nuevo(id, nombre, "1.0", "RAM:Prog/", fs)
+    r.repo = "aminet"
+    r.motivo = "adoptado"
+    recibo_guardar(r)
+end
+
+Main
+    api_base = "http://127.0.0.1:47131/amiga/v1"
+    api2_estado = "RAM:hangar_estado"
+    recibos_cajon = "RAM:Base"
+    dir_create("RAM:Base")
+    k = "ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d1"
+    var rs: [RepoConf] = []
+    rs.push(RepoConf("main", "http://127.0.0.1:47131/pkg/v2/main", 20, false, k, api2_clave_id(k)))
+    rs.push(RepoConf("aminet", "http://127.0.0.1:47131/pkg/v2/aminet", 10, false, k, api2_clave_id(k)))
+    api2_repos = rs
+    var rz: [String] = ["6e7a1cdd29b0b78fd13af4c5598feff4ef2a97166e3ca6f2e4fbfccd80505bf1"]
+    api2_raices = rz
+    Print "autor: " + autor_limpio(" FreeMEM <hola@freemem.space>") + " | " + autor_limpio("Jorg Sixt (jorg@x.de)")
+    apuntar(6101, "Trasfondo")
+    apuntar(6103, "MCP")
+    apuntar(6105, "Fantasma")
+    Print "pasados " + str_from_int(recibos_al_autor(), 10)
+    for n in ["trasfondo", "mcp", "fantasma"]
+        r = recibo_de(n)
+        Print n + " " + r.repo + " " + str_from_int(r.id, 10)
+    end
+    Print "otra vez " + str_from_int(recibos_al_autor(), 10)
+end

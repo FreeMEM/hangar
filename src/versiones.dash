@@ -267,13 +267,51 @@ func _ver_nombre(ruta: String) -> String
     return ruta[i + 1:ruta.length]
 end
 
+# Lo ya leído en esta vuelta: "ruta TAB tamaño TAB fecha" del programa de un recibo y la versión que dio. Míos y
+# Verificar lo leen todo cada vez; con esto, un fichero que no ha cambiado (mismo tamaño y fecha) no se vuelve a
+# leer entero (el CRC de los 4,8 MB de Tachyon, segundos en un 68020)
+var _ver_memo_clave: [String] = []
+var _ver_memo_version: [String] = []
+
+func _ver_principal(r: Recibo) -> String
+    nombre = str_lower(r.nombre)
+    for f in r.ficheros
+        if str_lower(_ver_nombre(f)) == nombre
+            return f
+        end
+    end
+    return ""
+end
+
 # La versión que hay de verdad: la del "$VER:" del programa del recibo (el fichero que se llama como el paquete, o
 # el primero con "$VER:" de su nombre); si cambió (se actualizó solo), el recibo se pone al día. Si no se encuentra,
-# la del recibo.
+# la del recibo. Se mira el disco cada vez (Míos, la ficha, Verificar): el recibo puede ser de antes de que el
+# programa se actualizara solo (Trasfondo 2.11.0 seguía saliendo 2.10.1 en Míos; lo contó Ferrán García)
 func version_instalada(r: Recibo) -> String
     if r.id == 0
         return ""
     end
+    clave = ""
+    p = _ver_principal(r)
+    if p != "" and file_exists(p)
+        clave = r.nombre + "\t" + p + "\t" + str_from_int(file_size(p), 10) + "\t" + str_from_int(file_date(p), 10)
+        i = 0
+        while i < _ver_memo_clave.length
+            if _ver_memo_clave[i] == clave and _ver_memo_version[i] == r.version
+                return r.version
+            end
+            i = i + 1
+        end
+    end
+    v = _version_instalada(r)
+    if clave != "" and v == r.version
+        _ver_memo_clave.push(clave)
+        _ver_memo_version.push(v)
+    end
+    return v
+end
+
+func _version_instalada(r: Recibo) -> String
     # lo que instaló Hangar y sigue como lo dejó (el mismo CRC) es la versión de su paquete: el $VER del programa a
     # veces dice otra (image2icon 1.20 lleva "1.19" dentro) y se ofrecería actualizar para siempre. El $VER manda si
     # el programa cambió (se actualizó solo: Tachyon, Trasfondo) y en lo apuntado a mano

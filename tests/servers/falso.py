@@ -158,6 +158,26 @@ _VARLIB = ("Choice: LIBS:vprueba.library = VL/Libs/vprueba.library\nChoice: LIBS
 _punta2("8019", "main", "varlib", "1.0", _varlib(10), _VARLIB)
 _punta2("8020", "main", "varlib", "1.1", _varlib(11), _VARLIB, nueva=True)
 
+# Lo de Aminet que su autor publica también en Hangar (tests/test_autor.dash, lo contó Ferrán García): Trasfondo, del
+# mismo autor y verificado, pasa a main; mcp no (en main es de otro autor) y fantasma tampoco (su autor no está
+# verificado). id: (fuente, nombre, versión, autor, verificado)
+FICHAS_AUTOR = {
+    "6101": ("aminet", "Trasfondo", "2.9.13", "FreeMEM", False),
+    "6102": ("github", "Trasfondo", "2.11.0", "FreeMEM <hola@freemem.space>", True),
+    "6103": ("aminet", "MCP", "13.76", "Jorg Sixt", False),
+    "6104": ("github", "MCP", "1.49", "Otro", True),
+    "6105": ("aminet", "Fantasma", "1.0", "Ana", False),
+    "6106": ("github", "Fantasma", "2.0", "Ana", False),
+    "6107": ("aminet", "IconPrueba_46.4", "46.4.605", "Peter Keunecke", False),
+}
+# lo que la de IconPrueba pone en el sistema (Choice), como IconLib
+ELIGE_AUTOR = {"6107": "elige\tLIBS:iconprueba.library = IconPrueba_46.4/Libs/iconprueba.library\n"
+                       "elige\tLIBS:iconprueba.library = IconPrueba_46.4/Libs/68000/iconprueba.library\n"}
+for _i, (_f, _n, _v, _a, _ver) in FICHAS_AUTOR.items():
+    if _f == "github":
+        REPO2["main"][_n.lower()] = (f"Name: {_n.lower()}\nVersion: {_v}\nRelease: 1\nId: {_i}\nUrl: http://x/{_n}.lha\n"
+                                    f"Size: 5\nSha256: cc\nAuthor: {_a}\n")
+
 
 def respuesta2(ruta, cuerpo_post=None):
     """La respuesta del formato 2 a una ruta /pkg/v2/<repo>/<arq>/<acción>?..., y su firma"""
@@ -266,6 +286,27 @@ class Manejador(http.server.BaseHTTPRequestHandler):
             n = q["q"][0]
             filas = [f"{k}\t{v[0]}\t{v[1]}\tutil/misc\t{len(v[2])}\t2026-11-10\t0\tPaquete {v[0]}\n" for k, v in PUNTA.items() if v[0] == n]
             return self.responder(200, f"LISTA\t{len(filas)}\t0\t50\n" + "".join(filas))
+        # (las capturas de lo de Ferrán García: la ficha de Míos por su repositorio, buscar Trasfondo y una librería
+        # que va a LIBS: como IconLib)
+        if u.path.startswith("/amiga/v1/ficha-pkg/"):
+            _, _, _, _, repo, nombre = u.path.split("/", 5)
+            for i, (f, n, v, a, ver) in FICHAS_AUTOR.items():
+                if n.lower() == nombre and (f == "aminet") == (repo == "aminet"):
+                    u = urllib.parse.urlparse(f"/amiga/v1/ficha/{i}")
+                    break
+        if u.path == "/amiga/v1/buscar" and q.get("q", [""])[0].lower() in [v[1].lower() for v in FICHAS_AUTOR.values()]:
+            n = q["q"][0].lower()
+            filas = [f"{k}\t{v[1]}\t{v[2]}\tutil/moni\t5\t2026-11-25\t0\t{'De su autor' if v[0] == 'github' else 'De Aminet'}\n"
+                     for k, v in FICHAS_AUTOR.items() if v[1].lower() == n]
+            return self.responder(200, f"LISTA\t{len(filas)}\t0\t50\n" + "".join(filas))
+        if u.path.startswith("/amiga/v1/ficha/") and u.path[-4:] in FICHAS_AUTOR:
+            ident = u.path[-4:]
+            fuente, nombre, version, autor, verificado = FICHAS_AUTOR[ident]
+            t = (f"FICHA\nid\t{ident}\nfuente\t{fuente}\nnombre\t{nombre}\nversion\t{version}\ncajon\tutil/moni\n"
+                 f"tamano\t5\nautor\t{autor}\ndescarga\t{B}/x.lha\n{EXTRA_FICHA}pkg\t{nombre.lower()}\n"
+                 f"repo\t{'aminet' if fuente == 'aminet' else 'main'}\n" + ("verificado\tsi\n" if verificado else "")
+                 + ELIGE_AUTOR.get(ident, "") + "\nTexto\n")
+            return self.responder(200, t)
         if u.path.startswith("/amiga/v1/ficha/") and u.path[-4:] in PUNTA:
             ident = u.path[-4:]
             nombre, version, d, sha, extra = PUNTA[ident]
@@ -282,7 +323,7 @@ class Manejador(http.server.BaseHTTPRequestHandler):
             if q.get("q") != ["player ñ"]:
                 return self.responder(400, f"ERROR\tq rara: {q.get('q')}\n")
             return self.responder(200, LISTA)
-        if u.path == "/amiga/v1/novedades" or u.path.startswith("/amiga/v1/categoria/"):
+        if u.path in ("/amiga/v1/novedades", "/amiga/v1/autores", "/amiga/v1/todo") or u.path.startswith("/amiga/v1/categoria/"):
             return self.responder(200, LISTA)
         if u.path == "/amiga/v1/categorias":
             return self.responder(200, "CATEGORIAS\t2\ncomm/misc\t1\nmus/play\t1\n")

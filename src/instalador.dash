@@ -276,9 +276,11 @@ func instalador_ejecutar(instalador: String, guion: String, nombre: String) -> B
     return true
 end
 
-# El guion de Installer que trae un .lha (lo de Aminet no lo declara): un fichero "Install..." que no es un
-# ejecutable y tiene órdenes del Installer. Antes "Install" que "Install-English" y lo menos hondo. Su ruta dentro de
-# staged, o ""
+# El guion de Installer que trae un .lha (lo de Aminet no lo declara): un fichero "Install..." (o con el nombre en
+# otro idioma: "Instalar" de Trasfondo, "Instalación", "Instalacja", "Asenna") que no es un ejecutable y tiene órdenes
+# del Installer. Antes "Install" que "Instalar", que "Install-English", y lo menos hondo. Su ruta dentro de staged, o
+# "" (Trasfondo se copiaba tal cual sin su guion: TrasfondoPrefs no iba a SYS:Prefs ni Avisa a C:; lo contó Ernesto
+# Laura de la Fuente)
 func guion_del_paquete(staged: String, ficheros: [String]) -> String
     mejor = ""
     puntos = 0
@@ -293,7 +295,7 @@ func guion_del_paquete(staged: String, ficheros: [String]) -> String
             hondo = hondo + 1
         end
         nb = str_lower(b)
-        if str_starts(nb, "install") and not str_ends(nb, ".info") and hondo <= 2 and file_size(x) < 200000
+        if (str_starts(nb, "instal") or str_starts(nb, "asenna")) and not str_ends(nb, ".info") and hondo <= 2 and file_size(x) < 200000
             t = file_read_text(x)
             # (un ejecutable empieza por bytes 0: como texto sale vacío)
             if t != nil and t.length > 0
@@ -303,6 +305,8 @@ func guion_del_paquete(staged: String, ficheros: [String]) -> String
                     p = 10 - hondo * 3
                     if nb == "install"
                         p = p + 5
+                    elif nb == "instalar" or nb == "asenna"
+                        p = p + 4
                     elif str_find(nb, "english") >= 0 or str_ends(nb, "-en") or str_ends(nb, "_en")
                         p = p + 3
                     end

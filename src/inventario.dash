@@ -140,7 +140,27 @@ struct FicheroDisco
     ruta: String
 end
 
+# Los cajones que no se miran (ENVARC:Hangar/disco_excluir, "Stuff:Juegos"; lo pidió Ferrán García), como los da
+# inventario_normal
+var inventario_excluir: [String] = []
+
+# Un cajón para compararlo: en minúsculas y sin la "/" del final ("Stuff:Juegos/" -> "stuff:juegos")
+func inventario_normal(c: String) -> String
+    t = str_lower(str_trim(c))
+    while t.length > 1 and str_ends(t, "/")
+        t = t[:t.length - 1]
+    end
+    return t
+end
+
+func inventario_excluido(cajon: String) -> Bool
+    return inventario_excluir.length > 0 and inventario_normal(cajon) in inventario_excluir
+end
+
 func _inv_cajon(cajon: String, hondo: Int, salida: [FicheroDisco])
+    if inventario_excluido(cajon)
+        return
+    end
     n = dir_read(cajon)
     if n <= 0
         return
@@ -184,11 +204,27 @@ func inventario_recorrer(cajones: [String], hondo: Int) -> [FicheroDisco]
     return r
 end
 
-# "fichero TAB tamaño TAB nombre TAB versión" por línea, para api_reconocer
+# Si un fichero está en un sitio del sistema o de herramientas (C:, LIBS:, SYS:Tools, Commodities...): ahí, por el
+# nombre de su $VER:, no puede ser un juego (la commodity MCP no es el juego MCP de Aminet; lo contó Ferrán García)
+func inventario_del_sistema(ruta: String) -> Bool
+    r = str_lower(ruta)
+    for s in ["c:", "libs:", "devs:", "l:", "fonts:", "sys:c/", "sys:libs/", "sys:devs/", "sys:l/", "sys:system", "sys:prefs", "sys:tools", "sys:utilities", "sys:wbstartup", "sys:storage"]
+        if str_starts(r, s)
+            return true
+        end
+    end
+    return str_find(r, "commodities") >= 0
+end
+
+# "fichero TAB tamaño TAB nombre TAB versión TAB sitio" por línea, para api_reconocer; sitio "sistema" u "otro"
 func inventario_texto(inv: [FicheroDisco]) -> String
     t = ""
     for p in inv
-        t = t + p.fichero + "\t" + str_from_int(p.tamano, 10) + "\t" + p.nombre + "\t" + p.version + "\n"
+        sitio = "otro"
+        if inventario_del_sistema(p.ruta)
+            sitio = "sistema"
+        end
+        t = t + p.fichero + "\t" + str_from_int(p.tamano, 10) + "\t" + p.nombre + "\t" + p.version + "\t" + sitio + "\n"
     end
     return t
 end

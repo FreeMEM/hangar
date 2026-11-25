@@ -791,9 +791,6 @@ MSG_1232
 MSG_1233
 Lecture des programmes du disque...
 ; Leyendo los programas del disco...
-MSG_1234
-Lecture des programmes de Work:...
-; Leyendo los programas de Work:...
 MSG_1235
 Lecture des programmes de 
 ; Leyendo los programas de 
@@ -1415,3 +1412,93 @@ _Accepter ce certificat
 MSG_1466
 A_nnuler
 ; _Cancelar
+MSG_1467
+  (et son tiroir dans 
+;   (y su cajón en 
+MSG_1468
+Choisissez d'abord un programme dans la liste
+; Elige antes un programa de la lista
+MSG_1469
+ n'est pas installé avec Hangar.
+;  no está instalado con Hangar.
+MSG_1470
+_OK
+; _Vale
+MSG_1471
+\n\nDans le système (celui qui compte) :
+; \n\nEn el sistema (lo que cuenta):
+MSG_1472
+\n\nNoté dans Hangar dans :\n  
+; \n\nApuntado en Hangar en:\n  
+MSG_1473
+\nSon programme :\n  
+; \nSu programa:\n  
+MSG_1474
+\n(Installé à la main ; Hangar l'a noté en examinant le disque.)
+; \n(Lo instalaste a mano y Hangar lo apuntó al mirar el disco.)
+MSG_1475
+\n\nIl est dans 
+; \n\nEstá en 
+MSG_1476
+, sans être noté dans Hangar.
+; , sin apuntar en Hangar.
+MSG_1477
+_Ouvrir le tiroir|_OK
+; _Abrir el cajón|_Vale
+MSG_1478
+Où est le programme choisi...
+; Dónde está el elegido...
+MSG_1479
+Lancer
+; Ejecutar
+MSG_1480
+Hangar : où chercher sur le disque
+; Hangar: dónde mirar el disco
+MSG_1481
+Avec Disque, Hangar cherche à ces endroits\n(SYS: c'est C:, LIBS:, SYS:Utilities, SYS:Tools...) :
+; Al pulsar Disco, Hangar mira estos sitios\n(SYS: es C:, LIBS:, SYS:Utilities, SYS:Tools...):
+MSG_1482
+_Ajouter...
+; _Añadir...
+MSG_1483
+_Retirer
+; _Quitar
+MSG_1484
+_Ceux par défaut
+; _Los de siempre
+MSG_1485
+Et il saute ces tiroirs :
+; Y se salta estos cajones:
+MSG_1486
+Ajou_ter...
+; Aña_dir...
+MSG_1487
+Re_tirer
+; Q_uitar
+MSG_1488
+_Enregistrer
+; _Guardar
+MSG_1489
+Enregistrer et _chercher
+; Guardar y _mirar ahora
+MSG_1490
+A_nnuler
+; _Cancelar
+MSG_1491
+Où dois-je chercher aussi ?
+; ¿Dónde más miro?
+MSG_1492
+Quel tiroir dois-je sauter ?
+; ¿Qué cajón me salto?
+MSG_1493
+Enregistré où chercher sur le disque : 
+; Guardado dónde mirar el disco: 
+MSG_1494
+Où chercher sur le disque...
+; Dónde mirar el disco...
+MSG_1495
+\n\nJe chercherai dans : 
+; \n\nMiraré en: 
+MSG_1496
+\n(Modifiable dans le menu, Où chercher sur le disque...)
+; \n(Se cambia en el menú, Dónde mirar el disco...)

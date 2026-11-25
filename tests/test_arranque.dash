@@ -6,6 +6,7 @@
 # expect-out: igual [] [; mio|Echo hola|]
 # expect-out: repetida [Echo hola|] [Echo hola|Path C:|]
 # expect-out: guion [Prog/Install] sin guion []
+# expect-out: instalar [Trasfondo/Instalar]
 # expect-out: sitio [Work:] [Programs:Juegos/] [Work:] []
 import "../src/instalador.dash"
 
@@ -35,6 +36,14 @@ Main
     var fs: [String] = ["RAM:n/Prog/Prog", "RAM:n/Prog/Install-Deutsch", "RAM:n/Prog/Installation.txt", "RAM:n/Prog/Install", "RAM:n/Prog/Install.info"]
     var otros: [String] = ["RAM:n/Prog/Prog", "RAM:n/Prog/Installation.txt"]
     Print "guion [" + guion_del_paquete("RAM:n/", fs) + "] sin guion [" + guion_del_paquete("RAM:n/", otros) + "]"
+    # en castellano, como el de Trasfondo (Trasfondo/Instalar; lo contó Ernesto Laura de la Fuente)
+    dir_create("RAM:t")
+    dir_create("RAM:t/Trasfondo")
+    file_write_text("RAM:t/Trasfondo/Instalar", "(welcome)\n(set dest (askdir (prompt \"?\") (default @default-dest)))\n(copyfiles (source \"Avisa\") (dest \"C:\"))\n")
+    file_write_text("RAM:t/Trasfondo/Instalar.info", "x")
+    file_write_text("RAM:t/Trasfondo/Trasfondo", "programa")
+    var ft: [String] = ["RAM:t/Trasfondo/Trasfondo", "RAM:t/Trasfondo/Instalar", "RAM:t/Trasfondo/Instalar.info"]
+    Print "instalar [" + guion_del_paquete("RAM:t/", ft) + "]"
     var a1: [String] = ["Work:Prog/Prog", "Work:Prog/Prog.info", "LIBS:prog.library", "Work:Prog/Docs/Leeme"]
     var a2: [String] = ["Programs:Juegos/Pac/Pac", "ENVARC:Pac.prefs", "Programs:Juegos/Pac.info"]
     var a3: [String] = ["Work:Prog", "C:prog"]
