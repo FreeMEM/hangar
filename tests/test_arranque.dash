@@ -8,6 +8,8 @@
 # expect-out: guion [Prog/Install] sin guion []
 # expect-out: instalar [Trasfondo/Instalar]
 # expect-out: sitio [Work:] [Programs:Juegos/] [Work:] []
+# expect-out: sitio con SYS:Prefs [Work:]
+# expect-out: cambiados suyos [MyFiles:Trasfondo/Trasfondo|MyFiles:Trasfondo.info|SYS:Prefs/TrasfondoPrefs]
 import "../src/instalador.dash"
 
 func barras(t: String) -> String
@@ -49,4 +51,12 @@ Main
     var a3: [String] = ["Work:Prog", "C:prog"]
     var a4: [String] = ["LIBS:x.library", "SYS:WBStartup/X"]
     Print "sitio [" + sitio_de_lo_escrito(a1) + "] [" + sitio_de_lo_escrito(a2) + "] [" + sitio_de_lo_escrito(a3) + "] [" + sitio_de_lo_escrito(a4) + "]"
+    # el guion de Trasfondo: su cajón, y fuera SYS:Prefs, C:, SYS:WBStartup y el catálogo (lo pidió el usuario)
+    var a5: [String] = ["Work:Trasfondo/Trasfondo", "Work:Trasfondo/LEEME", "Work:Trasfondo.info", "SYS:Prefs/TrasfondoPrefs", "C:Avisa", "SYS:WBStartup/Trasfondo.info", "LOCALE:Catalogs/español/Trasfondo.catalog"]
+    Print "sitio con SYS:Prefs [" + sitio_de_lo_escrito(a5) + "]"
+    # lo que el guion pisó: lo del recibo anterior y lo de su cajón en el destino, sí; S:User-Startup y una librería
+    # de otro, no (al actualizar Trasfondo con su guion, sus ficheros se borraban como "lo que ya no viene")
+    var cm: [String] = ["MyFiles:Trasfondo/Trasfondo", "MyFiles:Trasfondo.info", "S:User-Startup", "SYS:Prefs/TrasfondoPrefs", "LIBS:otra.library", "MyFiles:TrasfondoOtro/x"]
+    var an: [String] = ["SYS:Prefs/TrasfondoPrefs"]
+    Print "cambiados suyos [" + str_join(cambiados_del_paquete(cm, an, "MyFiles:", "Trasfondo/Instalar"), "|") + "]"
 end

@@ -10,8 +10,9 @@
 import "transaccion.dash"
 
 var instalador_forzado: String = ""     # (para los tests: otro programa en su lugar)
-# lo que va tras el guion: el nombre del programa (%n) y el modo para principiantes (pregunta lo mínimo)
-var instalador_args: String = " APPNAME \"%n\" MINUSER NOVICE DEFUSER NOVICE"
+# lo que va tras el guion: el nombre del programa (%n), el modo para principiantes (pregunta lo mínimo) y sin el
+# fichero de registro (install_log_file, que quedaba suelto en el destino; con Trasfondo, en MyFiles:)
+var instalador_args: String = " APPNAME \"%n\" MINUSER NOVICE DEFUSER NOVICE NOLOG"
 
 # El programa Installer: el del sistema o el de un paquete instalado con Hangar ("" si no hay)
 func instalador_ruta() -> String
@@ -80,7 +81,7 @@ func foto_sistema(destino: String) -> [String]
             _foto_cajon(o, 2, f)
         end
     end
-    for c in ["LIBS:", "C:", "DEVS:", "L:", "FONTS:", "S:", "SYS:WBStartup", "SYS:Classes", "ENVARC:"]
+    for c in ["LIBS:", "C:", "DEVS:", "L:", "FONTS:", "S:", "SYS:WBStartup", "SYS:Classes", "SYS:Prefs", "ENVARC:"]
         _foto_cajon(c, 1, f)
     end
     # los catálogos: LOCALE:Catalogs/<idioma>/<programa>.catalog (o un cajón más)
@@ -189,6 +190,23 @@ end
 var guion_volumenes_cambiados: Int = 0
 
 func guion_sin_volumenes_ausentes(t: String, destino: String) -> String
+    return _guion_askdir(t, destino, false)
+end
+
+# Un paquete del autor que declara su guion (Install: installer Trasfondo/Instalar): el sitio que propone su primer
+# askdir es el de "En:" de Hangar. El Installer corre en modo principiante, que no pregunta y toma lo propuesto: si no,
+# Trasfondo iba siempre a su SYS:Utilities (lo pidió el usuario). El destino, sin la "/" del final
+func guion_con_destino(t: String, destino: String) -> String
+    d = destino
+    if str_ends(d, "/")
+        d = d[:d.length - 1]
+    end
+    return _guion_askdir(t, d, true)
+end
+
+# primero: cambia el default (un texto) del primer askdir, haya o no su volumen; si no, el de cada askdir que
+# propone un volumen que no hay
+func _guion_askdir(t: String, destino: String, primero: Bool) -> String
     guion_volumenes_cambiados = 0
     if destino == ""
         return t
@@ -229,7 +247,7 @@ func guion_sin_volumenes_ausentes(t: String, destino: String) -> String
                     if e > k and e < fin
                         valor = t[k + 1:e]
                         dp = str_find(valor, ":")
-                        if dp > 0 and not file_exists(valor[:dp + 1])
+                        if (primero and guion_volumenes_cambiados == 0) or (not primero and dp > 0 and not file_exists(valor[:dp + 1]))
                             r = r + t[desde:k + 1] + destino
                             desde = e
                             guion_volumenes_cambiados = guion_volumenes_cambiados + 1
@@ -253,11 +271,15 @@ func instalador_ejecutar(instalador: String, guion: String, nombre: String) -> B
     while i >= 0 and str_code(cajon, i) != 47 and str_code(cajon, i) != 58
         i = i - 1
     end
+    solo = guion[i + 1:]
     cajon = cajon[:i + 1]
     marca = "T:hangar_installer_fin"
     file_delete(marca)
-    # FailAt: aunque el Installer acabe con error (o lo cancele el usuario), el guion sigue y deja la marca de fin
-    t = "FailAt 1000000\nStack " + str_from_int(pila_installer(guion), 10) + "\nCD \"" + cajon + "\"\n\"" + instalador + "\" \"" + guion + "\"" + str_replace(instalador_args, "%n", nombre) + "\nEcho >" + marca + " \"fin\"\n"
+    # FailAt: aunque el Installer acabe con error (o lo cancele el usuario), el guion sigue y deja la marca de fin.
+    # El guion, por su nombre solo y desde su cajón: con su ruta entera ("System:Utilities/Hangar/Cache/Nuevo/
+    # Trasfondo/Instalar") el Installer 44 de Coffin se caía al acabar ("Memory header not located"; visto con
+    # Trasfondo, y antes con LumiGram)
+    t = "FailAt 1000000\nStack " + str_from_int(pila_installer(guion), 10) + "\nCD \"" + cajon + "\"\n\"" + instalador + "\" \"" + solo + "\"" + str_replace(instalador_args, "%n", nombre) + "\nEcho >" + marca + " \"fin\"\n"
     if not file_write_text("T:hangar_installer", t)
         return false
     end
@@ -274,6 +296,45 @@ func instalador_ejecutar(instalador: String, guion: String, nombre: String) -> B
     file_delete(marca)
     file_delete("T:hangar_installer")
     return true
+end
+
+# De lo que el guion cambió (ya estaba), lo que es del paquete: lo que tenía su recibo anterior (al actualizar, el
+# guion pisa sus propios ficheros: sin esto no iban al recibo nuevo y se borraban como "lo que ya no viene") y lo
+# del cajón del paquete en el destino (el primer cajón de la ruta del guion: "Trasfondo/Instalar" pone
+# "Destino:Trasfondo/" y "Destino:Trasfondo.info"; lo que había de una instalación a mano, también suyo)
+func cambiados_del_paquete(cambiados: [String], anterior: [String], destino: String, guion: String) -> [String]
+    var r: [String] = []
+    var suyos: [String] = []
+    # (sin "Inserta el volumen": lo del recibo puede estar en uno que ya no está)
+    dos_requesters(false)
+    for a in anterior
+        suyos.push(str_lower(a))
+        real = str_lower(file_real_path(a))
+        if real != ""
+            suyos.push(real)
+        end
+    end
+    d = destino
+    if d != "" and not str_ends(d, ":") and not str_ends(d, "/")
+        d = d + "/"
+    end
+    cima = ""
+    k = str_find(guion, "/")
+    if k > 0 and d != ""
+        cima = str_lower(d + guion[:k])
+    end
+    for c in cambiados
+        cl = str_lower(c)
+        suyo = cl in suyos or str_lower(file_real_path(c)) in suyos
+        if cima != "" and (str_starts(cl, cima + "/") or cl == cima + ".info")
+            suyo = true
+        end
+        if suyo
+            r.push(c)
+        end
+    end
+    dos_requesters(true)
+    return r
 end
 
 # El guion de Installer que trae un .lha (lo de Aminet no lo declara): un fichero "Install..." (o con el nombre en
@@ -342,7 +403,7 @@ func sitio_de_lo_escrito(escritos: [String]) -> String
     for x in escritos
         xl = str_lower(x)
         del_sistema = false
-        for s in ["libs:", "c:", "devs:", "l:", "fonts:", "s:", "envarc:", "locale:", "sys:classes/", "sys:wbstartup/"]
+        for s in ["libs:", "c:", "devs:", "l:", "fonts:", "s:", "envarc:", "locale:", "sys:classes/", "sys:wbstartup/", "sys:prefs/"]
             if str_starts(xl, s)
                 del_sistema = true
             end
@@ -402,6 +463,7 @@ end
 # escribió. Devuelve los ficheros para el recibo; "" en error si algo falló.
 var instalador_error: String = ""
 var instalador_cambiados: Int = 0
+var instalador_cambiados_lista: [String] = []   # lo que ya estaba y el guion cambió (sus rutas)
 # lo que el guion añadió a S:User-Startup: sale de ahí y va al bloque del paquete, que se quita al desinstalarlo
 var instalador_arranque: String = ""
 
@@ -444,10 +506,14 @@ func arranque_separar(antes: String, despues: String) -> [String]
     return [nuevas, resto]
 end
 
+var guion_declarado: Bool = false     # el guion lo declara el paquete (Install: installer ...): va a "En:"
+
 func instalar_con_guion(staged: String, guion: String, nombre: String, destino: String) -> [String]
     var escritos: [String] = []
     instalador_error = ""
     instalador_cambiados = 0
+    var sin_cambiados: [String] = []
+    instalador_cambiados_lista = sin_cambiados
     instalador_arranque = ""
     inst = instalador_ruta()
     if inst == ""
@@ -474,7 +540,12 @@ func instalar_con_guion(staged: String, guion: String, nombre: String, destino: 
     texto = file_read_text(ruta_guion)
     if texto != nil
         nuevo = guion_sin_volumenes_ausentes(texto, destino)
-        if guion_volumenes_cambiados > 0
+        cambiados = guion_volumenes_cambiados
+        if guion_declarado
+            nuevo = guion_con_destino(nuevo, destino)
+            cambiados = cambiados + guion_volumenes_cambiados
+        end
+        if cambiados > 0
             file_write_text(ruta_guion, nuevo)
         end
     end
@@ -506,6 +577,7 @@ func instalar_con_guion(staged: String, guion: String, nombre: String, destino: 
                 escritos.push(ruta)
             else
                 instalador_cambiados = instalador_cambiados + 1
+                instalador_cambiados_lista.push(ruta)
             end
         end
     end

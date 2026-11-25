@@ -1,6 +1,6 @@
 # Hangar: busca, instala y pone al día el software del Amiga. Busca en el catálogo de hangar.freemem.space, enseña la ficha, instala
 # (baja el .lha y lo descomprime, sin C:lha), actualiza, desinstala y ejecuta.
-@version "Hangar 0.21.0"
+@version "Hangar 0.21.1"
 @catalog "Hangar.catalog" 1 "español"
 import "api.dash"
 import "lha.dash"
@@ -15,7 +15,7 @@ import "plan2.dash"
 import "instalador.dash"
 import "elegir.dash"
 
-const VERSION = "0.21.0"
+const VERSION = "0.21.1"
 
 const ID_BUSCAR = 1
 const ID_NOVEDADES = 2
@@ -1064,6 +1064,7 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
     var guardados_crc: [Int] = []
     nuevos_config = 0
     con_guion = str_starts(str_lower(f.instala), "installer ")
+    guion_declarado = con_guion
     guion = ""
     if con_guion
         guion = str_trim(f.instala[10:])
@@ -1137,6 +1138,25 @@ func instalar_ficha(f: Ficha, destino: String, motivo: String) -> Bool
             estado_texto = tr(1109, "Installer: ") + instalador_error
             return false
         end
+        # lo suyo que ya estaba y el guion pisó (al actualizar, sus propios ficheros) también va al recibo
+        for x in cambiados_del_paquete(instalador_cambiados_lista, anterior.ficheros, destino, guion)
+            escritos.push(x)
+        end
+        # y lo de la versión anterior que sigue ahí sin tocar: un guion no dice qué sobra, y lo que no reescribe (el
+        # icono de su cajón, los ajustes que guardó el programa) se borraba como "lo que ya no viene" al actualizar
+        dos_requesters(false)
+        for viejo in anterior.ficheros
+            ya = false
+            for d in escritos
+                if str_lower(d) == str_lower(viejo)
+                    ya = true
+                end
+            end
+            if not ya and file_exists(viejo)
+                escritos.push(viejo)
+            end
+        end
+        dos_requesters(true)
         # donde lo dejó el guion es su sitio (para seguirlo si se mueve, y en Míos)
         sitio = sitio_de_lo_escrito(escritos)
         if sitio != ""

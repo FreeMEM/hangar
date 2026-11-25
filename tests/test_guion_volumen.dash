@@ -7,6 +7,7 @@
 # expect-out: [; (askdir (default "NoHay:"))]
 # expect-out: [(set #f (ASKDIR (default "Programs:") (prompt "y")))]
 # expect-out: sin destino 0
+# expect-out: declarado 1 [(set #donde (askdir (prompt "?") (help @askdir-help) (default "Work:Programas")))] [(set #e (askdir (default "SYS:Otro")))]
 import "../src/instalador.dash"
 
 Main
@@ -23,4 +24,9 @@ Main
     end
     r2 = guion_sin_volumenes_ausentes(t, "")
     Print "sin destino " + str_from_int(guion_volumenes_cambiados, 10)
+    # un guion declarado (Install: installer, Trasfondo): su primer askdir propone el destino de Hangar, aunque su
+    # volumen exista (lo pidió el usuario)
+    g = "(set #donde (askdir (prompt \"?\") (help @askdir-help) (default \"SYS:Utilities\")))\n(set #e (askdir (default \"SYS:Otro\")))"
+    d = str_split(guion_con_destino(g, "Work:Programas/"), "\n")
+    Print "declarado " + str_from_int(guion_volumenes_cambiados, 10) + " [" + d[0] + "] [" + d[1] + "]"
 end

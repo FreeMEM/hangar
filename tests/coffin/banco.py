@@ -39,12 +39,15 @@ from amiberry import orden  # noqa: E402
 V = os.path.expanduser("~/.cache/hangar-coffin")
 # el Coffin del usuario (coffin_r65_32GB.img) dio el 16/11 un error de PFS-III (bloque 2386) y System protegido:
 # se usa la copia del 14/11 de las pruebas de Tachyon
-ORIGINAL = os.path.expanduser("~/Amiberry/HardDrives/.coffin-comparativa.img")
+# (BANCO_DISCO: otro disco de partida, como DashCoffin.hdf, con el que se probaron LumiGram y Trasfondo con su Installer)
+ORIGINAL = os.environ.get("BANCO_DISCO") or os.path.expanduser("~/Amiberry/HardDrives/.coffin-comparativa.img")
 COPIA = os.path.expanduser("~/Amiberry/HardDrives/.coffin-hangar.img")   # en el btrfs del original: reflink
 TRASP = os.path.join(V, "traspaso")
 PANTALLA = ":85"
 R = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TRASPASO = (38, 250)          # el icono del escritorio de Coffin en RTG (medido para el vídeo de Trasfondo)
+if os.environ.get("BANCO_TRASPASO"):  # en otro disco está en otro sitio (DashCoffin.hdf: 38,180)
+    TRASPASO = tuple(int(x) for x in os.environ["BANCO_TRASPASO"].split(","))
 
 
 # códigos raw del teclado del Amiga
