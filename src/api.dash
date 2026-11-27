@@ -85,6 +85,9 @@ struct Ficha
     antivirus: String = ""     # lo que dijo el antivirus del servidor ("limpio (xvs 33.49, 12 ficheros)", "VIRUS ...")
     verificado: Bool = false   # su autor está verificado (otro programa tenía su nombre)
     descargas: Int = 0         # las veces que se ha bajado desde Hangar, todas sus versiones
+    valoraciones: Int = 0      # cuántas valoraciones tiene (src/comunidad.dash)
+    media10: Int = 0           # su media en décimas (43 = 4,3)
+    n_comentarios: Int = 0     # cuántos comentarios se ven
 end
 
 struct Comparacion
@@ -293,6 +296,12 @@ func api_leer_ficha(texto: String) -> Ficha
                 f.verificado = v == "si"
             elif k == "descargas"
                 f.descargas = Int(v)
+            elif k == "valoraciones"
+                f.valoraciones = Int(v)
+            elif k == "media"
+                f.media10 = Int(v)
+            elif k == "comentarios"
+                f.n_comentarios = Int(v)
             elif k == "pkg"
                 f.pkg2 = v
             elif k == "repo"

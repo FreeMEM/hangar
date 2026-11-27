@@ -1,4 +1,4 @@
-## version $VER: Hangar.catalog 1.0 (25.11.2026)
+## version $VER: Hangar.catalog 1.0 (27.11.2026)
 ## language svenska
 ## codeset 0
 ;
@@ -1502,3 +1502,78 @@ MSG_1495
 MSG_1496
 \n(Ändras i menyn, Var på disken ska jag leta...)
 ; \n(Se cambia en el menú, Dónde mirar el disco...)
+MSG_1497
+Till:
+; En:
+MSG_1498
+konstigt svar
+; respuesta rara
+MSG_1499
+konstigt svar
+; respuesta rara
+MSG_1500
+konstigt svar
+; respuesta rara
+MSG_1508
+K_ommentarer...
+; C_omentarios...
+MSG_1509
+Betyg: inga ännu
+; Valoración: ninguna todavía
+MSG_1510
+Betyg: 
+; Valoración: 
+MSG_1511
+ av 5 (
+;  de 5 (
+MSG_1513
+Letar efter skärmbilderna...
+; Buscando las capturas...
+MSG_1514
+Fel: 
+; Error: 
+MSG_1515
+Hämtar skärmbilden...
+; Bajando la captura...
+MSG_1516
+ · av 
+;  · de 
+MSG_1517
+Fel: 
+; Error: 
+MSG_1518
+(Inga kommentarer än: den första kan bli din.)
+; (Todavía no hay comentarios: el primero puede ser el tuyo.)
+MSG_1519
+Hämtar kommentarerna...
+; Cargando los comentarios...
+MSG_1520
+Fel: 
+; Error: 
+MSG_1521
+Hangar: kommentarer om %1
+; Hangar: comentarios de %1
+MSG_1522
+Ä_ldre
+; _Más antiguos
+MSG_1526
+_Stäng
+; C_errar
+MSG_1527
+Fel: 
+; Error: 
+MSG_1606
+_Omdömen...
+; _Opiniones...
+MSG_1608
+Dubbelklick: hela kommentaren
+; Doble clic: el comentario entero
+MSG_1609
+_OK
+; _Vale
+MSG_1610
+kommentar
+; comentario
+MSG_1611
+kommentarer
+; comentarios

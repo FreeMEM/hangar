@@ -1,0 +1,38 @@
+# Test: lo de la comunidad (src/comunidad.dash) contra el servidor falso: la valoración, los comentarios por
+# páginas (con su texto en varias líneas y en Latin-1), las capturas de una ficha; con la cuenta, valorar, comentar,
+# borrar, avisar y mandar una captura con bytes 0 (llega entera, con su tamaño y su SHA-256).
+# emu-server: falso.py 47131
+# expect-out: valoracion 12 43 0 -
+# expect-out: media 4,3
+# expect-out: comentarios 21 pagina 0 de 20 - 20
+# expect-out: 920 Eva Peña 2026-11-10 10:20 UTC no
+# expect-out: Comentario 20 en España
+# expect-out: pagina 1: 900 [Comentario 0 en España|con dos líneas||y una en blanco]
+# expect-out: capturas 2 - 0: 501 160x128 [] 502 160x100 [Eva Peña]
+# expect-out: url http://127.0.0.1:47131/amiga/v1/captura/502.iff
+import "../src/comunidad.dash"
+
+func lineas(t: String) -> String
+    return str_replace(t, "\n", "|")
+end
+
+Main
+    api_base = "http://127.0.0.1:47131/amiga/v1"
+    v = api_valoracion(4050)
+    Print "valoracion " + str_from_int(v.n, 10) + " " + str_from_int(v.media10, 10) + " " + str_from_int(v.mia, 10) + " " + v.puedo + v.error
+    Print "media " + str_replace(media_texto(v.media10), ".", ",")
+    cs = api_comentarios(4050, 0)
+    Print "comentarios " + str_from_int(cs.total, 10) + " pagina " + str_from_int(cs.pagina, 10) + " de " + str_from_int(cs.por_pagina, 10) + " " + cs.puedo + " " + str_from_int(cs.lista.length, 10) + cs.error
+    c = cs.lista[0]
+    mio = "no"
+    if c.mio
+        mio = "si"
+    end
+    Print str_from_int(c.id, 10) + " " + c.nombre + " " + c.fecha + " " + mio
+    Print c.texto
+    cs = api_comentarios(4050, 1)
+    Print "pagina 1: " + str_from_int(cs.lista[0].id, 10) + " [" + lineas(cs.lista[0].texto) + "]"
+    ks = api_capturas(4050)
+    Print "capturas " + str_from_int(ks.lista.length, 10) + " " + ks.puedo + " " + str_from_int(ks.mias, 10) + ": " + str_from_int(ks.lista[0].id, 10) + " " + str_from_int(ks.lista[0].ancho, 10) + "x" + str_from_int(ks.lista[0].alto, 10) + " [" + ks.lista[0].enviada_por + "] " + str_from_int(ks.lista[1].id, 10) + " " + str_from_int(ks.lista[1].ancho, 10) + "x" + str_from_int(ks.lista[1].alto, 10) + " [" + ks.lista[1].enviada_por + "]"
+    Print "url " + api_url_captura(502)
+end

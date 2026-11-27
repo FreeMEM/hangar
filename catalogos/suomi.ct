@@ -1,4 +1,4 @@
-## version $VER: Hangar.catalog 1.0 (25.11.2026)
+## version $VER: Hangar.catalog 1.0 (27.11.2026)
 ## language suomi
 ## codeset 0
 ;
@@ -1502,3 +1502,78 @@ MSG_1495
 MSG_1496
 \n(Voit muuttaa sen valikosta, Mistä levyltä etsitään...)
 ; \n(Se cambia en el menú, Dónde mirar el disco...)
+MSG_1497
+Kohde:
+; En:
+MSG_1498
+outo vastaus
+; respuesta rara
+MSG_1499
+outo vastaus
+; respuesta rara
+MSG_1500
+outo vastaus
+; respuesta rara
+MSG_1508
+K_ommentit...
+; C_omentarios...
+MSG_1509
+Arvio: ei vielä yhtään
+; Valoración: ninguna todavía
+MSG_1510
+Arvio: 
+; Valoración: 
+MSG_1511
+ / 5 (
+;  de 5 (
+MSG_1513
+Haetaan kuvakaappauksia...
+; Buscando las capturas...
+MSG_1514
+Virhe: 
+; Error: 
+MSG_1515
+Ladataan kuvakaappausta...
+; Bajando la captura...
+MSG_1516
+ · lähettäjä 
+;  · de 
+MSG_1517
+Virhe: 
+; Error: 
+MSG_1518
+(Ei vielä kommentteja: ensimmäinen voi olla sinun.)
+; (Todavía no hay comentarios: el primero puede ser el tuyo.)
+MSG_1519
+Ladataan kommentteja...
+; Cargando los comentarios...
+MSG_1520
+Virhe: 
+; Error: 
+MSG_1521
+Hangar: kommentit ohjelmasta %1
+; Hangar: comentarios de %1
+MSG_1522
+_Vanhemmat
+; _Más antiguos
+MSG_1526
+_Sulje
+; C_errar
+MSG_1527
+Virhe: 
+; Error: 
+MSG_1606
+_Arviot...
+; _Opiniones...
+MSG_1608
+Kaksoisnapsautus: koko kommentti
+; Doble clic: el comentario entero
+MSG_1609
+_OK
+; _Vale
+MSG_1610
+kommentti
+; comentario
+MSG_1611
+kommenttia
+; comentarios

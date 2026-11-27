@@ -1,4 +1,4 @@
-## version $VER: Hangar.catalog 1.0 (25.11.2026)
+## version $VER: Hangar.catalog 1.0 (27.11.2026)
 ## language deutsch
 ## codeset 0
 ;
@@ -1502,3 +1502,78 @@ MSG_1495
 MSG_1496
 \n(Änderbar im Menü, Wo auf der Festplatte suchen...)
 ; \n(Se cambia en el menú, Dónde mirar el disco...)
+MSG_1497
+Nach:
+; En:
+MSG_1498
+seltsame Antwort
+; respuesta rara
+MSG_1499
+seltsame Antwort
+; respuesta rara
+MSG_1500
+seltsame Antwort
+; respuesta rara
+MSG_1508
+K_ommentare...
+; C_omentarios...
+MSG_1509
+Bewertung: noch keine
+; Valoración: ninguna todavía
+MSG_1510
+Bewertung: 
+; Valoración: 
+MSG_1511
+ von 5 (
+;  de 5 (
+MSG_1513
+Suche die Bildschirmfotos...
+; Buscando las capturas...
+MSG_1514
+Fehler: 
+; Error: 
+MSG_1515
+Lade das Bildschirmfoto...
+; Bajando la captura...
+MSG_1516
+ · von 
+;  · de 
+MSG_1517
+Fehler: 
+; Error: 
+MSG_1518
+(Noch keine Kommentare: der erste kann deiner sein.)
+; (Todavía no hay comentarios: el primero puede ser el tuyo.)
+MSG_1519
+Lade die Kommentare...
+; Cargando los comentarios...
+MSG_1520
+Fehler: 
+; Error: 
+MSG_1521
+Hangar: Kommentare zu %1
+; Hangar: comentarios de %1
+MSG_1522
+Ä_ltere
+; _Más antiguos
+MSG_1526
+_Schließen
+; C_errar
+MSG_1527
+Fehler: 
+; Error: 
+MSG_1606
+_Meinungen...
+; _Opiniones...
+MSG_1608
+Doppelklick: der ganze Kommentar
+; Doble clic: el comentario entero
+MSG_1609
+_OK
+; _Vale
+MSG_1610
+Kommentar
+; comentario
+MSG_1611
+Kommentare
+; comentarios

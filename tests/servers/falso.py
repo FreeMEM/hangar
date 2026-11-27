@@ -22,6 +22,7 @@ FICHA = ("FICHA\nid\t4050\nfuente\taminet\nnombre\tTuneFinder\nversion\t1.5\ncaj
          "Short:        Search and play online radio stations\nAuthor: Marcin\n\nTexto del readme.\nFin.\n")
 
 
+ESTADO_COMUNIDAD = {}
 
 # El repositorio de punta a punta (tests/punta.py): paquetes .lha de verdad, hechos al arrancar, con su SHA-256 y sus
 # fichas firmadas. A pide b, B pide c >= 1.0; T llega con un SHA-256 que no cuadra; K tiene Config y Assigns.
@@ -350,6 +351,28 @@ class Manejador(http.server.BaseHTTPRequestHandler):
             datos = ("HISTORIAL\t2\n1.5\t1\t88064\taa11\t2026-11-02\t" + B + "/comm/misc/TuneFinder.lha\n"
                      "  Requires: TCP/IP\n1.4\t2\t80000\tbb22\t2026-10-01\t" + B + "/viejo/TuneFinder.lha\n").encode("latin-1")
             return self.responder(200, datos, firma=f"{CLAVE_ID} {CLAVE.sign(datos).hex()}")
+        # lo de la comunidad (tests/test_comunidad.dash): con el token tok123, la nota propia y "si"
+        con_token = self.headers.get("X-Hangar-Token") == "tok123"
+        puede = "-"
+        if u.path == "/amiga/v1/valoracion/4050":
+            return self.responder(200, "VALORACION\t12\t43\t4\tsi\n" if con_token else f"VALORACION\t12\t43\t0\t{puede}\n")
+        if u.path == "/amiga/v1/comentarios/4050":
+            pag = int(q.get("pag", ["0"])[0])
+            t = f"COMENTARIOS\t21\t{pag}\t20\t{puede}\n"
+            for k in ([20 - i for i in range(20)] if pag == 0 else [0]):
+                mio = "si" if con_token and k == 20 else "no"
+                t += f"{900 + k}\tEva Peña\t2026-11-{10 + k % 10:02d} 10:{k:02d} UTC\t{mio}\n Comentario {k} en España\n"
+                if k == 0:
+                    t += " con dos líneas\n \n y una en blanco\n"
+            return self.responder(200, t)
+        if u.path == "/amiga/v1/comentarios/4051":
+            t = ESTADO_COMUNIDAD.get("comentario", "")
+            return self.responder(200, "COMENTARIOS\t1\t0\t20\tsi\n1\tYo\t2026-11-27 10:00 UTC\tsi\n" + "".join(" " + l + "\n" for l in t.split("\n")))
+        if u.path == "/amiga/v1/capturas/4050":
+            return self.responder(200, f"CAPTURAS\t2\t{puede}\t{1 if con_token else 0}\n501\t160\t128\t\n502\t160\t100\tEva Peña\n")
+        if u.path == "/amiga/v1/recibida":
+            d = ESTADO_COMUNIDAD.get("captura", b"")
+            return self.responder(200, f"RECIBIDA\t{len(d)}\t{_hashlib.sha256(d).hexdigest()}\t{ESTADO_COMUNIDAD.get('tipo', '')}\n")
         if u.path.startswith("/amiga/v1/ficha/"):
             return self.responder(404, "ERROR\tno existe\n")
         f = FICHEROS / u.path.lstrip("/")

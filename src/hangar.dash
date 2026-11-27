@@ -1,6 +1,6 @@
 # Hangar: busca, instala y pone al día el software del Amiga. Busca en el catálogo de hangar.freemem.space, enseña la ficha, instala
 # (baja el .lha y lo descomprime, sin C:lha), actualiza, desinstala y ejecuta.
-@version "Hangar 0.21.1"
+@version "Hangar 0.22.0"
 @catalog "Hangar.catalog" 1 "español"
 import "api.dash"
 import "lha.dash"
@@ -14,8 +14,9 @@ import "sistema.dash"
 import "plan2.dash"
 import "instalador.dash"
 import "elegir.dash"
+import "comunidad.dash"
 
-const VERSION = "0.21.1"
+const VERSION = "0.22.0"
 
 const ID_BUSCAR = 1
 const ID_NOVEDADES = 2
@@ -58,6 +59,24 @@ const ID_DISCO_GUARDAR = 55
 const ID_DISCO_MIRAR = 56
 const ID_DISCO_CANCELAR = 57
 const ID_CATEGORIA = 40       # los botones de categorías: 40 en adelante, en el orden de CATEGORIAS
+# lo de la comunidad (src/comunidad.dash): valorar, los comentarios, mandar una captura, la captura anterior y la
+# siguiente de la ficha, y la de la pantalla de delante (pasados unos segundos)
+const ID_VALORAR = 60
+const ID_COMENTARIOS = 61
+const ID_ENVIAR_CAPTURA = 62
+const ID_CAPTURA_ANT = 63
+const ID_CAPTURA_SIG = 64
+const ID_CAPTURAR_YA = 65
+# la ventana de los comentarios
+const ID_COM_LISTA = 70
+const ID_COM_MAS = 71
+const ID_COM_BORRAR = 72
+const ID_COM_AVISAR = 73
+const ID_COM_ENVIAR = 74
+const ID_COM_CERRAR = 75
+const ID_COM_LEER = 76        # doble clic en la lista: el comentario entero (pantallas bajas)
+const ID_COM_VALORAR = 77
+const ID_COM_CAPTURA = 78
 
 # Lo que se baja: aquí se queda cada versión (para volver a ella) y aquí se descomprime antes de ponerla en su sitio
 const CACHE = "PROGDIR:Cache"
@@ -103,6 +122,18 @@ var ficha_junta: Bool = true     # la ficha sin pestañas (pantallas de 480 o m�
 var botones_lista: [Int] = []     # los botones de las listas (Buscar, Míos... Novedades, Todo, Juegos...)
 var consultas_lista: [String] = []   # la consulta de cada uno ("b:", "i:", "k:game"...)
 var lista_hundida: Int = -1
+# lo de la comunidad en la ficha
+var w_valorar: Int = 0
+var w_comentarios: Int = 0
+var w_enviar_captura: Int = 0
+var w_cap_ant: Int = 0
+var w_cap_sig: Int = 0
+var w_cap_info: Int = 0          # cuál se ve (en las pestañas, el mismo texto de "no tiene captura")
+var linea_valoracion_vista: String = ""   # la línea de la valoración que se ve en los datos (para cambiarla al valorar)
+var capturas_ficha: [Captura] = nil       # las capturas de la ficha que se ve (se piden al pasar a otra)
+var capturas_de: Int = 0                  # de qué programa son
+var captura_vista: Int = 0                # cuál se ve (0 la principal)
+var captura_para: Int = 0                 # la captura de la pantalla de delante que espera: para qué programa
 
 
 # El estado va en el título de la ventana: no ocupa sitio en una pantalla de 640 x 256
@@ -305,6 +336,17 @@ func limpiar_ficha()
     mui_set_enabled(w_desinstalar, false)
     mui_set_enabled(w_ejecutar, false)
     mui_set_enabled(w_web, false)
+    comunidad_apagada()
+end
+
+# Sin ficha: lo de la comunidad, apagado
+func comunidad_apagada()
+    mui_set_enabled(w_comentarios, false)
+    mui_set_enabled(w_cap_ant, false)
+    mui_set_enabled(w_cap_sig, false)
+    if ficha_junta
+        mui_set_text(w_cap_info, "")
+    end
 end
 
 func poner_lista(l: Lista, anadir: Bool)
@@ -406,6 +448,13 @@ func ver_ficha(i: Int)
     if f.autor != ""
         d = d + tr(1039, "Autor: ") + corta(f.autor, a - 7) + "\n"
     end
+    linea_valoracion_vista = linea_valoracion(f.valoraciones, f.media10)
+    d = d + linea_valoracion_vista
+    # (en las pestañas no: la línea ensanchaba la ventana más que la pantalla de 640; se ven en su ventana)
+    if f.n_comentarios > 0 and ficha_junta
+        d = d + ", " + cuantos(f.n_comentarios, tr(1610, "comentario"), tr(1611, "comentarios"))
+    end
+    d = d + "\n"
     d = d + tr(1041, "Tamaño: ") + tamano_texto(f.tamano) + "\n"
     if f.fecha != ""
         d = d + tr(1042, "Fecha: ") + f.fecha + "\n"
@@ -461,6 +510,7 @@ func ver_ficha(i: Int)
     end
     mui_set_visible(w_imagen, true)
     mui_set_visible(w_sin_captura, not hay_captura)
+    comunidad_de_ficha(f)
     progreso(0)
     mui_set_enabled(w_instalar, f.descarga != "")
     if r.id != 0 and not version_mayor(f.version, instalada)
@@ -3206,6 +3256,219 @@ func adoptar(inv: [FicheroDisco], v: Reconocidos) -> Int
     return cuales.length
 end
 
+# === La comunidad: valoraciones, comentarios y capturas (src/comunidad.dash) ===
+
+# La fila de los botones de la comunidad de la ficha: valorar, los comentarios y mandar una captura
+func botones_comunidad(vertical: Bool)
+    if vertical
+        mui_vgroup_begin()
+    else
+        mui_hgroup_begin()
+    end
+        w_comentarios = mui_button(tr(1508, "C_omentarios..."))
+    mui_group_end()
+end
+
+# Bajo la captura: la anterior, cuál se ve ("2/5 · de Eva") y la siguiente
+func botones_capturas()
+    mui_hgroup_begin()
+        w_cap_ant = mui_button("<")
+        w_cap_info = mui_text("\33c")
+        w_cap_sig = mui_button(">")
+        mui_weight(w_cap_ant, 15)
+        mui_weight(w_cap_sig, 15)
+    mui_group_end()
+end
+
+# "Valoración: 4,3 de 5 (12)"
+func linea_valoracion(n: Int, media10: Int) -> String
+    if n == 0
+        return tr(1509, "Valoración: ninguna todavía")
+    end
+    return tr(1510, "Valoración: ") + media_texto(media10) + tr(1511, " de 5 (") + str_from_int(n, 10) + ")"
+end
+
+# Lo de la comunidad de la ficha que se ve: los botones y las capturas (la principal ya está a la vista)
+func comunidad_de_ficha(f: Ficha)
+    var nada: [Captura] = nil
+    capturas_ficha = nada
+    capturas_de = 0
+    captura_vista = 0
+    mui_set_enabled(w_comentarios, true)
+    mui_set_enabled(w_cap_ant, f.imagenes > 1)
+    mui_set_enabled(w_cap_sig, f.imagenes > 1)
+    if f.imagenes > 1
+        mui_set_text(w_cap_info, "\33c1/" + str_from_int(f.imagenes, 10))
+        mui_set_visible(w_cap_info, true)
+    elif ficha_junta
+        mui_set_text(w_cap_info, "")
+    else
+        mui_set_text(w_cap_info, tr(1302, "\33cEste programa no tiene captura"))
+    end
+end
+
+# La captura anterior (-1) o la siguiente (1) de la ficha: la lista se pide la primera vez
+func captura_mover(paso: Int)
+    if ficha_actual == nil
+        return
+    end
+    f = ficha_actual
+    if capturas_ficha == nil or capturas_de != f.id
+        estado(tr(1513, "Buscando las capturas..."))
+        cs = api_capturas(f.id)
+        if cs.error != ""
+            estado(tr(1514, "Error: ") + cs.error)
+            return
+        end
+        capturas_ficha = cs.lista
+        capturas_de = f.id
+    end
+    n = capturas_ficha.length
+    if n == 0
+        estado("")
+        return
+    end
+    captura_vista = (captura_vista + paso + n) % n
+    c = capturas_ficha[captura_vista]
+    estado(tr(1515, "Bajando la captura..."))
+    # ocultar y volver a enseñar (MUI recoloca la imagen con su tamaño); un nombre distinto cada vez (Dtpic)
+    mui_set_visible(w_imagen, false)
+    mui_set_text(w_imagen, "T:hangar_vacia.iff")
+    file_delete(captura_anterior)
+    captura_anterior = "T:hangar_captura_" + str_from_int(f.id, 10) + "_" + str_from_int(c.id, 10) + ".iff"
+    e = bajar(api_url_captura(c.id), captura_anterior)
+    if e == ""
+        mui_set_text(w_imagen, captura_anterior)
+    end
+    mui_set_visible(w_imagen, true)
+    if ficha_junta
+        mui_set_visible(w_sin_captura, e != "")
+    end
+    info = str_from_int(captura_vista + 1, 10) + "/" + str_from_int(n, 10)
+    if c.enviada_por != ""
+        info = info + tr(1516, " · de ") + corta(c.enviada_por, 20)
+    end
+    mui_set_text(w_cap_info, "\33c" + info)
+    progreso(0)
+    if e != ""
+        estado(tr(1517, "Error: ") + e)
+    else
+        estado("")
+    end
+end
+
+# Una línea de la lista de comentarios: quién, el día y el principio del texto
+func linea_comentario(c: Comentario) -> String
+    partes = str_split(c.texto + "\n", "\n")
+    primera = partes[0]
+    return corta(c.nombre, 20) + " (" + c.fecha[:10] + "): " + corta(primera, 50)
+end
+
+func _comentarios_a_lista(l: Int, cs: [Comentario])
+    mui_list_quiet(l, true)
+    mui_list_clear(l)
+    for c in cs
+        mui_list_add(l, linea_comentario(c))
+    end
+    if cs.length == 0
+        mui_list_add(l, tr(1518, "(Todavía no hay comentarios: el primero puede ser el tuyo.)"))
+    end
+    mui_list_quiet(l, false)
+end
+
+# La ventana de los comentarios de la ficha: la lista y el elegido entero; con una cuenta, escribir uno, borrar el
+# propio o avisar de otro
+func ventana_comentarios()
+    if ficha_actual == nil
+        return
+    end
+    f = ficha_actual
+    estado(tr(1519, "Cargando los comentarios..."))
+    cs = api_comentarios(f.id, 0)
+    if cs.error != ""
+        estado(tr(1520, "Error: ") + cs.error)
+        return
+    end
+    estado("")
+    todos = cs.lista
+    total = cs.total
+    pagina_com = 0
+    # en 256 de alto cabe poco: sin el elegido entero debajo (con doble clic sale en una petición) y lo que se
+    # escribe en dos líneas
+    baja = screen_height() < 400
+    w = mui_window_begin(hueco(tr(1521, "Hangar: comentarios de %1"), corta(f.nombre, 40)), 0)
+        l = mui_list()
+        mui_list_stripes(l, true)
+        alto_e = 4
+        t = 0
+        if baja
+            alto_e = 2
+            mui_help(l, tr(1608, "Doble clic: el comentario entero"))
+        else
+            t = mui_text_editor(5)
+        end
+        # todos los botones en una fila: en 256 de alto no caben dos
+        mui_hgroup_begin()
+            bmas = mui_button(tr(1522, "_Más antiguos"))
+            bcerrar = mui_button(tr(1526, "C_errar"))
+        mui_group_end()
+    mui_window_end()
+    mui_on_change(l, ID_COM_LISTA)
+    mui_on_double(l, ID_COM_LEER)
+    mui_on_press(bmas, ID_COM_MAS)
+    mui_on_press(bcerrar, ID_COM_CERRAR)
+    mui_on_close(w, ID_COM_CERRAR)
+    _comentarios_a_lista(l, todos)
+    mui_set_enabled(bmas, todos.length < total)
+    mui_window_size(w, 90, 90)
+    mui_window_modal(w)
+    mui_window_open(w)
+    if todos.length > 0
+        mui_set_value(l, 0)
+    end
+    var otros: [Int] = []
+    sigue = true
+    while sigue
+        ev = mui_wait_event()
+        k = mui_get_value(l)
+        if ev == ID_COM_LISTA
+            if k >= 0 and k < todos.length
+                c = todos[k]
+                if t != 0
+                    mui_set_text(t, c.nombre + "  -  " + c.fecha + "\n\n" + c.texto)
+                end
+            end
+        elif ev == ID_COM_LEER
+            if k >= 0 and k < todos.length
+                mui_request(w, "Hangar", todos[k].nombre + "  -  " + todos[k].fecha + "\n\n" + todos[k].texto, tr(1609, "_Vale"))
+            end
+        elif ev == ID_COM_MAS
+            pagina_com = pagina_com + 1
+            mas = api_comentarios(f.id, pagina_com)
+            if mas.error != ""
+                estado(tr(1527, "Error: ") + mas.error)
+            else
+                for c in mas.lista
+                    todos.push(c)
+                    mui_list_add(l, linea_comentario(c))
+                end
+                total = mas.total
+            end
+            mui_set_enabled(bmas, todos.length < total and mas.lista.length > 0)
+        elif ev == ID_COM_CERRAR or ev == -1
+            sigue = false
+        elif ev > 0
+            otros.push(ev)
+        end
+    end
+    mui_window_dispose(w)
+    for x in otros
+        mui_post_event(x)
+    end
+end
+
+
+
 # Un IFF vacío (16 x 1) para el hueco de la captura hasta que haya una
 func imagen_vacia() -> String
     bytes = [70, 79, 82, 77, 0, 0, 0, 56, 73, 76, 66, 77, 66, 77, 72, 68, 0, 0, 0, 20, 0, 16, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 10, 11, 0, 16, 0, 1, 67, 77, 65, 80, 0, 0, 0, 6, 0, 0, 0, 255, 255, 255, 66, 79, 68, 89, 0, 0, 0, 2, 0, 0]
@@ -3546,6 +3809,13 @@ Main
             r.clave_id = api2_clave_id(clave2)
         end
     end
+    # los errores del servidor (los de valorar, comentar...) en el idioma en que se ven los textos: castellano sin
+    # catálogo, inglés con cualquiera (el servicio solo tiene esos dos)
+    if catalog_language() == ""
+        http_idiomas = "es"
+    else
+        http_idiomas = "en"
+    end
     # los certificados que el usuario aceptó (ENVARC:Hangar/certificados), antes de nada que vaya por la red
     cert_cargar()
     # otra raíz de confianza para los keys (la del servidor de pruebas, tests/punta2.py)
@@ -3662,24 +3932,39 @@ Main
                         w_imagen = mui_image(imagen_vacia())
                         mui_space()
                     mui_group_end()
+                    botones_capturas()
                     w_sin_captura = mui_text("")
+                    # en 640 de ancho no caben los tres en una fila
+                    botones_comunidad(estrecha)
                     w_readme = mui_text_editor(0)
                 else
                     # pantallas bajas (640x256): no cabe todo junto, en pestañas
                     w_pestanas = mui_register_begin(tr(1301, "Ficha|Léeme|Captura"))
-                        # la ficha arriba (sola, MUI la centraba en todo el alto de la pestaña)
+                        # la ficha arriba (sola, MUI la centraba en todo el alto de la pestaña); debajo, un solo
+                        # botón para lo de la comunidad (valorar, comentarios, mandar una captura: su ventana). Una
+                        # pestaña más o una fila de tres botones ensanchaban la ventana más que la pantalla de 640
                         mui_vgroup_begin()
                             w_datos = mui_text("")
+                            mui_hgroup_begin()
+                                w_comentarios = mui_button(tr(1606, "_Opiniones..."))
+                                mui_space()
+                            mui_group_end()
                             mui_space()
                         mui_group_end()
                         # sin alto fijo: llena la pestaña (Dash PR #176)
                         w_readme = mui_text_editor(0)
                         mui_vgroup_begin()
+                            # el texto de arriba dice también cuál se ve ("2/3 · de Eva")
                             w_sin_captura = mui_text(tr(1302, "\33cEste programa no tiene captura"))
+                            w_cap_info = w_sin_captura
                             mui_hgroup_begin()
+                                w_cap_ant = mui_button("<")
                                 mui_space()
                                 w_imagen = mui_image(imagen_vacia())
                                 mui_space()
+                                w_cap_sig = mui_button(">")
+                                mui_weight(w_cap_ant, 0)
+                                mui_weight(w_cap_sig, 0)
                             mui_group_end()
                         mui_group_end()
                     mui_group_end()
@@ -3693,7 +3978,7 @@ Main
                     mui_weight(w_instalar, 200)
                 mui_group_end()
                 mui_hgroup_begin()
-                    mui_label("En:")
+                    mui_label(tr(1497, "En:"))
                     w_destino = mui_combo(destino_por_defecto(), destinos_texto())
                     w_elegir = mui_button(tr(1307, "_Elegir..."))
                     mui_weight(w_elegir, 15)
@@ -3725,6 +4010,9 @@ Main
     mui_on_press(w_desinstalar, ID_DESINSTALAR)
     mui_on_press(w_ejecutar, ID_EJECUTAR)
     mui_on_press(w_web, ID_WEB)
+    mui_on_press(w_comentarios, ID_COMENTARIOS)
+    mui_on_press(w_cap_ant, ID_CAPTURA_ANT)
+    mui_on_press(w_cap_sig, ID_CAPTURA_SIG)
     # no a pantalla entera: con MCP (Coffin), un clic en ella la trae delante y tapaba las peticiones
     mui_window_size(w_ventana, 85, 85)
     limpiar_ficha()
@@ -3867,6 +4155,12 @@ Main
             mirar_hangar(true)
         elif ev == ID_CONTAR
             contar_versiones(true)
+        elif ev == ID_COMENTARIOS
+            ventana_comentarios()
+        elif ev == ID_CAPTURA_ANT
+            captura_mover(-1)
+        elif ev == ID_CAPTURA_SIG
+            captura_mover(1)
         elif ev == ID_WEB
             if ficha_actual != nil and ficha_actual.web != ""
                 run_command("Run >NIL: OpenURL \"" + ficha_actual.web + "\"")

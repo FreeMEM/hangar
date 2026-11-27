@@ -1,4 +1,4 @@
-## version $VER: Hangar.catalog 1.0 (25.11.2026)
+## version $VER: Hangar.catalog 1.0 (27.11.2026)
 ## language français
 ## codeset 0
 ;
@@ -1502,3 +1502,78 @@ MSG_1495
 MSG_1496
 \n(Modifiable dans le menu, Où chercher sur le disque...)
 ; \n(Se cambia en el menú, Dónde mirar el disco...)
+MSG_1497
+Dans :
+; En:
+MSG_1498
+réponse étrange
+; respuesta rara
+MSG_1499
+réponse étrange
+; respuesta rara
+MSG_1500
+réponse étrange
+; respuesta rara
+MSG_1508
+C_ommentaires...
+; C_omentarios...
+MSG_1509
+Note : aucune pour l'instant
+; Valoración: ninguna todavía
+MSG_1510
+Note : 
+; Valoración: 
+MSG_1511
+ sur 5 (
+;  de 5 (
+MSG_1513
+Recherche des captures...
+; Buscando las capturas...
+MSG_1514
+Erreur : 
+; Error: 
+MSG_1515
+Téléchargement de la capture...
+; Bajando la captura...
+MSG_1516
+ · de 
+;  · de 
+MSG_1517
+Erreur : 
+; Error: 
+MSG_1518
+(Pas encore de commentaires : le premier peut être le vôtre.)
+; (Todavía no hay comentarios: el primero puede ser el tuyo.)
+MSG_1519
+Chargement des commentaires...
+; Cargando los comentarios...
+MSG_1520
+Erreur : 
+; Error: 
+MSG_1521
+Hangar : commentaires sur %1
+; Hangar: comentarios de %1
+MSG_1522
+Plus _anciens
+; _Más antiguos
+MSG_1526
+_Fermer
+; C_errar
+MSG_1527
+Erreur : 
+; Error: 
+MSG_1606
+_Avis...
+; _Opiniones...
+MSG_1608
+Double clic : le commentaire entier
+; Doble clic: el comentario entero
+MSG_1609
+_OK
+; _Vale
+MSG_1610
+commentaire
+; comentario
+MSG_1611
+commentaires
+; comentarios

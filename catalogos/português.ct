@@ -1,4 +1,4 @@
-## version $VER: Hangar.catalog 1.0 (25.11.2026)
+## version $VER: Hangar.catalog 1.0 (27.11.2026)
 ## language português
 ## codeset 0
 ;
@@ -1502,3 +1502,78 @@ MSG_1495
 MSG_1496
 \n(Muda-se no menu, Onde procurar no disco...)
 ; \n(Se cambia en el menú, Dónde mirar el disco...)
+MSG_1497
+Em:
+; En:
+MSG_1498
+resposta estranha
+; respuesta rara
+MSG_1499
+resposta estranha
+; respuesta rara
+MSG_1500
+resposta estranha
+; respuesta rara
+MSG_1508
+C_omentários...
+; C_omentarios...
+MSG_1509
+Avaliação: nenhuma ainda
+; Valoración: ninguna todavía
+MSG_1510
+Avaliação: 
+; Valoración: 
+MSG_1511
+ de 5 (
+;  de 5 (
+MSG_1513
+A procurar as capturas...
+; Buscando las capturas...
+MSG_1514
+Erro: 
+; Error: 
+MSG_1515
+A descarregar a captura...
+; Bajando la captura...
+MSG_1516
+ · de 
+;  · de 
+MSG_1517
+Erro: 
+; Error: 
+MSG_1518
+(Ainda não há comentários: o primeiro pode ser o seu.)
+; (Todavía no hay comentarios: el primero puede ser el tuyo.)
+MSG_1519
+A carregar os comentários...
+; Cargando los comentarios...
+MSG_1520
+Erro: 
+; Error: 
+MSG_1521
+Hangar: comentários sobre %1
+; Hangar: comentarios de %1
+MSG_1522
+Mais _antigos
+; _Más antiguos
+MSG_1526
+_Fechar
+; C_errar
+MSG_1527
+Erro: 
+; Error: 
+MSG_1606
+_Opiniões...
+; _Opiniones...
+MSG_1608
+Duplo clique: o comentário inteiro
+; Doble clic: el comentario entero
+MSG_1609
+_OK
+; _Vale
+MSG_1610
+comentário
+; comentario
+MSG_1611
+comentários
+; comentarios

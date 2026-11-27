@@ -1,4 +1,4 @@
-## version $VER: Hangar.catalog 1.0 (25.11.2026)
+## version $VER: Hangar.catalog 1.0 (27.11.2026)
 ## language english
 ## codeset 0
 ;
@@ -1502,3 +1502,78 @@ MSG_1495
 MSG_1496
 \n(You can change it in the menu, Where to look on the disk...)
 ; \n(Se cambia en el menú, Dónde mirar el disco...)
+MSG_1497
+To:
+; En:
+MSG_1498
+strange answer
+; respuesta rara
+MSG_1499
+strange answer
+; respuesta rara
+MSG_1500
+strange answer
+; respuesta rara
+MSG_1508
+C_omments...
+; C_omentarios...
+MSG_1509
+Rating: none yet
+; Valoración: ninguna todavía
+MSG_1510
+Rating: 
+; Valoración: 
+MSG_1511
+ out of 5 (
+;  de 5 (
+MSG_1513
+Looking for the screenshots...
+; Buscando las capturas...
+MSG_1514
+Error: 
+; Error: 
+MSG_1515
+Downloading the screenshot...
+; Bajando la captura...
+MSG_1516
+ · by 
+;  · de 
+MSG_1517
+Error: 
+; Error: 
+MSG_1518
+(No comments yet: the first one can be yours.)
+; (Todavía no hay comentarios: el primero puede ser el tuyo.)
+MSG_1519
+Loading the comments...
+; Cargando los comentarios...
+MSG_1520
+Error: 
+; Error: 
+MSG_1521
+Hangar: comments on %1
+; Hangar: comentarios de %1
+MSG_1522
+_Older
+; _Más antiguos
+MSG_1526
+C_lose
+; C_errar
+MSG_1527
+Error: 
+; Error: 
+MSG_1606
+_Opinions...
+; _Opiniones...
+MSG_1608
+Double click: the whole comment
+; Doble clic: el comentario entero
+MSG_1609
+_OK
+; _Vale
+MSG_1610
+comment
+; comentario
+MSG_1611
+comments
+; comentarios

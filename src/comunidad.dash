@@ -1,0 +1,182 @@
+# Lo de la comunidad: valoraciones, comentarios y capturas de una ficha (docs/API.md del servicio, "Comunidad").
+# Leer no pide nada; valorar, comentar, avisar y mandar capturas, una cuenta (la cabecera X-Hangar-Token).
+#
+#   v = api_valoracion(4050)
+#   Print v.media10           # 43 = 4,3
+#   cs = api_comentarios(4050, 0)
+#   for c in cs.lista
+#       Print c.nombre + ": " + c.texto
+#   end
+import "api.dash"
+
+struct Valoracion
+    n: Int
+    media10: Int       # la media en décimas (43 = 4,3); 0 sin ninguna
+    mia: Int           # la nota de esta cuenta, 0 ninguna
+    puedo: String      # lo que puede hacer este Amiga ("si" valorar; docs/API.md del servicio)
+    error: String
+end
+
+struct Comentario
+    id: Int
+    nombre: String
+    fecha: String      # "2026-11-27 10:30 UTC"
+    mio: Bool
+    texto: String      # con sus saltos de línea
+end
+
+struct Comentarios
+    total: Int
+    pagina: Int
+    por_pagina: Int
+    puedo: String      # lo que puede hacer este Amiga ("si" comentar)
+    lista: [Comentario]
+    error: String
+end
+
+struct Captura
+    id: Int
+    ancho: Int
+    alto: Int
+    enviada_por: String
+end
+
+struct Capturas
+    lista: [Captura]
+    puedo: String      # lo que puede hacer este Amiga ("si" comentar), "llena"
+    mias: Int          # las de esta cuenta que esperan revisión
+    error: String
+end
+
+# Las cabeceras de más de cada petición (la de la cuenta, si la hay)
+func _com_cabeceras() -> String
+    return ""
+end
+
+func _com_una(url: String, metodo: String, cuerpo: String, extra: String) -> Respuesta
+    c = http_empezar_metodo(url, metodo, cuerpo, "text/plain; charset=iso-8859-1", extra, API_ESPERA_MS)
+    while not http_avanzar(c)
+        time_delay(1)
+    end
+    return c.respuesta
+end
+
+# Una petición a la API con el token (preguntando por un certificado que no se puede comprobar)
+func _com_pedir(metodo: String, ruta: String, cuerpo: String) -> Respuesta
+    url = api_base + ruta
+    extra = _com_cabeceras()
+    r = _com_una(url, metodo, cuerpo, extra)
+    while cert_repetir(r)
+        r = _com_una(url, metodo, cuerpo, extra)
+    end
+    return r
+end
+
+# "4,3" (con la coma o el punto del país del usuario)
+func media_texto(media10: Int) -> String
+    return str_from_int(media10 / 10, 10) + locale_decimal_point() + str_from_int(media10 % 10, 10)
+end
+
+func api_leer_valoracion(texto: String) -> Valoracion
+    p = str_split(str_trim(texto) + "\t\t\t\t", "\t")
+    if p[0] != "VALORACION"
+        return Valoracion(0, 0, 0, "", tr(1498, "respuesta rara"))
+    end
+    return Valoracion(Int(p[1]), Int(p[2]), Int(p[3]), p[4], "")
+end
+
+func _valoracion_de(r: Respuesta) -> Valoracion
+    e = api_error(r)
+    if e != ""
+        return Valoracion(0, 0, 0, "", e)
+    end
+    return api_leer_valoracion(http_texto(r))
+end
+
+# La valoración de un programa: la media, cuántas, la nota propia y si se puede valorar
+func api_valoracion(id: Int) -> Valoracion
+    return _valoracion_de(_com_pedir("GET", "/valoracion/" + str_from_int(id, 10), ""))
+end
+
+# Lee una respuesta COMENTARIOS: cada comentario, su línea y debajo su texto, cada línea empezando por un espacio
+func api_leer_comentarios(texto: String) -> Comentarios
+    var l: [Comentario] = []
+    cs = Comentarios(0, 0, 20, "", l, "")
+    lineas = str_split(texto, "\n")
+    cab = str_split(lineas[0] + "\t\t\t\t", "\t")
+    if cab[0] != "COMENTARIOS"
+        cs.error = tr(1499, "respuesta rara")
+        return cs
+    end
+    cs.total = Int(cab[1])
+    cs.pagina = Int(cab[2])
+    cs.por_pagina = Int(cab[3])
+    cs.puedo = cab[4]
+    var c: Comentario = nil
+    lineas.push("")      # al menos dos: (1..0) contaría hacia atrás
+    for i in (1..lineas.length - 1)
+        x = lineas[i]
+        if str_starts(x, " ")
+            if c != nil
+                if c.texto != ""
+                    c.texto = c.texto + "\n"
+                end
+                c.texto = c.texto + x[1:]
+            end
+        elif x != ""
+            p = str_split(x + "\t\t\t", "\t")
+            c = Comentario(Int(p[0]), p[1], p[2], p[3] == "si", "")
+            cs.lista.push(c)
+        end
+    end
+    return cs
+end
+
+# Los comentarios de un programa, del más nuevo al más viejo, 20 por página (0 la primera)
+func api_comentarios(id: Int, pagina: Int) -> Comentarios
+    r = _com_pedir("GET", "/comentarios/" + str_from_int(id, 10) + "?pag=" + str_from_int(pagina, 10), "")
+    e = api_error(r)
+    if e != ""
+        var l: [Comentario] = []
+        return Comentarios(0, 0, 20, "", l, e)
+    end
+    return api_leer_comentarios(http_texto(r))
+end
+
+func api_leer_capturas(texto: String) -> Capturas
+    var l: [Captura] = []
+    cs = Capturas(l, "", 0, "")
+    lineas = str_split(texto, "\n")
+    cab = str_split(lineas[0] + "\t\t\t", "\t")
+    if cab[0] != "CAPTURAS"
+        cs.error = tr(1500, "respuesta rara")
+        return cs
+    end
+    cs.puedo = cab[2]
+    cs.mias = Int(cab[3])
+    lineas.push("")      # al menos dos: (1..0) contaría hacia atrás
+    for i in (1..lineas.length - 1)
+        p = str_split(lineas[i] + "\t\t\t", "\t")
+        if lineas[i] != ""
+            cs.lista.push(Captura(Int(p[0]), Int(p[1]), Int(p[2]), p[3]))
+        end
+    end
+    return cs
+end
+
+# Las capturas de una ficha, la principal primero
+func api_capturas(id: Int) -> Capturas
+    r = _com_pedir("GET", "/capturas/" + str_from_int(id, 10), "")
+    e = api_error(r)
+    if e != ""
+        var l: [Captura] = []
+        return Capturas(l, "", 0, e)
+    end
+    return api_leer_capturas(http_texto(r))
+end
+
+# Una captura en IFF (160 x 128 como mucho)
+func api_url_captura(img: Int) -> String
+    return api_base + "/captura/" + str_from_int(img, 10) + ".iff"
+end
+
