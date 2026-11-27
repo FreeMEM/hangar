@@ -180,3 +180,14 @@ func api_url_captura(img: Int) -> String
     return api_base + "/captura/" + str_from_int(img, 10) + ".iff"
 end
 
+# La captura grande (hasta 640 x 512, 256 colores) a la medida de una caja de la pantalla de ancho x alto: el servidor
+# la reduce si no cabe y la pone al doble si cabe así. doble: los píxeles de la pantalla son el doble de altos que de
+# anchos (640 x 256), y la manda de la mitad de alto para que no se vea estirada
+func api_url_captura_grande(img: Int, ancho: Int, alto: Int, doble: Bool) -> String
+    u = api_base + "/captura-grande/" + str_from_int(img, 10) + ".iff?ancho=" + str_from_int(ancho, 10) + "&alto=" + str_from_int(alto, 10)
+    if doble
+        u = u + "&doble=1"
+    end
+    return u
+end
+

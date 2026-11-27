@@ -1577,3 +1577,15 @@ kommentti
 MSG_1611
 kommenttia
 ; comentarios
+MSG_1612
+Napsauta nähdäksesi sen isona
+; Pincha para verla grande
+MSG_1613
+Ladataan isoa kuvakaappausta...
+; Bajando la captura grande...
+MSG_1614
+Hangar: kuvakaappaus: %1
+; Hangar: captura de %1
+MSG_1615
+Napsauta sulkeaksesi
+; Pincha para cerrarla

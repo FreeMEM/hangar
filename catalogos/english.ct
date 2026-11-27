@@ -1577,3 +1577,15 @@ comment
 MSG_1611
 comments
 ; comentarios
+MSG_1612
+Click to see it large
+; Pincha para verla grande
+MSG_1613
+Downloading the large screenshot...
+; Bajando la captura grande...
+MSG_1614
+Hangar: screenshot of %1
+; Hangar: captura de %1
+MSG_1615
+Click to close it
+; Pincha para cerrarla

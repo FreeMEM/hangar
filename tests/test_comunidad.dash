@@ -10,6 +10,8 @@
 # expect-out: pagina 1: 900 [Comentario 0 en España|con dos líneas||y una en blanco]
 # expect-out: capturas 2 - 0: 501 160x128 [] 502 160x100 [Eva Peña]
 # expect-out: url http://127.0.0.1:47131/amiga/v1/captura/502.iff
+# expect-out: grande http://127.0.0.1:47131/amiga/v1/captura-grande/502.iff?ancho=608&alto=204&doble=1
+# expect-out: grande http://127.0.0.1:47131/amiga/v1/captura-grande/7.iff?ancho=768&alto=548
 import "../src/comunidad.dash"
 
 func lineas(t: String) -> String
@@ -35,4 +37,6 @@ Main
     ks = api_capturas(4050)
     Print "capturas " + str_from_int(ks.lista.length, 10) + " " + ks.puedo + " " + str_from_int(ks.mias, 10) + ": " + str_from_int(ks.lista[0].id, 10) + " " + str_from_int(ks.lista[0].ancho, 10) + "x" + str_from_int(ks.lista[0].alto, 10) + " [" + ks.lista[0].enviada_por + "] " + str_from_int(ks.lista[1].id, 10) + " " + str_from_int(ks.lista[1].ancho, 10) + "x" + str_from_int(ks.lista[1].alto, 10) + " [" + ks.lista[1].enviada_por + "]"
     Print "url " + api_url_captura(502)
+    Print "grande " + api_url_captura_grande(502, 608, 204, true)
+    Print "grande " + api_url_captura_grande(7, 768, 548, false)
 end

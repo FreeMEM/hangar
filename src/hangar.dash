@@ -1,6 +1,6 @@
 # Hangar: busca, instala y pone al día el software del Amiga. Busca en el catálogo de hangar.freemem.space, enseña la ficha, instala
 # (baja el .lha y lo descomprime, sin C:lha), actualiza, desinstala y ejecuta.
-@version "Hangar 0.22.0"
+@version "Hangar 0.23.0"
 @catalog "Hangar.catalog" 1 "español"
 import "api.dash"
 import "lha.dash"
@@ -16,7 +16,7 @@ import "instalador.dash"
 import "elegir.dash"
 import "comunidad.dash"
 
-const VERSION = "0.22.0"
+const VERSION = "0.23.0"
 
 const ID_BUSCAR = 1
 const ID_NOVEDADES = 2
@@ -67,6 +67,8 @@ const ID_ENVIAR_CAPTURA = 62
 const ID_CAPTURA_ANT = 63
 const ID_CAPTURA_SIG = 64
 const ID_CAPTURAR_YA = 65
+const ID_CAPTURA_GRANDE = 66  # pinchar en la captura de la ficha: su ventana, grande
+const ID_GRANDE_CERRAR = 67   # y cerrarla (pinchando en ella o con su botón de cerrar)
 # la ventana de los comentarios
 const ID_COM_LISTA = 70
 const ID_COM_MAS = 71
@@ -331,7 +333,6 @@ func limpiar_ficha()
     # sin la captura del que se veía antes (con la ficha junta se quedaba a la vista al cambiar de lista)
     mui_set_visible(w_imagen, false)
     mui_set_text(w_imagen, "T:hangar_vacia.iff")
-    mui_set_visible(w_imagen, true)
     mui_set_enabled(w_instalar, false)
     mui_set_enabled(w_desinstalar, false)
     mui_set_enabled(w_ejecutar, false)
@@ -508,7 +509,8 @@ func ver_ficha(i: Int)
             hay_captura = true
         end
     end
-    mui_set_visible(w_imagen, true)
+    # sin captura, escondida: es un botón (pincharla la abre grande) y sola se vería su marco vacío
+    mui_set_visible(w_imagen, hay_captura)
     mui_set_visible(w_sin_captura, not hay_captura)
     comunidad_de_ficha(f)
     progreso(0)
@@ -3340,7 +3342,7 @@ func captura_mover(paso: Int)
     if e == ""
         mui_set_text(w_imagen, captura_anterior)
     end
-    mui_set_visible(w_imagen, true)
+    mui_set_visible(w_imagen, e == "")
     if ficha_junta
         mui_set_visible(w_sin_captura, e != "")
     end
@@ -3354,6 +3356,77 @@ func captura_mover(paso: Int)
         estado(tr(1517, "Error: ") + e)
     else
         estado("")
+    end
+end
+
+# La captura que se ve en la ficha, grande, en una ventana suya (Alex Agauser: "quizás estaría bien que
+# fueran clickables y se pudieran ver más grandes en otra ventana"). El servidor la hace a la medida de la pantalla:
+# reducida si no cabe (en 640 x 256, de la mitad de alto: sus píxeles son el doble de altos que de anchos) y al
+# doble si cabe así. Se cierra pinchándola o con el botón de cerrar.
+func captura_grande()
+    if ficha_actual == nil
+        return
+    end
+    f = ficha_actual
+    if f.imagenes == 0
+        return
+    end
+    if capturas_ficha == nil or capturas_de != f.id
+        estado(tr(1513, "Buscando las capturas..."))
+        cs = api_capturas(f.id)
+        if cs.error != ""
+            estado(tr(1514, "Error: ") + cs.error)
+            return
+        end
+        capturas_ficha = cs.lista
+        capturas_de = f.id
+    end
+    n = capturas_ficha.length
+    if n == 0
+        estado("")
+        return
+    end
+    c = capturas_ficha[captura_vista % n]
+    # lo que deja la pantalla: su barra de título, la de la ventana y sus bordes
+    ancho = screen_width() - 32
+    alto = screen_height() - 52
+    doble = screen_width() >= screen_height() * 2
+    estado(tr(1613, "Bajando la captura grande..."))
+    fichero = "T:hangar_grande_" + str_from_int(c.id, 10) + ".iff"
+    e = bajar(api_url_captura_grande(c.id, ancho, alto, doble), fichero)
+    progreso(0)
+    if e != ""
+        file_delete(fichero)
+        estado(tr(1517, "Error: ") + e)
+        return
+    end
+    estado("")
+    titulo = hueco(tr(1614, "Hangar: captura de %1"), corta(f.nombre, 40))
+    if n > 1
+        titulo = titulo + " (" + str_from_int(captura_vista % n + 1, 10) + "/" + str_from_int(n, 10) + ")"
+    end
+    w = mui_window_begin(titulo, 0)
+        img = mui_image_button(fichero)
+    mui_window_end()
+    mui_help(img, tr(1615, "Pincha para cerrarla"))
+    mui_on_press(img, ID_GRANDE_CERRAR)
+    mui_on_close(w, ID_GRANDE_CERRAR)
+    mui_window_modal(w)
+    mui_window_open(w)
+    var otros: [Int] = []
+    sigue = true
+    while sigue
+        ev = mui_wait_event()
+        if ev == ID_GRANDE_CERRAR or ev == -1
+            sigue = false
+        elif ev > 0
+            otros.push(ev)
+        end
+    end
+    mui_window_dispose(w)
+    file_delete(fichero)
+    for x in otros
+        mui_post_event(x)
     end
 end
 
@@ -3929,7 +4002,7 @@ Main
                     w_datos = mui_text("")
                     mui_hgroup_begin()
                         mui_space()
-                        w_imagen = mui_image(imagen_vacia())
+                        w_imagen = mui_image_button(imagen_vacia())
                         mui_space()
                     mui_group_end()
                     botones_capturas()
@@ -3960,7 +4033,7 @@ Main
                             mui_hgroup_begin()
                                 w_cap_ant = mui_button("<")
                                 mui_space()
-                                w_imagen = mui_image(imagen_vacia())
+                                w_imagen = mui_image_button(imagen_vacia())
                                 mui_space()
                                 w_cap_sig = mui_button(">")
                                 mui_weight(w_cap_ant, 0)
@@ -4013,6 +4086,9 @@ Main
     mui_on_press(w_comentarios, ID_COMENTARIOS)
     mui_on_press(w_cap_ant, ID_CAPTURA_ANT)
     mui_on_press(w_cap_sig, ID_CAPTURA_SIG)
+    # la captura de la ficha es un botón: pincharla la abre grande en su ventana (lo pidió Alex Agauser)
+    mui_on_press(w_imagen, ID_CAPTURA_GRANDE)
+    mui_help(w_imagen, tr(1612, "Pincha para verla grande"))
     # no a pantalla entera: con MCP (Coffin), un clic en ella la trae delante y tapaba las peticiones
     mui_window_size(w_ventana, 85, 85)
     limpiar_ficha()
@@ -4161,6 +4237,8 @@ Main
             captura_mover(-1)
         elif ev == ID_CAPTURA_SIG
             captura_mover(1)
+        elif ev == ID_CAPTURA_GRANDE
+            captura_grande()
         elif ev == ID_WEB
             if ficha_actual != nil and ficha_actual.web != ""
                 run_command("Run >NIL: OpenURL \"" + ficha_actual.web + "\"")
